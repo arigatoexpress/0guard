@@ -94,6 +94,11 @@ def exercise_workbench(page: Page) -> None:
 
     expect(page).to_have_title("0guard Workbench")
     expect(page.locator("body")).to_contain_text("0G Hack Guard")
+    expect(page.locator("body")).to_contain_text(
+        "What happens before an AI agent touches a wallet?"
+    )
+    expect(page.locator("#plain-explanation")).to_contain_text("Safe simulations pass")
+    expect(page.locator("#flow-canvas")).to_have_attribute("data-state", "idle")
     expect(page.locator("body")).to_contain_text("Intent Firewall")
     expect(page.locator("body")).to_contain_text("Hack Signature Check")
     expect(page.locator("body")).to_contain_text("Domain Guard")
@@ -125,12 +130,22 @@ def exercise_workbench(page: Page) -> None:
     page.locator("#load-deny-sample").click()
     page.locator("#run-evaluate").click()
     expect(page.locator("#decision-pill")).to_contain_text("deny")
+    expect(page.locator("#flow-canvas")).to_have_attribute("data-state", "deny")
+    expect(page.locator("#wallet-state")).to_contain_text("not asked to sign")
+    expect(page.locator("#risk-list")).to_contain_text("wallet signature")
     expect(page.locator("#result-output")).to_contain_text('"decision": "deny"')
     expect(page.locator("#result-output")).to_contain_text("Intent requires a wallet signature")
+
+    page.locator("#run-bridge-scenario").click()
+    expect(page.locator("#plain-explanation")).to_contain_text("bridge funds")
+    expect(page.locator("#technical-output")).to_contain_text("Decision: deny")
+    expect(page.locator("#risk-list")).to_contain_text("bridge")
 
     page.locator("#load-allow-sample").click()
     page.locator("#run-evaluate").click()
     expect(page.locator("#decision-pill")).to_contain_text("allow")
+    expect(page.locator("#flow-canvas")).to_have_attribute("data-state", "allow")
+    expect(page.locator("#wallet-state")).to_contain_text("simulation only")
     expect(page.locator("#result-output")).to_contain_text('"decision": "allow"')
     expect(page.locator("#result-output")).to_contain_text('"mode": "simulation"')
 

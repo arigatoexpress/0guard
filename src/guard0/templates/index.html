@@ -9,7 +9,13 @@
 <body>
   <div class="shell">
     <nav aria-label="Workbench sections">
-      <div class="brand">0guard</div>
+      <div class="brand-lockup">
+        <img src="{{ url_for('static', filename='0guard-logo.png') }}" alt="" aria-hidden="true">
+        <div>
+          <div class="brand">0guard</div>
+          <p class="mini">Pre-wallet firewall for AI agents.</p>
+        </div>
+      </div>
       <p class="mini">Read-only agent firewall for 0G hack signatures.</p>
       <button class="nav-item active" id="nav-intent" type="button">Intent Firewall</button>
       <button class="nav-item" id="nav-signatures" type="button">Hack Signatures</button>
@@ -28,6 +34,88 @@
           <p class="muted">Evaluate wallet-adjacent agent intents before they reach a signing key.</p>
         </div>
         <span class="pill deny" id="decision-pill">default deny</span>
+      </section>
+
+      <section class="story-board" aria-label="Visual pre-wallet story">
+        <div class="story-header">
+          <div>
+            <span class="eyebrow">Simple view</span>
+            <h2>What happens before an AI agent touches a wallet?</h2>
+            <p id="plain-explanation" class="story-copy">An agent asks for an action. 0guard checks it first. Safe simulations pass; risky wallet actions are blocked before a signature exists.</p>
+          </div>
+          <div class="scenario-controls" aria-label="Demo story controls">
+            <button id="play-story" type="button">Play story</button>
+            <button id="run-drift-scenario" class="secondary" type="button">Social-engineering ask</button>
+            <button id="run-bridge-scenario" class="secondary" type="button">Bridge release ask</button>
+            <button id="run-upgrade-scenario" class="secondary" type="button">Upgrade ask</button>
+            <button id="run-safe-scenario" class="secondary" type="button">Safe simulation</button>
+          </div>
+        </div>
+
+        <div class="flow-canvas" id="flow-canvas" data-state="idle">
+          <div class="flow-line" aria-hidden="true"></div>
+          <div class="flow-packet" id="flow-packet">intent</div>
+          <div class="flow-node agent-node">
+            <span class="node-icon">AI</span>
+            <strong>Agent</strong>
+            <small id="agent-state">asks to act</small>
+          </div>
+          <div class="flow-node guard-node" id="guard-gate">
+            <img src="{{ url_for('static', filename='0guard-logo.png') }}" alt="" aria-hidden="true">
+            <strong>0guard</strong>
+            <small>intent, calldata, policy, intel</small>
+          </div>
+          <div class="flow-node wallet-node" id="wallet-node">
+            <span class="node-icon">W</span>
+            <strong>Wallet</strong>
+            <small id="wallet-state">locked</small>
+          </div>
+          <div class="flow-node receipt-node" id="receipt-node">
+            <span class="node-icon">0G</span>
+            <strong>Receipt</strong>
+            <small id="receipt-state">waiting</small>
+          </div>
+        </div>
+
+        <div class="story-grid">
+          <div class="story-card">
+            <span>1</span>
+            <h3>Plain intent</h3>
+            <p id="story-intent">A wallet-adjacent request is converted into a clear intent before anything can sign.</p>
+          </div>
+          <div class="story-card">
+            <span>2</span>
+            <h3>Pre-wallet check</h3>
+            <p id="story-check">0guard compares the request against policy, known exploit signatures, and source-aware incident intelligence.</p>
+          </div>
+          <div class="story-card">
+            <span>3</span>
+            <h3>Verdict</h3>
+            <p id="story-verdict">Risky live actions stop at the firewall. Safe simulations can continue.</p>
+          </div>
+          <div class="story-card">
+            <span>4</span>
+            <h3>Proof trail</h3>
+            <p id="story-proof">Each verdict has a receipt hash. One deny receipt is anchored on 0G mainnet.</p>
+          </div>
+        </div>
+
+        <div class="explain-grid">
+          <div>
+            <h3>Why it matters</h3>
+            <p id="normie-output">The wallet never has to guess whether an agent is being manipulated. 0guard makes the risk visible before the dangerous step.</p>
+          </div>
+          <div>
+            <h3>Technical proof</h3>
+            <p id="technical-output">Awaiting a scenario. The next verdict will show blockers, warnings, receipt hash, and 0G status.</p>
+          </div>
+          <div>
+            <h3>Detected risk</h3>
+            <div id="risk-list" class="risk-list">
+              <span class="risk-chip review">ready</span>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section class="grid">
