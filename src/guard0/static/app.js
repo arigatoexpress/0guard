@@ -352,6 +352,11 @@ async function loadVirtualsFacilitator(){
   const j = await r.json();
   writeJson('cross-chain-output', j);
 }
+async function loadIkaIntegration(){
+  const r = await fetch('/api/integrations/ika');
+  const j = await r.json();
+  writeJson('cross-chain-output', j);
+}
 async function loadExternalGuardrails(){
   const r = await fetch('/api/integrations/external-guardrails');
   const j = await r.json();
@@ -481,6 +486,7 @@ document.getElementById('load-threat-passport').addEventListener('click', loadTh
 document.getElementById('load-cross-chain-catalog').addEventListener('click', loadCrossChainCatalog);
 document.getElementById('load-cross-chain-readiness').addEventListener('click', loadCrossChainReadiness);
 document.getElementById('load-virtuals-facilitator').addEventListener('click', loadVirtualsFacilitator);
+document.getElementById('load-ika-integration').addEventListener('click', loadIkaIntegration);
 document.getElementById('load-external-guardrails').addEventListener('click', loadExternalGuardrails);
 document.getElementById('run-external-guardrail-check').addEventListener('click', runExternalGuardrailCheck);
 document.getElementById('create-telegram-registration').addEventListener('click', createTelegramRegistration);

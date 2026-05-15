@@ -28,6 +28,7 @@ from guard0.external_guardrails import (
     external_guardrail_catalog,
 )
 from guard0.incident_data import detection_coverage, filter_incidents, incident_summary
+from guard0.ika import evaluate_ika_signing_request, ika_integration_manifest
 from guard0.mira import build_mira_claim_preview, build_mira_security_preview
 from guard0.osint import (
     evolving_threat_intelligence,
@@ -119,6 +120,7 @@ FRONTEND_REQUIRED_SELECTORS = (
     "#load-cross-chain-catalog",
     "#load-cross-chain-readiness",
     "#load-virtuals-facilitator",
+    "#load-ika-integration",
     "#load-external-guardrails",
     "#run-external-guardrail-check",
     "#cross-chain-output",
@@ -609,6 +611,8 @@ def api_frontend_contract():
                 "/api/integrations/cross-chain",
                 "/api/integrations/cross-chain/readiness",
                 "/api/integrations/virtuals-facilitator",
+                "/api/integrations/ika",
+                "/api/integrations/ika/evaluate",
                 "/api/integrations/external-guardrails",
                 "/api/integrations/external-guardrails/evaluate",
                 "/api/hackathon/submission-brief",
@@ -658,6 +662,7 @@ def api_frontend_contract():
                 "load-cross-chain-catalog",
                 "load-cross-chain-readiness",
                 "load-virtuals-facilitator",
+                "load-ika-integration",
                 "load-external-guardrails",
                 "run-external-guardrail-check",
                 "run-wallet-alert-preview",
@@ -825,6 +830,20 @@ def api_cross_chain_readiness():
 @app.route("/api/integrations/virtuals-facilitator", methods=["GET"])
 def api_virtuals_facilitator():
     return jsonify(virtuals_facilitator_manifest())
+
+
+@app.route("/api/integrations/ika", methods=["GET"])
+def api_ika_integration():
+    return jsonify(ika_integration_manifest())
+
+
+@app.route("/api/integrations/ika/evaluate", methods=["POST"])
+def api_ika_integration_evaluate():
+    body = request.get_json(silent=True) or {}
+    try:
+        return jsonify(evaluate_ika_signing_request(body))
+    except (TypeError, ValueError) as exc:
+        return jsonify({"error": str(exc)}), 400
 
 
 @app.route("/api/integrations/external-guardrails", methods=["GET"])

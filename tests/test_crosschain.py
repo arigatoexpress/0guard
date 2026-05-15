@@ -38,6 +38,10 @@ def test_cross_chain_catalog_is_source_cited_and_non_mutating():
     assert "ccip_lane_policy_review" in targets["chainlink_ccip"]["capabilities"]
     assert "dvn_executor_config_review" in targets["layerzero_v2"]["capabilities"]
     assert "global_accountant_supply_invariant" in targets["wormhole_ntt"]["capabilities"]
+    assert targets["ika_dwallets"]["kind"] == "zero_trust_signing_fabric"
+    assert "native_multichain_signatures" in targets["ika_dwallets"]["capabilities"]
+    assert targets["ikavery_recovery"]["status"] == "testnet_devnet_pre_alpha_reference"
+    assert targets["encrypt_pre_alpha"]["status"] == "pre_alpha_devnet_plaintext_warning"
     assert all(target["officialSources"] for target in catalog["targets"])
 
 
@@ -60,6 +64,7 @@ def test_cross_chain_readiness_defaults_to_catalog_only_without_network():
     assert by_id["lighter_exchange"]["status"] == "not_checked"
     assert by_id["celestia_blobstream"]["status"] == "catalog_only_non_evm"
     assert by_id["chainlink_ccip"]["status"] == "catalog_only_non_evm"
+    assert by_id["ika_dwallets"]["status"] == "catalog_only_non_evm"
 
 
 def test_virtuals_facilitator_manifest_is_deployable_but_not_deployed():

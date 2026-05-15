@@ -12,6 +12,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
+from guard0.ika import evaluate_ika_signing_request
+
 
 EXTERNAL_GUARDRAIL_CATALOG_SCHEMA = "0guard.external_guardrail_catalog.v1"
 EXTERNAL_GUARDRAIL_EVALUATION_SCHEMA = "0guard.external_guardrail_evaluation.v1"
@@ -102,6 +104,15 @@ def external_guardrail_catalog() -> dict[str, Any]:
                     "0guard's implemented proof anchor remains 0G Chain/Storage-ready receipts",
                 ],
             },
+            {
+                "targetId": "ika_dwallets",
+                "role": "dWallet signing/custody posture",
+                "checks": [
+                    "0guard may preflight dWallet requests before MPCKit, OdWS, or Ikavery signing",
+                    "live signing, key import, sweep, and transaction submission remain disabled",
+                    "Encrypt pre-alpha data must be treated as public/plaintext until its own status changes",
+                ],
+            },
         ],
         "safety": _safety(),
     }
@@ -134,6 +145,24 @@ def evaluate_external_guardrail(payload: dict[str, Any] | None = None) -> dict[s
         findings.extend(_evaluate_wormhole(action=action, config=config, intent_text=intent_text))
     elif target_id in {"celestia_blobstream", "celestia"}:
         findings.extend(_evaluate_celestia(action=action, config=config, intent_text=intent_text))
+    elif target_id in {
+        "ika_dwallets",
+        "ika",
+        "ikavery",
+        "mpckit",
+        "odws",
+        "clear_msig_ika",
+        "encrypt",
+        "encrypt_pre_alpha",
+    }:
+        findings.extend(
+            _evaluate_ika_guardrail(
+                target_id=target_id,
+                action=action,
+                config=config,
+                intent_text=intent_text,
+            )
+        )
     else:
         findings.append(
             GuardrailFinding(
@@ -430,6 +459,38 @@ def _evaluate_celestia(*, action: str, config: dict[str, Any], intent_text: str)
             "Celestia/Blobstream can be compared as DA proof context while 0G remains the implemented anchor.",
             {"blobstreamContract": config.get("blobstreamContract")},
         )
+    ]
+
+
+def _evaluate_ika_guardrail(
+    *,
+    target_id: str,
+    action: str,
+    config: dict[str, Any],
+    intent_text: str,
+) -> list[GuardrailFinding]:
+    result = evaluate_ika_signing_request(
+        {
+            **config,
+            "sourceProject": config.get("sourceProject") or config.get("source_project") or target_id,
+            "operation": action,
+            "intentText": intent_text,
+            "liveSigning": config.get("liveSigning", False),
+        }
+    )
+    return [
+        _finding(
+            finding.get("id", "ika_preflight_finding"),
+            finding.get("severity", "medium"),
+            finding.get("decision", "review"),
+            finding.get("message", "Ika preflight finding."),
+            {
+                **(finding.get("evidence") or {}),
+                "ikaPreflightReceipt": (result.get("receipt") or {}).get("hash"),
+                "ikaPreflightDecision": result.get("decision"),
+            },
+        )
+        for finding in result.get("findings", [])
     ]
 
 

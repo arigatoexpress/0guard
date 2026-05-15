@@ -156,6 +156,8 @@ python3 -m guard0.cli serve --port 8109
 | `GET`  | `/api/integrations/cross-chain` | Source-cited integration catalog for 0G, Virtuals/Base, x402, EVM expansion networks, Lighter exchange/API, bridge protocol guardrails, and Celestia/TIA |
 | `GET`  | `/api/integrations/cross-chain/readiness` | Read-only cross-chain readiness; add `?live=1` for safe EVM RPC probes plus supported non-EVM status probes |
 | `GET`  | `/api/integrations/virtuals-facilitator` | Prepared Virtuals/Base `0guard Facilitator` manifest; no live launch |
+| `GET`  | `/api/integrations/ika` | Source-cited Ika, Encrypt, Ikavery, MPCKit, and OdWS integration manifest |
+| `POST` | `/api/integrations/ika/evaluate` | Read-only dWallet signing preflight before MPCKit/OdWS/Ikavery; no key import or signing |
 | `GET/POST` | `/api/integrations/external-guardrails` + `/evaluate` | Active read-only guardrail catalog and evaluator for x402, Virtuals/Base, Lighter, CCIP, LayerZero, Wormhole, and Celestia intents/configs |
 | `GET`  | `/api/hackathon/submission-brief` | HackQuest-ready project brief, data stats, 0G story, manual TODOs, and claims to avoid |
 | `GET`  | `/api/hackathon/submission-packet` | Copy-ready HackQuest form fields, required links, X commands, and remaining operator placeholders |

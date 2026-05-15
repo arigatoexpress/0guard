@@ -19,7 +19,8 @@ The live repo already has:
 - Telegram Mini App preview with server-side `initData` validation support.
 - Mira deterministic previews and claim packets.
 - Cross-chain guardrails for Base, Arbitrum, Polygon, Abstract, Lighter, CCIP,
-  LayerZero, Wormhole, Celestia, TON, Solana, and Hyperliquid lanes.
+  LayerZero, Wormhole, Celestia, TON, Solana, Hyperliquid, Ika, Encrypt, and
+  Ikavery lanes.
 
 ## Build Phases
 
@@ -38,6 +39,8 @@ The live repo already has:
 - Solana gets parsed account/token activity and warning receipts.
 - Hyperliquid gets read-only exposure/fill context only.
 - Cross-chain protocols get message/config guardrails, not transfer execution.
+- Ika/Ikavery get pre-signing guardrails and 0G receipts, not key import or
+  signing from 0guard.
 
 ## New API Proof
 
@@ -45,6 +48,8 @@ The live repo already has:
 - `/api/ton/status`, `/api/ton/risk-rules`, `/api/ton/wallet-risk-preview`, and
   `/api/telegram/miniapp/ton-preview` expose the TON/Telegram lane without
   signatures or sends.
+- `/api/integrations/ika` and `/api/integrations/ika/evaluate` expose the
+  Ika/Ikavery pre-signing lane without key import, dWallet creation, signing,
+  sweeps, or broadcasts.
 - `/tonconnect-manifest.json` is present for wallet presentation context, but
   the frontend does not request `sendTransaction`, `signData`, or `tonProof`.
-

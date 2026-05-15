@@ -97,6 +97,8 @@ def test_frontend_contract_is_browser_smoke_ready_and_non_mutating(client):
     assert "/api/integrations/cross-chain" in data["apiRoutes"]
     assert "/api/integrations/cross-chain/readiness" in data["apiRoutes"]
     assert "/api/integrations/virtuals-facilitator" in data["apiRoutes"]
+    assert "/api/integrations/ika" in data["apiRoutes"]
+    assert "/api/integrations/ika/evaluate" in data["apiRoutes"]
     assert "/api/integrations/external-guardrails" in data["apiRoutes"]
     assert "/api/integrations/external-guardrails/evaluate" in data["apiRoutes"]
     assert "/api/hackathon/submission-brief" in data["apiRoutes"]
@@ -136,6 +138,7 @@ def test_frontend_contract_is_browser_smoke_ready_and_non_mutating(client):
     assert "#load-cross-chain-catalog" in data["requiredSelectors"]
     assert "#load-cross-chain-readiness" in data["requiredSelectors"]
     assert "#load-virtuals-facilitator" in data["requiredSelectors"]
+    assert "#load-ika-integration" in data["requiredSelectors"]
     assert "#load-external-guardrails" in data["requiredSelectors"]
     assert "#run-external-guardrail-check" in data["requiredSelectors"]
     assert "#cross-chain-output" in data["requiredSelectors"]
@@ -369,6 +372,27 @@ def test_cross_chain_integration_routes_are_read_only(client):
     assert manifest_body["agent"]["name"] == "0guard Facilitator"
     assert manifest_body["agent"]["launchStatus"] == "prepared_operator_required"
     assert manifest_body["safety"]["externalAgentLaunchEnabled"] is False
+
+    ika = client.get("/api/integrations/ika")
+    assert ika.status_code == 200
+    ika_body = ika.get_json()
+    assert ika_body["schema"] == "0guard.ika_integration_manifest.v1"
+    assert ika_body["safety"]["privateKeyImportEnabled"] is False
+
+    ika_preflight = client.post(
+        "/api/integrations/ika/evaluate",
+        json={
+            "sourceProject": "ikavery",
+            "operation": "sweep",
+            "chain": "solana:devnet",
+            "liveSigning": True,
+        },
+    )
+    assert ika_preflight.status_code == 200
+    ika_preflight_body = ika_preflight.get_json()
+    assert ika_preflight_body["schema"] == "0guard.ika_signing_preflight.v1"
+    assert ika_preflight_body["decision"] == "deny"
+    assert ika_preflight_body["safety"]["transactionSigningEnabled"] is False
 
     guardrails = client.get("/api/integrations/external-guardrails")
     assert guardrails.status_code == 200

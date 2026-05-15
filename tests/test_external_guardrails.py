@@ -23,6 +23,7 @@ def test_external_guardrail_catalog_is_non_mutating():
         "layerzero_v2",
         "wormhole_ntt",
         "celestia_blobstream",
+        "ika_dwallets",
     }
 
 
@@ -111,3 +112,20 @@ def test_wormhole_controls_roll_up_to_review_or_allow():
 def test_invalid_config_rejected():
     with pytest.raises(ValueError, match="config must be an object"):
         evaluate_external_guardrail({"target_id": "layerzero_v2", "config": []})
+
+
+def test_ika_external_guardrail_denies_live_signing():
+    result = evaluate_external_guardrail(
+        {
+            "target_id": "ika_dwallets",
+            "action": "sign_transaction",
+            "intent_text": "Sign a live dWallet sweep.",
+            "config": {"liveSigning": True, "sourceProject": "ikavery"},
+        }
+    )
+
+    assert result["schema"] == "0guard.external_guardrail_evaluation.v1"
+    assert result["decision"] == "deny"
+    assert any(finding["id"] == "ika_signing_surface_operator_only" for finding in result["findings"])
+    assert any(finding["id"] == "ikavery_pre_alpha_devnet_boundary" for finding in result["findings"])
+    assert result["safety"]["transactionSigningEnabled"] is False
