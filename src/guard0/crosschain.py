@@ -437,6 +437,103 @@ CHAIN_TARGETS: tuple[ChainTarget, ...] = (
         caveats=("Do not call exchange endpoints that place/cancel orders, transfer, or withdraw funds.",),
     ),
     ChainTarget(
+        id="ika_dwallets",
+        name="Ika dWallet Network",
+        kind="zero_trust_signing_fabric",
+        status="mainnet_sdk_reference",
+        chain_id=None,
+        rpc_env=None,
+        default_rpc=None,
+        http_status_env=None,
+        default_http_status_url=None,
+        explorer="https://ika.xyz",
+        native_asset="IKA",
+        evm_compatible=False,
+        probe_default=False,
+        capabilities=(
+            "native_multichain_signatures",
+            "2pc_mpc_dwallets",
+            "sui_coordinated_policy_caps",
+            "pre_signing_0guard_receipts",
+        ),
+        x402_posture="not_an_x402_settlement_target; use as custody/signing fabric behind policy gates",
+        proof_strategy=(
+            "Run 0guard before any dWallet signature request; anchor 0guard verdicts to 0G "
+            "while Ika handles native chain signatures only after separate operator approval."
+        ),
+        official_sources=(
+            "https://docs.ika.xyz/",
+            "https://docs.ika.xyz/docs/core-concepts/multi-chain-vs-cross-chain",
+            "https://github.com/dwallet-labs/ika",
+        ),
+        caveats=(
+            "0guard routes do not import keys, create dWallets, sign messages, or submit Ika transactions.",
+        ),
+    ),
+    ChainTarget(
+        id="ikavery_recovery",
+        name="Ikavery quorum recovery",
+        kind="quorum_recovery_reference",
+        status="testnet_devnet_pre_alpha_reference",
+        chain_id=None,
+        rpc_env=None,
+        default_rpc=None,
+        http_status_env=None,
+        default_http_status_url=None,
+        explorer="https://github.com/Iamknownasfesal/ikavery",
+        native_asset="SUI/SOL",
+        evm_compatible=False,
+        probe_default=False,
+        capabilities=(
+            "passkey_or_wallet_quorum",
+            "sui_testnet_recovery",
+            "solana_devnet_recovery",
+            "sweep_intent_preview",
+        ),
+        x402_posture="not_a_payment_settlement_target; integrate as recovery/custody UX reference",
+        proof_strategy=(
+            "Attach 0guard preflight receipts to Ikavery recovery/sweep proposals before quorum execution."
+        ),
+        official_sources=(
+            "https://github.com/Iamknownasfesal/ikavery",
+            "https://github.com/Iamknownasfesal/clear-msig-ika",
+        ),
+        caveats=(
+            "Ikavery README says pre-alpha devnet/testnet only and unaudited; never import real-fund keys.",
+            "Repository metadata does not declare a license, so do not vendor source without permission.",
+        ),
+    ),
+    ChainTarget(
+        id="encrypt_pre_alpha",
+        name="Encrypt Pre-Alpha",
+        kind="confidential_compute_watchlist",
+        status="pre_alpha_devnet_plaintext_warning",
+        chain_id=None,
+        rpc_env=None,
+        default_rpc=None,
+        http_status_env=None,
+        default_http_status_url=None,
+        explorer="https://github.com/dwallet-labs/encrypt-pre-alpha",
+        native_asset="SOL",
+        evm_compatible=False,
+        probe_default=False,
+        capabilities=(
+            "solana_devnet_fhe_sdk",
+            "mock_executor",
+            "future_private_risk_scoring_candidate",
+            "plaintext_today_warning",
+        ),
+        x402_posture="not_a_payment_settlement_target; future private-risk proof lane only",
+        proof_strategy=(
+            "Treat Encrypt as a future private-risk computation lane after real encryption guarantees; "
+            "today it is devnet/plaintext and cannot protect sensitive 0guard data."
+        ),
+        official_sources=("https://github.com/dwallet-labs/encrypt-pre-alpha",),
+        caveats=(
+            "Encrypt pre-alpha README states there is no real encryption and data is public/plaintext.",
+        ),
+    ),
+    ChainTarget(
         id="chainlink_ccip",
         name="Chainlink CCIP",
         kind="cross_chain_security_protocol",
