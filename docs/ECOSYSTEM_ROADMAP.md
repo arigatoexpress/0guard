@@ -70,3 +70,24 @@ The live repo already has:
   examples.
 - `/tonconnect-manifest.json` is present for wallet presentation context, but
   the frontend does not request `sendTransaction`, `signData`, or `tonProof`.
+
+## May 16, 2026 Hackathon Sequencing Update
+
+The next external tracks are now documented in
+`docs/NEXT_HACKATHON_ROADMAP.md`.
+
+Priority order:
+
+1. MetaMask Smart Accounts Kit x 1Shot API Dev Cook Off.
+   Build a permission-aware approval copilot around Advanced Permissions,
+   ERC-7710, x402, and agent/A2A coordination.
+2. Arbitrum Open House London.
+   Build an Arbitrum-native agent safety pack with a small deployed receipt or
+   scoring proof on a qualifying Arbitrum chain.
+3. Injective Solo AI Builder Sprint.
+   Use as a fast repository-quality lane only if the README, hosted demo, video,
+   and X post are already clean.
+
+The common product nucleus stays unchanged: 0guard is a native preflight layer
+that emits receipt-backed risk decisions before a signer or permission grant is
+used. It should not become a bridge, exchange bot, or custody wallet.

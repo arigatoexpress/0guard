@@ -1,6 +1,6 @@
 # 0guard Veo 3 / Flow Production Packet
 
-Updated: May 16, 2026.
+Updated: May 16, 2026. No generated-video text allowed.
 
 Goal: create a replacement-quality 0guard demo video that feels professional,
 cypherpunk, calm, and technically credible. The video should explain the simple

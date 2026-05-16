@@ -106,6 +106,9 @@ For the 0G APAC Hackathon, the fastest review path is:
    path is healthy.
 5. Use `docs/hackathon-0g/` for the submission copy, demo walkthrough, market
    intel, and mainnet gap register.
+6. Use `docs/NEXT_HACKATHON_ROADMAP.md` for the post-0G sequence across
+   MetaMask Smart Accounts Kit x 1Shot API, Arbitrum Open House London, and
+   Injective Solo AI Builder Sprint.
 
 Current submission proof is captured in `docs/hackathon-0g/`, including the
 public X post URL, final demo video URL, HackQuest readback, and 0G mainnet
