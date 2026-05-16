@@ -19,6 +19,10 @@ truth boundary.
   product screen capture. The current public MP4 is already assembled from
   product footage; use `veo3-flow-production-prompt.md` for a later replacement
   cut that improves clarity without adding unsupported claims.
+- Generated video clips must contain no text at all. No captions, subtitles,
+  lower thirds, title cards, brand lettering, API paths, fake UI labels,
+  addresses, hashes, numbers, QR codes, or decorative glyphs that look like
+  writing. Use narration and real product screen capture for exact proof.
 
 Sources:
 
@@ -92,20 +96,21 @@ The current higher-quality prompt and Flow configuration lives in
 `docs/hackathon-0g/veo3-flow-production-prompt.md`. Keep the older prompts
 below only as compact fallback clips.
 
-Use landscape `16:9`. Generate 8 seconds per clip. Avoid text-heavy prompts:
-AI video text can be unreliable, and the real submission text should come from
-captions and screen capture.
+Use landscape `16:9`. Generate 8 seconds per clip. Keep generated clips fully
+textless. AI video text is not accurate enough for this submission; all exact
+proof belongs in narration and real product screen capture.
 
 ### Clip 1: Pre-Wallet Firewall
 
 ```text
 Cinematic 8-second opener for a Web3 security product. A luminous stream of
 machine-generated wallet intents flows toward a secure signing vault. Before
-the intents reach the vault, a transparent firewall made of policy receipts and
-cryptographic hashes filters risky red packets away while safe blue packets
-continue. High-end cyber documentary style, realistic UI reflections, dark
+the intents reach the vault, a transparent firewall made of abstract policy
+receipt shapes and cryptographic block patterns filters risky red packets away
+while safe blue packets continue. High-end cyber documentary style, realistic UI reflections, dark
 background, cyan and white highlights, subtle 0G-inspired modular network
-geometry, no readable logos, no fake transaction hashes, no text overlays.
+geometry, no readable logos, no fake transaction hashes, no text overlays, no
+captions, no labels, no lettering.
 Audio: low precise pulse, soft verification chime when a safe intent passes.
 ```
 
@@ -113,30 +118,30 @@ Negative prompt:
 
 ```text
 No fake brand logos, no readable wallet addresses, no scary hacker stereotype,
-no stock footage feel, no cartoon style, no illegible text overlays.
+no stock footage feel, no cartoon style, no text overlays of any kind.
 ```
 
 ### Clip 2: Receipt Anchor
 
 ```text
 An 8-second cinematic macro shot of a cryptographic receipt becoming anchored
-into a decentralized ledger. A receipt hash appears as abstract glowing blocks,
-then locks into a transparent chain grid. The motion communicates auditability,
-not money movement. Dark premium interface aesthetic, crisp cyan highlights,
-realistic glass materials, shallow depth of field, no readable text, no logos,
-no token price visuals. Audio: quiet mechanical lock, soft confirmation tone.
+into a decentralized ledger. A receipt object appears as abstract glowing
+blocks, then locks into a transparent chain grid. The motion communicates
+auditability, not money movement. Dark premium interface aesthetic, crisp cyan highlights,
+realistic glass materials, shallow depth of field, no text of any kind, no
+logos, no token price visuals. Audio: quiet mechanical lock, soft confirmation
+tone.
 ```
 
 ### Clip 3: OSINT Provenance
 
 ```text
 An 8-second cinematic data-room scene showing many public-source evidence cards
-being normalized into a clean provenance matrix. Cards transform into hashes,
-source ids, and confidence lanes without showing real personal data. Premium
+being normalized into a clean provenance matrix. Cards transform into abstract
+proof blocks and confidence lanes without showing real personal data. Premium
 investigative interface, dark neutral background, white and cyan accents,
-smooth camera dolly, no news logos, no screenshots of real articles, no
-readable copied text. Audio: subtle paper-to-digital sweep and calm analysis
-tone.
+smooth camera dolly, no news logos, no screenshots of real articles, no text of
+any kind. Audio: subtle paper-to-digital sweep and calm analysis tone.
 ```
 
 ### Clip 4: Cross-Chain Guardrail
@@ -147,7 +152,7 @@ Several abstract EVM and data-availability networks connect to one central
 policy firewall. A separate exchange/API lane is visibly guarded but never
 executes a trade. The mood is controlled, credible, and technical. Dark
 background, cyan-white proof lines, tiny safety locks, no logos, no price
-charts, no buy or sell buttons, no readable text. Audio: restrained network
+charts, no buy or sell buttons, no text of any kind. Audio: restrained network
 hum, one verification chime.
 ```
 
@@ -158,7 +163,7 @@ An 8-second final hero shot for a serious AI x Web3 security demo. A calm
 operator dashboard shows abstract allow, review, deny lanes flowing into a
 tamper-evident proof layer. The scene should feel like enterprise-grade
 security infrastructure, not a trading app. Realistic dark UI, sharp details,
-cinematic lighting, cyan accents, no readable labels, no fake data, no logos.
+cinematic lighting, cyan accents, no text, no labels, no fake data, no logos.
 Audio: confident low swell ending in a clean proof-confirmation tone.
 ```
 

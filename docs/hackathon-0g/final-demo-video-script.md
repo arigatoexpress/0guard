@@ -18,6 +18,15 @@ Professional replacement packet:
 docs/hackathon-0g/veo3-flow-production-prompt.md
 ```
 
+Text rule for any replacement cut:
+
+```text
+Generated Veo/Flow clips must contain no text at all. Use narration and real
+product screen capture for exact claims, API paths, hashes, addresses, and
+status fields. Do not rely on AI-generated captions, labels, title cards, or
+UI typography.
+```
+
 Rebuild command:
 
 ```bash
@@ -51,7 +60,7 @@ mainnet receipt anchor, source-aware provenance, and the current signature map.
 | 1:42-1:53 | "0guard also prepares Storage-ready roots and a provenance matrix. The important part is that every incident stays traceable, while raw upstream payloads stay out of resale." | Show provenance coverage, source matches, and raw-payload safety. |
 | 1:53-2:05 | "The detector map is measurable. It now covers all 28 incident-derived patterns, including the Quant EIP-7702 batch-call evidence that closed the last gap." | Click `Load signature map`. Show `matchedCount=28`, `gapCount=0`, and the Quant EIP-7702 detector row. |
 | 2:05-2:16 | "For external systems, 0guard is a checkpoint, not a launch button. Base and Virtuals, x402, EVM networks, Celestia, Lighter order intents, and bridge protocols stay read-only here." | Show the read-only cross-chain catalog. |
-| 2:16-2:24 | "That is the thesis: autonomous finance needs a clear checkpoint before the wallet, and proof people can inspect. That is 0guard, built on 0G." | End on the cross-chain/read-only guardrail surface and final 0guard caption. |
+| 2:16-2:24 | "That is the thesis: autonomous finance needs a clear checkpoint before the wallet, and proof people can inspect. That is 0guard, built on 0G." | End on the cross-chain/read-only guardrail surface and a clean visual lockup; no generated text overlays. |
 
 ## Exact Demo Scenarios
 

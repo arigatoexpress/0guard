@@ -67,6 +67,12 @@ Completed through the logged-in Chrome X session:
 
 - Main-account HackQuest update from `@rariwrldd`:
   https://x.com/rariwrldd/status/2055683406302941687
+- ZeroGuard-account HackQuest update from `@0guard_`:
+  https://x.com/0guard_/status/2055693819941941617
+
+Chrome readback at 2026-05-16T16:57Z showed the active account switcher as
+`0guard @0guard_`, the submitted draft landed with 260 characters, and the
+public `@0guard_` profile contained the new post after submission.
 
 The shell environment does not contain the X OAuth variables required by
 `scripts/x_post.py`:
@@ -77,13 +83,8 @@ The shell environment does not contain the X OAuth variables required by
 - `X_ACCESS_TOKEN_SECRET`
 
 Because those are absent, API-based live X posting cannot run from this repo.
-The same Brave profile was also checked against https://x.com/0guard_ and is
-not authenticated for X; it shows `Log in` / `Sign up` and no posting controls.
 The corrected X drafts say the project is submitted, not that it is still
 submitted.
-Chrome is authenticated as `@rariwrldd`; the account switcher does not expose
-`@0guard_` yet, only `Add an existing account`, so the ZeroGuard-account update
-is prepared but not posted.
 
 ## X Cleanup State
 

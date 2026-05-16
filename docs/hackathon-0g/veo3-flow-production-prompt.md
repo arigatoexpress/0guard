@@ -22,9 +22,12 @@ Use these current Google Flow constraints when building the cut:
   can still produce low-quality or missing audio.
 - Flow Scenebuilder can arrange and trim multiple clips, but final editing in
   DaVinci Resolve, Premiere, ScreenFlow, CapCut, or Descript is still the safer
-  route for subtitles, mix, and precise product overlays.
-- For 0guard, do not rely on generated text inside Veo clips. Add exact text,
-  API routes, receipt hashes, and captions in the editor from real repo data.
+  route for timing, mix, and product screen capture.
+- No text rule: every generated Veo/Flow clip must be textless. Do not generate
+  subtitles, captions, lower thirds, labels, logos made of letters, UI words,
+  addresses, hashes, article snippets, terminal output, or decorative glyphs
+  that look like writing. Use narration and real product screen capture for all
+  exact claims.
 
 Official references:
 
@@ -60,15 +63,15 @@ Primary settings:
 | Outputs | 2 per prompt for final contenders; 1 per prompt for rough iteration. |
 | Resolution | Upscale final selected clips to 1080p or 4K if Flow exposes the option. |
 | Audio | Generate only restrained ambience and verification sounds in Flow. Use a separate human or premium TTS narration track for the final voiceover. |
-| Captions | Add in the editor, not inside Veo. Use exact repo/API wording. |
+| Captions | Do not add captions to generated clips. Use narration plus real product screen capture for exact repo/API wording. |
 
 Ingredients to upload:
 
 | Ingredient name | File | How to use |
 | --- | --- | --- |
-| `@0guard-logo` | `docs/hackathon-0g/assets/0guard-logo.png` | Brand reference for final hero and intro. |
-| `@0guard-banner-style` | `docs/hackathon-0g/assets/0guard-x-banner.png` | Visual style reference only. Do not ask Veo to reproduce all text. |
-| `@0guard-workbench` | `docs/hackathon-0g/assets/0guard-workbench-provenance.png` | UI composition reference. Use real screen capture for readable UI. |
+| `@0guard-logo` | `docs/hackathon-0g/assets/0guard-logo.png` | Style reference only. Prefer symbol, silhouette, color, and composition; do not ask Veo to recreate text. |
+| `@0guard-banner-style` | `docs/hackathon-0g/assets/0guard-x-banner.png` | Visual style reference only. Do not ask Veo to reproduce any lettering. |
+| `@0guard-workbench` | `docs/hackathon-0g/assets/0guard-workbench-provenance.png` | UI composition reference only. Use real screen capture for readable UI. |
 
 If Flow rejects or distorts an ingredient, create a clean reference image in
 Flow first: dark background, single object, no extra subjects, no text, no
@@ -93,19 +96,33 @@ Structure:
    guardrails stay checkpoint-first and no-send/no-trade by default.
 7. The close: autonomous finance needs a checkpoint before the wallet.
 
+## Global No-Text Rule
+
+Paste this before every Flow prompt:
+
+```text
+No text anywhere in this generated clip. No captions, subtitles, lower thirds,
+labels, title cards, brand lettering, API paths, wallet addresses, transaction
+hashes, article snippets, terminal text, chat messages, UI words, numbers, QR
+codes, or decorative marks that resemble writing. Communicate only through
+motion, color, shapes, spacing, light, and camera language. Exact information
+will be delivered by narration and real product screen capture outside this
+generated clip.
+```
+
 ## Global Visual Style Prompt
 
 Paste this into every prompt, then append the scene-specific block.
 
 ```text
 Visual style: professional cypherpunk security film, clean dark interface,
-matte black glass, crisp white typography added later in edit, restrained cyan
-and electric green proof lines, subtle red only for denied risk, realistic
-product-light reflections, high-end documentary macro cinematography, slow
-deliberate camera movement, no fantasy hacker stereotypes, no random crypto
-coins, no stock market charts, no fake wallet transactions, no bridges or swaps
-executing, no unreadable AI-generated UI text, no third-party logos, no private
-keys, no seed phrases, no real personal data.
+matte black glass, restrained cyan and electric green proof lines, subtle red
+only for denied risk, realistic product-light reflections, high-end documentary
+macro cinematography, slow deliberate camera movement, no fantasy hacker
+stereotypes, no random crypto coins, no stock market charts, no fake wallet
+transactions, no bridges or swaps executing, no generated text, no generated
+logos, no third-party logos, no private keys, no seed phrases, no real personal
+data.
 
 Audio direction: restrained low pulse, quiet room tone, soft verification
 chimes, no dramatic trailer boom, no robotic narration inside the generated
@@ -117,10 +134,11 @@ Global negative prompt:
 ```text
 Avoid: fake exchange screens, fake signatures, fake wallet approvals,
 fake token prices, fake news article screenshots, scrolling gibberish text,
-blue-purple gradient blob backgrounds, cartoon robots, hooded hackers,
-explosion effects, meme crypto visuals, busy dashboards, hallucinated brand
-logos, visible seed phrases, private keys, QR codes, phone numbers, emails, or
-real user account screens.
+captions, subtitles, lower thirds, labels, title cards, fake UI words, numbers,
+API paths, wallet addresses, transaction hashes, QR codes, blue-purple gradient
+blob backgrounds, cartoon robots, hooded hackers, explosion effects, meme
+crypto visuals, busy dashboards, hallucinated brand logos, visible seed
+phrases, private keys, phone numbers, emails, or real user account screens.
 ```
 
 ## Master Prompt
@@ -134,18 +152,19 @@ for AI agents built on 0G. The story is simple: an autonomous agent prepares a
 wallet action, the action passes through a calm security checkpoint, and only
 safe read-only actions continue. Risky signing attempts become red quarantined
 packets before the wallet is ever asked. Show a dark professional interface
-with abstract agent intent packets, policy receipts, source-linked evidence
-cards, and a public proof ledger. Keep all text abstract; exact captions will
-be added later. The mood is elite defensive engineering, not trading hype.
+with abstract agent intent packets, policy receipt objects, source-linked
+evidence shapes, and a public proof ledger. Do not include any text, symbols
+that look like text, captions, labels, addresses, hashes, or title cards. The
+mood is elite defensive engineering, not trading hype.
 
 Visual style: professional cypherpunk security film, clean dark interface,
-matte black glass, crisp white typography added later in edit, restrained cyan
-and electric green proof lines, subtle red only for denied risk, realistic
-product-light reflections, high-end documentary macro cinematography, slow
-deliberate camera movement, no fantasy hacker stereotypes, no random crypto
-coins, no stock market charts, no fake wallet transactions, no bridges or swaps
-executing, no unreadable AI-generated UI text, no third-party logos, no private
-keys, no seed phrases, no real personal data.
+matte black glass, restrained cyan and electric green proof lines, subtle red
+only for denied risk, realistic product-light reflections, high-end documentary
+macro cinematography, slow deliberate camera movement, no fantasy hacker
+stereotypes, no random crypto coins, no stock market charts, no fake wallet
+transactions, no bridges or swaps executing, no generated text, no generated
+logos, no third-party logos, no private keys, no seed phrases, no real personal
+data.
 
 Audio: restrained low pulse, quiet room tone, soft verification chimes.
 ```
@@ -164,8 +183,8 @@ An AI agent intent packet travels through a quiet dark workspace toward a
 sealed wallet signing vault. Just before it reaches the vault, a precise
 security checkpoint lights up and pauses the packet. The vault never opens.
 The camera moves slowly from the agent side to the checkpoint side, macro lens,
-crisp dark glass, cyan proof lines, one subtle red warning glint. No readable
-text. No wallet brand. No transaction confirmation. No fake address.
+crisp dark glass, cyan proof lines, one subtle red warning glint. No text of
+any kind. No wallet brand. No transaction confirmation. No fake address.
 
 Visual style: professional cypherpunk security film, clean dark interface,
 matte black glass, restrained cyan and electric green proof lines, subtle red
@@ -174,7 +193,7 @@ only for denied risk, realistic product-light reflections.
 Audio: low room tone, soft digital pause, no voice.
 ```
 
-Editor caption:
+Voiceover cue:
 
 ```text
 Before the signer opens, 0guard checks the intent.
@@ -190,11 +209,11 @@ Three clean lanes appear in a dark interface: agent intent, 0guard checkpoint,
 and protected wallet. A safe blue packet passes only after the checkpoint turns
 green. A risky red packet is diverted into quarantine before touching the
 wallet lane. The motion is simple enough for a non-technical viewer, elegant
-and minimal, like a premium security product explainer. No readable text;
-captions will be added later.
+and minimal, like a premium security product explainer. No text of any kind.
+No captions, labels, title cards, brand lettering, or UI words.
 
-Use @0guard-logo only as a small brand mark style reference, not as large
-generated text.
+Use @0guard-logo only as a shape, color, and lighting reference. Do not
+generate brand lettering.
 
 Visual style: professional cypherpunk security film, clean dark interface,
 matte black glass, precise geometry, restrained cyan and electric green proof
@@ -204,7 +223,7 @@ Audio: soft verification chime for safe packet, muted block tone for risky
 packet, no voice.
 ```
 
-Editor caption:
+Voiceover cue:
 
 ```text
 Agent asks. 0guard checks. Wallet stays protected.
@@ -223,7 +242,7 @@ walletNotAskedToSign: true
 telegram_send: false
 ```
 
-Keep readable text from the product. Do not generate this scene in Veo.
+Use real product screen capture only. Do not generate this scene in Veo.
 
 ### Scene 4: Incident Intelligence Becomes Detectors
 
@@ -231,19 +250,19 @@ Use: Text to Video or Frames to Video from a clean data-card frame.
 
 ```text
 A wall of public-source evidence cards becomes a clean provenance matrix. Each
-card collapses into a source id, a record hash, and a detector hint. The cards
-do not show copied article text or real people. The camera glides across the
-matrix as red exploit patterns become structured white and cyan detector
-signals. The scene feels like an analyst room, not a news montage.
+card collapses into abstract source blocks and detector hints without text,
+numbers, labels, article snippets, or real people. The camera glides across the
+matrix as red exploit patterns become structured cyan detector signals. The
+scene feels like an analyst room, not a news montage.
 
 Visual style: professional cypherpunk security film, dark neutral data room,
-sharp cards, source-aware hashes, restrained motion, no readable copied text,
-no news logos, no personal data.
+sharp cards, restrained motion, no text of any kind, no news logos, no personal
+data.
 
 Audio: soft paper-to-digital sweep, low analysis pulse, no voice.
 ```
 
-Editor caption:
+Voiceover cue:
 
 ```text
 28 source-linked April 2026 incidents become detector coverage.
@@ -260,6 +279,7 @@ compromised admin upgrade path, and delegated account batch-call risk. Each
 object is inspected by a thin cyan scan line, then stamped as review or deny.
 No exploit instructions. No real code. No copied transaction calldata. The
 visuals are elegant, readable through motion, and threat-model oriented.
+Do not use any letters, labels, numbers, or stamped text.
 
 Visual style: professional cypherpunk security film, matte black glass, precise
 threat objects, cyan scan lines, red quarantine glow only at the edges.
@@ -267,7 +287,7 @@ threat objects, cyan scan lines, red quarantine glow only at the edges.
 Audio: four quiet scan ticks and one final proof chime.
 ```
 
-Editor caption:
+Voiceover cue:
 
 ```text
 0guard catches behavior, not just known bad addresses.
@@ -283,8 +303,9 @@ A deterministic receipt hash becomes a tamper-evident proof object and locks
 into a transparent 0G mainnet ledger grid. The action communicates auditability
 only: no token transfer, no wallet approval, no price chart. The camera starts
 close on the receipt object, then pulls back to reveal a calm decentralized
-proof layer. Keep all text abstract; exact contract address and tx hash will
-be overlaid in edit from real repo proof data.
+proof layer. Do not show the contract address, transaction hash, receipt hash,
+numbers, labels, title cards, or any generated text. Exact proof details belong
+in narration and real product screen capture.
 
 Visual style: professional cypherpunk security film, premium dark ledger,
 transparent chain grid, cyan proof lines, small green verification pulse.
@@ -292,7 +313,7 @@ transparent chain grid, cyan proof lines, small green verification pulse.
 Audio: quiet mechanical lock, short verification tone, no voice.
 ```
 
-Editor caption:
+Voiceover cue:
 
 ```text
 Public 0G mainnet anchor: 0xBaC59b...7182abc
@@ -304,18 +325,19 @@ Use: Text to Video, Veo 3.1 Quality.
 
 ```text
 Three external intelligence streams enter a privacy-preserving normalization
-layer. Raw payloads are filtered out, and only derived evidence, hashes, source
-ids, and risk signals continue into the 0guard checkpoint. The camera shows the
-raw layer dimming while the derived analysis layer becomes crisp and usable.
-No vendor logos. No copied source text. No personal data.
+layer. Raw payloads are filtered out, and only abstract derived evidence blocks
+and risk signals continue into the 0guard checkpoint. The camera shows the raw
+layer dimming while the derived analysis layer becomes crisp and usable.
+No vendor logos. No copied source text. No labels, words, numbers, hashes, or
+personal data.
 
 Visual style: professional cypherpunk security film, clean data pipelines,
-dark glass, cyan normalization gates, white source-id glyphs added later.
+dark glass, cyan normalization gates, clean geometry, no text.
 
 Audio: low data hum, three clean normalization clicks, no voice.
 ```
 
-Editor caption:
+Voiceover cue:
 
 ```text
 Source-aware intelligence without raw payload resale.
@@ -340,14 +362,14 @@ Optional Veo background prompt:
 A phone-shaped dark glass frame shows abstract wallet-alert cards arriving
 only after a quality gate approves them. Most low-value alerts fade away before
 reaching the phone. No real Telegram interface, no chat usernames, no message
-spam, no readable text. The mood is calm, protective, and respectful of user
+spam, no text of any kind. The mood is calm, protective, and respectful of user
 attention.
 
 Visual style: professional cypherpunk security film, restrained mobile UI,
 cyan quality gates, minimal red risk chips, no real app logos.
 ```
 
-Editor caption:
+Voiceover cue:
 
 ```text
 Telegram preview is opt-in, deduped, and no-send by default.
@@ -364,6 +386,7 @@ order-intent lane, TON wallet context lane, and bridge-protocol risk lane. The
 checkpoint evaluates each lane without executing any bridge, trade, payment,
 or transfer. The visual language is native checkpointing, not wrapped-asset
 bridge hype.
+Do not label the lanes with words, symbols, tickers, or logos.
 
 Visual style: professional cypherpunk security film, dark topological network,
 clean white/cyan proof routes, no token logos, no price charts, no transfer
@@ -372,7 +395,7 @@ animation, no buy or sell buttons.
 Audio: restrained network hum and one clean lock tone.
 ```
 
-Editor caption:
+Voiceover cue:
 
 ```text
 Cross-chain expansion stays read-only and checkpoint-first.
@@ -388,7 +411,8 @@ Final hero shot for 0guard. A calm operator surface shows allow, review, and
 deny lanes flowing into a tamper-evident 0G proof layer. The protected wallet
 remains behind the checkpoint. The scene feels like serious infrastructure for
 autonomous finance, not a trading app. Leave clean negative space in the center
-for a real 0guard logo overlay in editing. No generated text.
+for a real logo asset outside Flow if needed. No generated text, no labels, no
+title card.
 
 Visual style: professional cypherpunk security film, clean dark interface,
 matte black glass, restrained cyan and electric green proof lines, subtle red
@@ -397,7 +421,7 @@ deny lane, sharp premium lighting.
 Audio: confident low swell ending in a precise proof-confirmation tone.
 ```
 
-Editor caption:
+Voiceover cue:
 
 ```text
 0guard: pre-wallet proof for autonomous finance.
@@ -441,14 +465,11 @@ That is 0guard: agent intent in, policy proof out, wallet protected.
    shots from the browser.
 3. Put the voiceover down first. Cut visuals to the voice, not the reverse.
 4. Use Veo scenes as 2 to 5 second inserts between real UI proof shots.
-5. Add captions in the editor with exact repo terms:
-   - `walletNotAskedToSign: true`
-   - `/api/reputation/shadow-cache`
-   - `/api/readyz`
-   - `0G mainnet PolicyReceiptAnchor`
-   - `telegram_send=false`
-   - `rawPayloadsReturned=false`
-6. Keep all readable product claims on screen for at least 1.5 seconds.
+5. Do not add captions, subtitles, lower thirds, title cards, or decorative
+   text to generated clips. Exact claims should appear only through narration
+   and real product screen capture.
+6. Keep real product UI proof shots on screen long enough to inspect when they
+   are used.
 7. Mix voice around -16 LUFS integrated, with music/ambience at least 12 dB
    below narration.
 8. Export:
@@ -457,8 +478,8 @@ That is 0guard: agent intent in, policy proof out, wallet protected.
    - Length under 2:00 for the polished public cut.
 9. Replace the public MP4 only after review confirms:
    - no fake live external actions;
-   - no generated gibberish text in critical shots;
-   - product UI is readable;
+   - no generated text appears anywhere in Veo/Flow clips;
+   - product UI is real screen capture when readable text appears;
    - 0G proof details match `docs/hackathon-0g/mainnet-proof.json`;
    - no private data or account screens appear.
 
@@ -466,7 +487,8 @@ That is 0guard: agent intent in, policy proof out, wallet protected.
 
 Reject a generated clip if any of these appear:
 
-- unreadable AI text where exact claims matter;
+- any generated text, caption, subtitle, lower third, title card, label, number,
+  address, hash, QR code, or fake UI typography;
 - any fake token balance, fake wallet approval, fake tx success, or fake bridge;
 - visible private key, seed phrase, QR code, phone number, email, or account
   profile;
