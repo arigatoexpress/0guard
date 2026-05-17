@@ -95,7 +95,7 @@ python3 -m json.tool docs/hackathon-0g/mainnet-proof.json
 Open the anchor transaction:
 
 ```text
-https://chainscan.0g.ai/tx/64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed
+https://chainscan.0g.ai/tx/0x64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed
 ```
 
 ### 2:20-2:45 - Dataset and Coverage

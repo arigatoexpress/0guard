@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 
 _RE_URL = re.compile(r'https?://[^\s"<>]+')
 _RE_CONTRACT = re.compile(r"0x[a-fA-F0-9]{40}")
-_RE_CHAINSCAN_TX = re.compile(r"https://chainscan\.0g\.ai/tx/[a-fA-F0-9]{64}")
+_RE_CHAINSCAN_TX = re.compile(r"https://chainscan\.0g\.ai/tx/(?:0x)?[a-fA-F0-9]{64}")
 _RE_IS_SUBMIT = re.compile(r'"isSubmit"\s*:\s*(true|false)')
 _RE_IS_SUBMIT_ESCAPED = re.compile(r'\\"isSubmit\\"\s*:\s*(true|false)')
 

@@ -28,6 +28,24 @@ from guard0.crosschain import (
     cross_chain_readiness,
     virtuals_facilitator_manifest,
 )
+from guard0.da_node import (
+    build_da_node_status,
+    build_storage_node_status,
+    build_telegram_da_node_preview,
+    build_telegram_storage_node_preview,
+)
+from guard0.node_business import (
+    build_0g_node_business_plan,
+    build_alignment_node_status,
+    build_telegram_node_business_preview,
+    build_validator_capacity_status,
+)
+from guard0.peer_protection import (
+    build_0g_private_computer_integration,
+    build_peer_outreach_preview,
+    build_peer_protection_plan,
+    build_pi_mesh_plan,
+)
 from guard0.case_file import build_threat_case_file
 from guard0.developer_kit import developer_kit_manifest
 from guard0.external_guardrails import (
@@ -37,6 +55,9 @@ from guard0.external_guardrails import (
 from guard0.experiments import frontier_experiments, run_frontier_experiment_preview
 from guard0.hackathon_integrations import (
     arbitrum_integration_plan,
+    arbitrum_open_house_buildathon_plan,
+    metamask_1shot_cookoff_plan,
+    metamask_1shot_permission_preview,
     metamask_integration_plan,
     next_hackathon_plan,
 )
@@ -162,7 +183,10 @@ FRONTEND_REQUIRED_SELECTORS = (
     "#load-cross-chain-catalog",
     "#load-cross-chain-readiness",
     "#load-arbitrum-integration",
+    "#load-arbitrum-buildathon",
     "#load-metamask-integration",
+    "#load-metamask-1shot-plan",
+    "#run-metamask-1shot-preview",
     "#load-virtuals-facilitator",
     "#load-ika-integration",
     "#run-reputation-probe",
@@ -178,6 +202,17 @@ FRONTEND_REQUIRED_SELECTORS = (
     "#osint-output",
     "#verify-receipt-hash",
     "#verify-receipt",
+    "#load-da-node-status",
+    "#run-telegram-da-node-preview",
+    "#load-node-business",
+    "#load-alignment-node-status",
+    "#load-validator-capacity",
+    "#load-private-computer",
+    "#load-peer-protection",
+    "#run-peer-outreach-preview",
+    "#load-pi-mesh",
+    "#run-telegram-node-business-preview",
+    "#da-node-output",
     "#telegram-register-output",
     "#mira-output",
     "#wallet-address-input",
@@ -263,11 +298,21 @@ def external_action_contracts_payload() -> dict:
                 "liveConfirmationFlag": "local CLI only with PRIVATE_KEY and explicit operator review",
                 "reachableFromWorkbench": False,
             },
+            {
+                "id": "0g-peer-chain-message",
+                "script": "future operator-approved peer sender",
+                "default": "draft_only",
+                "liveConfirmationFlag": (
+                    "local CLI only with opt-in peer, exact message hash, and operator approval"
+                ),
+                "reachableFromWorkbench": False,
+            },
         ],
         "blockedCapabilities": [
             "wallet signature requests",
             "raw transaction broadcasting",
             "X/Telegram posting from the browser",
+            "unsolicited peer outreach",
             "secret display or echo",
             "fund movement",
             "production deploys",
@@ -403,6 +448,14 @@ def _telegram_mira_status_payload() -> dict:
             ),
             "store": _telegram_store_status(),
             "defaultScopes": [DEFAULT_SCOPE],
+            "nodeScopes": [
+                "da_node.digest",
+                "da_node.balance",
+                "storage_node.digest",
+                "storage_node.peers",
+                "node_business.digest",
+                "peer_protection.digest",
+            ],
             "walletAlertPolicy": wallet_alert_quality_policy(),
             "telegramBotUsernameConfigured": bool(bot_username),
         },
@@ -423,6 +476,9 @@ def _telegram_mira_status_payload() -> dict:
             "/api/telegram/webhook",
             "/api/telegram/mira-preview",
             "/api/telegram/wallet-alert-preview",
+            "/api/telegram/da-node-preview",
+            "/api/telegram/storage-node-preview",
+            "/api/telegram/node-business-preview",
             "/api/mira/claim-preview",
             "/api/ton/status",
             "/api/ton/risk-rules",
@@ -738,6 +794,10 @@ def api_frontend_contract():
                 "Intent Firewall",
                 "Hack Signature Check",
                 "Domain Guard",
+                "0G Node Ops",
+                "0G AI Stack",
+                "Peer Protection",
+                "Pi Mesh",
                 "Data Flow",
                 "Telegram Mira Opt-In",
                 "Mira Telegram Preview",
@@ -753,6 +813,15 @@ def api_frontend_contract():
             "apiRoutes": [
                 "/api/health",
                 "/api/0g/status",
+                "/api/0g/da-node/status",
+                "/api/0g/storage-node/status",
+                "/api/0g/alignment-node/status",
+                "/api/0g/validator-capacity",
+                "/api/0g/node-business",
+                "/api/0g/private-computer",
+                "/api/0g/peer-protection",
+                "/api/0g/pi-mesh",
+                "/api/peer/outreach-preview",
                 "/api/0g/receipt",
                 "/api/0g/proof-ladder",
                 "/api/data/summary",
@@ -782,7 +851,10 @@ def api_frontend_contract():
                 "/api/integrations/cross-chain",
                 "/api/integrations/cross-chain/readiness",
                 "/api/integrations/arbitrum",
+                "/api/hackathons/arbitrum-open-house",
                 "/api/integrations/metamask",
+                "/api/hackathons/metamask-1shot",
+                "/api/hackathons/metamask-1shot/permission-preview",
                 "/api/integrations/virtuals-facilitator",
                 "/api/integrations/ika",
                 "/api/integrations/ika/evaluate",
@@ -810,6 +882,9 @@ def api_frontend_contract():
                 "/api/telegram/miniapp/ton-preview",
                 "/api/telegram/mira-preview",
                 "/api/telegram/wallet-alert-preview",
+                "/api/telegram/da-node-preview",
+                "/api/telegram/storage-node-preview",
+                "/api/telegram/node-business-preview",
                 "/api/mira/claim-preview",
                 "/api/external-action-contracts",
                 "/api/evaluate",
@@ -864,6 +939,16 @@ def api_frontend_contract():
                 "run-external-guardrail-check",
                 "run-wallet-alert-preview",
                 "run-telegram-wallet-alert-preview",
+                "load-da-node-status",
+                "run-telegram-da-node-preview",
+                "load-node-business",
+                "load-alignment-node-status",
+                "load-validator-capacity",
+                "load-private-computer",
+                "load-peer-protection",
+                "run-peer-outreach-preview",
+                "load-pi-mesh",
+                "run-telegram-node-business-preview",
             ],
             "safety": external_action_contracts_payload(),
         }
@@ -1098,9 +1183,28 @@ def api_arbitrum_integration():
     return jsonify(arbitrum_integration_plan())
 
 
+@app.route("/api/hackathons/arbitrum-open-house", methods=["GET"])
+def api_arbitrum_open_house_buildathon():
+    return jsonify(arbitrum_open_house_buildathon_plan())
+
+
 @app.route("/api/integrations/metamask", methods=["GET"])
 def api_metamask_integration():
     return jsonify(metamask_integration_plan())
+
+
+@app.route("/api/hackathons/metamask-1shot", methods=["GET"])
+def api_metamask_1shot_cookoff():
+    return jsonify(metamask_1shot_cookoff_plan())
+
+
+@app.route("/api/hackathons/metamask-1shot/permission-preview", methods=["GET", "POST"])
+def api_metamask_1shot_permission_preview():
+    body = request.get_json(silent=True) or {} if request.method == "POST" else {}
+    try:
+        return jsonify(metamask_1shot_permission_preview(body))
+    except (TypeError, ValueError) as exc:
+        return jsonify({"error": str(exc)}), 400
 
 
 @app.route("/api/integrations/virtuals-facilitator", methods=["GET"])
@@ -1598,6 +1702,29 @@ def api_telegram_webhook():
             }
         )
 
+    if text.lower().split(maxsplit=1)[0] in {"/da", "/node", "/balance"}:
+        record = _active_telegram_record_for_user(telegram_user)
+        if not record:
+            return jsonify(
+                {
+                    "schema": "0guard.telegram_webhook.v1",
+                    "action": "ignored_not_opted_in",
+                    "telegram_send": False,
+                    "network_calls": False,
+                }
+            )
+        preview = build_telegram_da_node_preview(
+            live=_truthy_query_arg("live"),
+            opt_in_record=record,
+        )
+        return jsonify(
+            {
+                "schema": "0guard.telegram_webhook.v1",
+                "action": "da_node_preview",
+                **preview,
+            }
+        )
+
     record = _active_telegram_record_for_user(telegram_user)
     if not record:
         return jsonify(
@@ -1699,6 +1826,48 @@ def api_telegram_wallet_alert_preview():
     )
 
 
+@app.route("/api/telegram/da-node-preview", methods=["GET", "POST"])
+def api_telegram_da_node_preview():
+    body = (request.get_json(silent=True) or {}) if request.method == "POST" else {}
+    record_id = body.get("record_id")
+    record = _TELEGRAM_OPT_IN_RECORDS.get(record_id) if record_id else None
+    if record_id and not record:
+        return jsonify({"error": "Unknown or inactive Telegram opt-in record"}), 403
+
+    live = (
+        _truthy_value(body.get("live", False))
+        if request.method == "POST"
+        else _truthy_query_arg("live")
+    )
+    status = (
+        body["status"]
+        if isinstance(body.get("status"), dict)
+        else build_da_node_status(live=live)
+    )
+    return jsonify(build_telegram_da_node_preview(status=status, opt_in_record=record))
+
+
+@app.route("/api/telegram/storage-node-preview", methods=["GET", "POST"])
+def api_telegram_storage_node_preview():
+    body = (request.get_json(silent=True) or {}) if request.method == "POST" else {}
+    record_id = body.get("record_id")
+    record = _TELEGRAM_OPT_IN_RECORDS.get(record_id) if record_id else None
+    if record_id and not record:
+        return jsonify({"error": "Unknown or inactive Telegram opt-in record"}), 403
+
+    live = (
+        _truthy_value(body.get("live", False))
+        if request.method == "POST"
+        else _truthy_query_arg("live")
+    )
+    status = (
+        body["status"]
+        if isinstance(body.get("status"), dict)
+        else build_storage_node_status(live=live)
+    )
+    return jsonify(build_telegram_storage_node_preview(status=status, opt_in_record=record))
+
+
 @app.route("/tonconnect-manifest.json", methods=["GET"])
 def api_tonconnect_manifest():
     return jsonify(tonconnect_manifest(request.host_url))
@@ -1759,6 +1928,12 @@ def api_health():
             "0g_chain_rpc": cfg["rpc"],
             "0g_receipt_contract": cfg["receipt_contract"],
             "0g_storage_node": os.getenv("ZGS_NODE_URL", "not_configured"),
+            "0g_da_node": build_da_node_status(live=False),
+            "0g_storage_node_status": build_storage_node_status(live=False),
+            "0g_node_business": build_0g_node_business_plan(live=False),
+            "0g_private_computer": build_0g_private_computer_integration(),
+            "peer_protection": build_peer_protection_plan(live=False),
+            "pi_mesh": build_pi_mesh_plan(),
             "telegram_mira": _telegram_mira_status_payload(),
             "read_only": True,
             "telegram_sends_enabled": False,
@@ -1788,6 +1963,73 @@ def healthz():
 @app.route("/api/0g/status", methods=["GET"])
 def api_0g_status():
     return jsonify(build_0g_status())
+
+
+@app.route("/api/0g/da-node/status", methods=["GET"])
+def api_0g_da_node_status():
+    return jsonify(build_da_node_status(live=_truthy_query_arg("live")))
+
+
+@app.route("/api/0g/storage-node/status", methods=["GET"])
+def api_0g_storage_node_status():
+    return jsonify(build_storage_node_status(live=_truthy_query_arg("live")))
+
+
+@app.route("/api/0g/alignment-node/status", methods=["GET"])
+def api_0g_alignment_node_status():
+    return jsonify(build_alignment_node_status(live=_truthy_query_arg("live")))
+
+
+@app.route("/api/0g/validator-capacity", methods=["GET"])
+def api_0g_validator_capacity():
+    return jsonify(build_validator_capacity_status())
+
+
+@app.route("/api/0g/node-business", methods=["GET"])
+def api_0g_node_business():
+    return jsonify(build_0g_node_business_plan(live=_truthy_query_arg("live")))
+
+
+@app.route("/api/0g/private-computer", methods=["GET"])
+def api_0g_private_computer():
+    return jsonify(build_0g_private_computer_integration())
+
+
+@app.route("/api/0g/peer-protection", methods=["GET"])
+def api_0g_peer_protection():
+    return jsonify(build_peer_protection_plan(live=_truthy_query_arg("live")))
+
+
+@app.route("/api/0g/pi-mesh", methods=["GET"])
+def api_0g_pi_mesh():
+    return jsonify(build_pi_mesh_plan())
+
+
+@app.route("/api/peer/outreach-preview", methods=["GET", "POST"])
+def api_peer_outreach_preview():
+    body = request.get_json(silent=True) or {}
+    return jsonify(build_peer_outreach_preview(body))
+
+
+@app.route("/api/telegram/node-business-preview", methods=["GET", "POST"])
+def api_telegram_node_business_preview():
+    body = (request.get_json(silent=True) or {}) if request.method == "POST" else {}
+    record_id = body.get("record_id")
+    record = _TELEGRAM_OPT_IN_RECORDS.get(record_id) if record_id else None
+    if record_id and not record:
+        return jsonify({"error": "Unknown or inactive Telegram opt-in record"}), 403
+
+    live = (
+        _truthy_value(body.get("live", False))
+        if request.method == "POST"
+        else _truthy_query_arg("live")
+    )
+    plan = (
+        body["businessPlan"]
+        if isinstance(body.get("businessPlan"), dict)
+        else build_0g_node_business_plan(live=live)
+    )
+    return jsonify(build_telegram_node_business_preview(plan, opt_in_record=record))
 
 
 @app.route("/api/0g/receipt", methods=["GET"])

@@ -249,6 +249,25 @@ def hackathon_strategy() -> dict[str, Any]:
         },
         {
             "rank": 2,
+            "id": "metamask_smart_accounts_1shot_api_dev_cookoff",
+            "name": "MetaMask Smart Accounts Kit x 1Shot API Dev Cook Off",
+            "timing": {
+                "status": "active_on_source_readback_2026-05-17",
+                "registrationWindow": "2026-05-15 to 2026-06-15",
+                "submissionWindow": "2026-05-15 to 2026-06-15",
+                "rewardAnnouncement": "2026-06-22",
+            },
+            "importance": "highest_next_build",
+            "whyNow": "The active requirements match 0guard's strongest product wedge: preflight scoped MetaMask permissions, ERC-7710 x402 payments, and agent actions before the wallet prompt.",
+            "0guardBuild": "Ship the Smart Accounts Kit permission firewall demo with bounded ERC-7715 permission review, ERC-7710 x402 payment preview, and 1Shot integration gates.",
+            "sources": [
+                "https://www.hackquest.io/hackathons/MetaMask-Smart-Accounts-Kit-x-1Shot-API-Dev-Cook-Off",
+                "https://docs.metamask.io/smart-accounts-kit/guides/x402/overview/",
+                "https://docs.1shotapi.com/x402/index.html",
+            ],
+        },
+        {
+            "rank": 3,
             "id": "arbitrum_open_house_london",
             "name": "Arbitrum Open House London Buildathon",
             "timing": {
@@ -267,12 +286,12 @@ def hackathon_strategy() -> dict[str, Any]:
             ],
         },
         {
-            "rank": 3,
+            "rank": 4,
             "id": "metamask_agent_wallet_security",
             "name": "MetaMask agent-wallet security lane",
             "timing": {
-                "status": "docs_verified_watchlist",
-                "nextPublicSubmissionWindow": "watch_ethglobal_and_metamask_programs",
+                "status": "superseded_by_active_metamask_1shot_cookoff",
+                "nextPublicSubmissionWindow": "ETHGlobal New York remains follow-on distribution",
             },
             "importance": "high",
             "whyNow": "MetaMask Smart Accounts Kit, Snaps, and Connect give 0guard a clean pre-signer integration path for agentic wallets.",
@@ -284,7 +303,7 @@ def hackathon_strategy() -> dict[str, Any]:
             ],
         },
         {
-            "rank": 4,
+            "rank": 5,
             "id": "ethglobal_new_york_2026",
             "name": "ETHGlobal New York 2026",
             "timing": {
@@ -297,7 +316,7 @@ def hackathon_strategy() -> dict[str, Any]:
             "sources": ["https://ethglobal.com/"],
         },
         {
-            "rank": 5,
+            "rank": 6,
             "id": "ethglobal_lisbon_2026",
             "name": "ETHGlobal Lisbon 2026",
             "timing": {
@@ -310,7 +329,7 @@ def hackathon_strategy() -> dict[str, Any]:
             "sources": ["https://ethglobal.com/"],
         },
         {
-            "rank": 6,
+            "rank": 7,
             "id": "arbitrum_open_house_singapore",
             "name": "Arbitrum Open House Singapore",
             "timing": {

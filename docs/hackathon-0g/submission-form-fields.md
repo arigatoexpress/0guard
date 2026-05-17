@@ -171,7 +171,7 @@ https://x.com/rariwrldd/status/2054779961425461542
 0G explorer URL:
 
 ```text
-https://chainscan.0g.ai/tx/64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed
+https://chainscan.0g.ai/tx/0x64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed
 ```
 
 0G contract page:
@@ -189,7 +189,7 @@ Anchored receipt hash:
 0G on-chain integration proof field:
 
 ```text
-0G Chain anchors policy receipt hashes. Contract: 0xBaC59b1571b7c7195915c5B36D8A719Ed7182abc. Anchor tx: https://chainscan.0g.ai/tx/64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed. Public proof packet: https://arigatoexpress.github.io/0guard/hackathon-0g/. The live Telegram Mini App and browser workbench keep signing/broadcasting disabled while returning Storage-ready root hashes and receipt payloads.
+0G Chain anchors policy receipt hashes. Contract: 0xBaC59b1571b7c7195915c5B36D8A719Ed7182abc. Anchor tx: https://chainscan.0g.ai/tx/0x64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed. Public proof packet: https://arigatoexpress.github.io/0guard/hackathon-0g/. The live Telegram Mini App and browser workbench keep signing/broadcasting disabled while returning Storage-ready root hashes and receipt payloads.
 ```
 
 Post-submit professionalization note:

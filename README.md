@@ -26,13 +26,14 @@
 
 1. **Intent Firewall** — Evaluates every action as `allow`, `review`, or `deny` before it reaches a wallet.
 2. **Hack Signature Detection** — Built-in IOCs, calldata selectors, and behavioral sequences derived from **source-linked April 2026 incidents** (Drift, Kelp DAO, Wasabi, Rhea, Volo, Giddy, HyperBridge, Aftermath, Sweat Foundation).
-3. **0G-Native Proofs** — Reads live 0G status, prepares policy receipt hashes, and includes a public 0G mainnet receipt anchor proof while keeping workbench writes operator-controlled.
-4. **0G Proof Ladder** — Builds a Chain, Storage, DA, Compute, and Alignment proof packet for one verdict without uploading, inferring, signing, broadcasting, or operating a node.
+3. **0G-Native Proofs** — Reads live 0G status, prepares policy receipt hashes, tracks DA node signer/miner balances, and includes a public 0G mainnet receipt anchor proof while keeping workbench writes operator-controlled.
+4. **0G Proof Ladder** — Builds a Chain, Storage, DA, Compute, and Alignment proof packet for one verdict without uploading, inferring, signing, broadcasting, or moving funds.
 5. **OSINT Data Pipeline** — Normalizes rights-aware public source registries, live incident/research leads, source readiness, and signature coverage gaps.
 6. **Reputation Probe** — Checks domains, counterparties, labels, caller evidence, and intent context without reselling raw OSINT payloads.
 7. **External Guardrail Catalog** — Catalogs read-only EVM networks, x402 posture, Lighter exchange/API intents, DA proof lanes, and bridge-protocol risk lanes; no settlement, orders, bridges, or launches.
-8. **Telegram Mira Opt-In** — Provides secure Telegram Mini App registration primitives and Mira response previews without live sends.
-9. **Zero Trust by Default** — Refuses signing, raw transactions, bridges, swaps, and approvals unless explicitly cleared.
+8. **0G Private Computer + Peer Protection** — Models 0GM-1.0, peer-protection drafts, onchain message hashes, and Pi sentinel roles without paid inference, sends, or broadcasts.
+9. **Telegram Mira Opt-In** — Provides secure Telegram Mini App registration primitives and Mira response previews without live sends.
+10. **Zero Trust by Default** — Refuses signing, raw transactions, bridges, swaps, and approvals unless explicitly cleared.
 
 ---
 
@@ -41,8 +42,11 @@
 | 0G Component | How We Use It | Hackathon Track Fit |
 |---|---|---|
 | **0G Chain** (EVM-compatible) | Public 0G mainnet `PolicyReceiptAnchor` with one anchored deny receipt; workbench path remains read-only/preflight. | Agentic Infrastructure |
-| **0G Storage** (KV + Log) | Deterministic threat-intel payload/root-hash preparation; external writes stay opt-in. | Privacy & Sovereign Infrastructure |
-| **0G Compute** (Inference) | Planned 0G Compute scoring adapter; current demo uses deterministic policy/signature checks. | Agentic Infrastructure |
+| **0G Storage** (KV + Log) | Deterministic threat-intel payload/root-hash preparation plus read-only mainnet storage-node peer/sync telemetry; external writes and node funding stay opt-in. | Privacy & Sovereign Infrastructure |
+| **0G DA** | Read-only DA node telemetry for the dedicated Windows node: public relay socket, signer/miner balances, readiness blockers, and Telegram digest previews. | Agentic Infrastructure |
+| **0G Node Ops** | Alignment license readiness, validator capacity, storage economics, and operator business surfaces for node monitoring and proof receipts; no registration, staking, or funding from the workbench. | Agentic Infrastructure |
+| **0G Private Computer / 0GM-1.0** | OpenAI-compatible manifest for 0GM-1.0 sealed inference and TEE verification; ZeroGuard uses it for explanation/draft review only, not policy authority. | Agentic Infrastructure |
+| **0G Compute** (Inference) | Planned 0G Compute scoring adapter; current demo uses deterministic policy/signature checks and a no-call 0GM manifest. | Agentic Infrastructure |
 | **Agent ID** (ERC-7857) | Every evaluation is tagged with a persistent agent identity for accountability. | Agentic Economy |
 
 ### Smart Contract
@@ -157,6 +161,15 @@ python3 -m guard0.cli serve --port 8109
 | `GET`  | `/api/health` | Service health + 0G config |
 | `GET`  | `/api/readyz` | No-side-effect operational readiness profile for mainnet verifier config, data coverage, shadow cache, Telegram store posture, and safety |
 | `GET`  | `/api/0g/status` | Live read-only 0G RPC proof, chain ID, latest block, and receipt-anchor config |
+| `GET`  | `/api/0g/da-node/status` | Read-only 0G DA node telemetry for signer/miner balances, public relay socket, readiness blockers, and yield-source honesty |
+| `GET`  | `/api/0g/storage-node/status` | Read-only 0G mainnet storage-node telemetry for relay socket, peers, log sync height, no-key funding gate, and yield-source honesty |
+| `GET`  | `/api/0g/alignment-node/status` | Read-only Alignment Node license/economics readiness using configured owner wallets or token ids; no private key, KYC, or registration action |
+| `GET`  | `/api/0g/validator-capacity` | Windows/RV host validator fit: CPU, WSL RAM, disk, bandwidth, and practical workarounds |
+| `GET`  | `/api/0g/node-business` | Node monetization and business plan across storage, Alignment, validator, and ZeroGuard product lanes |
+| `GET`  | `/api/0g/private-computer` | 0GM-1.0 / 0G Private Computer integration manifest, pricing posture, TEE settings, and no-call safety gates |
+| `GET`  | `/api/0g/peer-protection` | ZeroGuard peer-protection operating model for opt-in node/operator help, bulletins, and proof-backed drafts |
+| `GET`  | `/api/0g/pi-mesh` | Raspberry Pi edge sentinel roles for node probes, evidence cache, alert dedupe, and Ethernet tether planning |
+| `GET/POST` | `/api/peer/outreach-preview` | Build a peer help message and onchain message hash as a no-send/no-broadcast draft |
 | `GET`  | `/api/0g/receipt?receipt_hash=...` | Read-only receipt-anchor lookup when `ZGG_RECEIPT_CONTRACT` is configured |
 | `GET/POST` | `/api/0g/proof-ladder` | Chain, Storage, DA, Compute, and Alignment proof packet; no live uploads, inference, signing, broadcasts, or node operation |
 | `GET`  | `/api/data/summary` | Validated incident dataset summary, aggregate stats, and dataset fingerprint |
@@ -184,7 +197,10 @@ python3 -m guard0.cli serve --port 8109
 | `GET`  | `/api/integrations/cross-chain` | Source-cited integration catalog for 0G, Virtuals/Base, x402, EVM expansion networks, Lighter exchange/API, bridge protocol guardrails, and Celestia/TIA |
 | `GET`  | `/api/integrations/cross-chain/readiness` | Read-only cross-chain readiness; add `?live=1` for safe EVM RPC probes plus supported non-EVM status probes |
 | `GET`  | `/api/integrations/arbitrum` | Arbitrum One/Nova/Sepolia safety-pack plan, read-only route map, and pre-signer risk rules |
+| `GET`  | `/api/hackathons/arbitrum-open-house` | Active Arbitrum Open House London plan for a deployed receipt/proof contract lane on Arbitrum Sepolia/One/Orbit/Robinhood Chain |
 | `GET`  | `/api/integrations/metamask` | MetaMask Connect, Snaps insights, and Smart Accounts/Delegation guardrail plan |
+| `GET`  | `/api/hackathons/metamask-1shot` | Active MetaMask Smart Accounts Kit x 1Shot cook-off plan, track fit, demo flow, 0G integration, and funding gate |
+| `GET/POST` | `/api/hackathons/metamask-1shot/permission-preview` | No-sign/no-settle ERC-7715, ERC-7710, and x402 permission preview for the cook-off demo |
 | `GET`  | `/api/integrations/virtuals-facilitator` | Prepared Virtuals/Base `0guard Facilitator` manifest; no live launch |
 | `GET`  | `/api/integrations/ika` | Source-cited Ika, Encrypt, Ikavery, MPCKit, and OdWS integration manifest |
 | `POST` | `/api/integrations/ika/evaluate` | Read-only dWallet signing preflight before MPCKit/OdWS/Ikavery; no key import or signing |
@@ -212,10 +228,13 @@ python3 -m guard0.cli serve --port 8109
 | `POST` | `/api/telegram/miniapp/session` | Detect browser preview versus Telegram launch and validate raw `initData` when present |
 | `POST` | `/api/telegram/miniapp/preview` | Combined wallet-alert + Mira preview for the Mini App; no Telegram send |
 | `POST` | `/api/telegram/miniapp/ton-preview` | Telegram-safe TON risk passport plus Mira claim preview; no Telegram send |
-| `POST` | `/api/telegram/webhook` | Inbound `/start`, `/stop`, and Mira preview handling with Telegram secret-header verification; no send |
+| `POST` | `/api/telegram/webhook` | Inbound `/start`, `/stop`, `/da`, `/node`, `/balance`, and Mira preview handling with Telegram secret-header verification; no outbound send from the workbench |
 | `POST` | `/api/telegram/mira-preview` | Build a Telegram-safe Mira security response preview; no send |
 | `POST` | `/api/mira/claim-preview` | Deterministic Mira Verify-ready claim packet with evidence hashes; no external Mira call |
 | `POST` | `/api/telegram/wallet-alert-preview` | Build a Telegram Mini App wallet alert message preview; no send |
+| `GET/POST` | `/api/telegram/da-node-preview` | Build a Telegram-safe DA node digest preview for balance, readiness, relay, and yield posture; no send |
+| `GET/POST` | `/api/telegram/storage-node-preview` | Build a Telegram-safe storage-node digest preview for peer, sync, and funding posture; no send |
+| `GET/POST` | `/api/telegram/node-business-preview` | Build a Telegram-safe 0G node business digest for storage economics, Alignment readiness, and validator fit; no send |
 | `GET`  | `/api/frontend-contract` | Browser smoke contract, selectors, and safety posture |
 | `GET`  | `/api/external-action-contracts` | Dry-run/default contract for X, Telegram, deploy, and signing paths |
 | `POST` | `/api/evaluate` | Full intent evaluation |
@@ -271,6 +290,8 @@ Check live 0G RPC proof without any private key:
 
 ```bash
 curl -s http://127.0.0.1:8109/api/0g/status | python3 -m json.tool
+curl -s 'http://127.0.0.1:8109/api/0g/da-node/status?live=1' | python3 -m json.tool
+curl -s 'http://127.0.0.1:8109/api/0g/node-business' | python3 -m json.tool
 curl -s 'http://127.0.0.1:8109/api/0g/receipt?receipt_hash=0x0000000000000000000000000000000000000000000000000000000000000000' | python3 -m json.tool
 ```
 
@@ -360,6 +381,9 @@ curl -s http://127.0.0.1:8109/api/telegram/status | python3 -m json.tool
 curl -s -X POST http://127.0.0.1:8109/api/telegram/wallet-alert-preview \
   -H "Content-Type: application/json" \
   -d '{"address":"0x885b0892D241Cb5033C9995e09cA521d54f936b5","intent":{"action":"approve","mode":"live_transaction","requires_signature":true,"calldata":"0x095ea7b3ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}}' \
+  | python3 -m json.tool
+
+curl -s 'http://127.0.0.1:8109/api/telegram/da-node-preview?live=1' \
   | python3 -m json.tool
 ```
 

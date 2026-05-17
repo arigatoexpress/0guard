@@ -27,7 +27,7 @@ can verify now from what remains before a production/mainnet launch.
   `docs/hackathon-0g/mainnet-proof.json`,
   `https://chainscan.0g.ai/address/0xBaC59b1571b7c7195915c5B36D8A719Ed7182abc`,
   and
-  `https://chainscan.0g.ai/tx/64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed`.
+  `https://chainscan.0g.ai/tx/0x64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed`.
 - 0G receipt verifier: `/api/0g/receipt?receipt_hash=...` performs a read-only
   verifier lookup when `ZGG_RECEIPT_CONTRACT` is configured and returns
   `contract_not_configured` honestly otherwise.

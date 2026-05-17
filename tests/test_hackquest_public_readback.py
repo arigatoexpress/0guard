@@ -13,7 +13,7 @@ def test_parse_hackquest_project_html_extracts_links_and_proofs() -> None:
         <a href="rariwrldd/status/2054779961425461542">x</a>
         <script id="__NEXT_DATA__">{"props":{"pageProps":{"project":{"isSubmit":true}}}}</script>
         <div>0xBaC59b1571b7c7195915c5B36D8A719Ed7182abc</div>
-        <div>https://chainscan.0g.ai/tx/64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed</div>
+        <div>https://chainscan.0g.ai/tx/0x64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed</div>
       </body>
     </html>
     """
@@ -24,7 +24,7 @@ def test_parse_hackquest_project_html_extracts_links_and_proofs() -> None:
     assert parse_hackquest_is_submit(html) is True
     assert "0xBaC59b1571b7c7195915c5B36D8A719Ed7182abc" in contracts
     assert (
-        "https://chainscan.0g.ai/tx/64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed"
+        "https://chainscan.0g.ai/tx/0x64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed"
         in txs
     )
 

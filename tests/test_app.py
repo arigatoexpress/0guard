@@ -47,6 +47,22 @@ def test_health(client):
     assert data["safety_flags"]["external_sends_blocked_from_workbench"] is True
     assert data["safety_flags"]["money_movement_enabled"] is False
     assert data["telegram_mira"]["safety"]["telegramSendsEnabled"] is False
+    assert data["0g_da_node"]["schema"] == "0guard.0g_da_node_status.v1"
+    assert data["0g_da_node"]["readiness"]["status"] == "blocked"
+    assert data["0g_da_node"]["readiness"]["blockedBy"] == ["signer_balance_not_checked"]
+    assert data["0g_da_node"]["readiness"]["fundingReady"] is False
+    assert data["0g_da_node"]["safety"]["telegramSendsEnabled"] is False
+    assert data["0g_storage_node_status"]["schema"] == "0guard.0g_storage_node_status.v1"
+    assert data["0g_storage_node_status"]["readiness"]["status"] == "blocked"
+    assert data["0g_storage_node_status"]["readiness"]["mainnetFundingReady"] is False
+    assert data["0g_storage_node_status"]["safety"]["moneyMovementEnabled"] is False
+    assert data["0g_node_business"]["schema"] == "0guard.0g_node_business.v1"
+    assert data["0g_node_business"]["safety"]["moneyMovementEnabled"] is False
+    assert data["0g_private_computer"]["schema"] == "0guard.0g_private_computer_integration.v1"
+    assert data["0g_private_computer"]["safety"]["transactionBroadcastingEnabled"] is False
+    assert data["peer_protection"]["schema"] == "0guard.peer_protection_plan.v1"
+    assert data["peer_protection"]["safety"]["externalMessagesEnabled"] is False
+    assert data["pi_mesh"]["schema"] == "0guard.pi_mesh_plan.v1"
     assert data["0g_chain_id"] == 16602
     assert data["0g_chain_rpc"] == "https://evmrpc-testnet.0g.ai"
     assert data["0g_receipt_contract"] == "0x0000000000000000000000000000000000000000"
@@ -96,6 +112,15 @@ def test_frontend_contract_is_browser_smoke_ready_and_non_mutating(client):
     assert data["safety"]["moneyMovementEnabled"] is False
     assert "/api/external-action-contracts" in data["apiRoutes"]
     assert "/api/0g/status" in data["apiRoutes"]
+    assert "/api/0g/da-node/status" in data["apiRoutes"]
+    assert "/api/0g/storage-node/status" in data["apiRoutes"]
+    assert "/api/0g/alignment-node/status" in data["apiRoutes"]
+    assert "/api/0g/validator-capacity" in data["apiRoutes"]
+    assert "/api/0g/node-business" in data["apiRoutes"]
+    assert "/api/0g/private-computer" in data["apiRoutes"]
+    assert "/api/0g/peer-protection" in data["apiRoutes"]
+    assert "/api/0g/pi-mesh" in data["apiRoutes"]
+    assert "/api/peer/outreach-preview" in data["apiRoutes"]
     assert "/api/0g/receipt" in data["apiRoutes"]
     assert "/api/0g/proof-ladder" in data["apiRoutes"]
     assert "/api/data/summary" in data["apiRoutes"]
@@ -149,6 +174,9 @@ def test_frontend_contract_is_browser_smoke_ready_and_non_mutating(client):
     assert "/api/telegram/miniapp/ton-preview" in data["apiRoutes"]
     assert "/api/telegram/mira-preview" in data["apiRoutes"]
     assert "/api/telegram/wallet-alert-preview" in data["apiRoutes"]
+    assert "/api/telegram/da-node-preview" in data["apiRoutes"]
+    assert "/api/telegram/storage-node-preview" in data["apiRoutes"]
+    assert "/api/telegram/node-business-preview" in data["apiRoutes"]
     assert "/api/mira/claim-preview" in data["apiRoutes"]
     assert "#run-evaluate" in data["requiredSelectors"]
     assert "#run-threat-case-file" in data["requiredSelectors"]
@@ -191,6 +219,17 @@ def test_frontend_contract_is_browser_smoke_ready_and_non_mutating(client):
     assert "#load-external-guardrails" in data["requiredSelectors"]
     assert "#run-external-guardrail-check" in data["requiredSelectors"]
     assert "#cross-chain-output" in data["requiredSelectors"]
+    assert "#load-da-node-status" in data["requiredSelectors"]
+    assert "#run-telegram-da-node-preview" in data["requiredSelectors"]
+    assert "#load-node-business" in data["requiredSelectors"]
+    assert "#load-alignment-node-status" in data["requiredSelectors"]
+    assert "#load-validator-capacity" in data["requiredSelectors"]
+    assert "#load-private-computer" in data["requiredSelectors"]
+    assert "#load-peer-protection" in data["requiredSelectors"]
+    assert "#run-peer-outreach-preview" in data["requiredSelectors"]
+    assert "#load-pi-mesh" in data["requiredSelectors"]
+    assert "#run-telegram-node-business-preview" in data["requiredSelectors"]
+    assert "#da-node-output" in data["requiredSelectors"]
     assert "#telegram-register-output" in data["requiredSelectors"]
     assert "#mira-output" in data["requiredSelectors"]
     assert "#wallet-address-input" in data["requiredSelectors"]
@@ -225,6 +264,8 @@ def test_frontend_uses_packaged_template_and_static_assets():
     assert "runThreatCaseFile" in (package_root / "static" / "app.js").read_text()
     assert "loadFrontierExperiments" in (package_root / "static" / "app.js").read_text()
     assert "loadReputationAdapters" in (package_root / "static" / "app.js").read_text()
+    assert "loadPeerProtection" in (package_root / "static" / "app.js").read_text()
+    assert "runPeerOutreachPreview" in (package_root / "static" / "app.js").read_text()
     assert "miniappRunPreview" in (package_root / "static" / "telegram-miniapp.js").read_text()
     assert "miniapp-evidence-panel" in (
         package_root / "templates" / "telegram_mini_app.html"
@@ -271,6 +312,44 @@ def test_external_action_contracts_keep_live_paths_out_of_workbench(client):
         == "--live-send-confirm SEND_TO_TELEGRAM_FROM_0GUARD"
     )
     assert by_id["0g-contract-deploy"]["reachableFromWorkbench"] is False
+    assert by_id["0g-peer-chain-message"]["reachableFromWorkbench"] is False
+    assert by_id["0g-peer-chain-message"]["default"] == "draft_only"
+
+
+def test_peer_protection_routes_are_no_send_and_no_broadcast(client):
+    private_computer = client.get("/api/0g/private-computer")
+    assert private_computer.status_code == 200
+    private_body = private_computer.get_json()
+    assert private_body["schema"] == "0guard.0g_private_computer_integration.v1"
+    assert private_body["api"]["openAiCompatible"] is True
+    assert private_body["safety"]["transactionBroadcastingEnabled"] is False
+
+    peer_plan = client.get("/api/0g/peer-protection")
+    assert peer_plan.status_code == 200
+    peer_body = peer_plan.get_json()
+    assert peer_body["schema"] == "0guard.peer_protection_plan.v1"
+    assert peer_body["peerContactModel"]["publicPeersExposeContactInfo"] is False
+
+    pi_mesh = client.get("/api/0g/pi-mesh")
+    assert pi_mesh.status_code == 200
+    assert pi_mesh.get_json()["schema"] == "0guard.pi_mesh_plan.v1"
+
+    preview = client.post(
+        "/api/peer/outreach-preview",
+        json={
+            "channel": "onchain_message_hash_draft",
+            "contact": {
+                "evmAddress": "0x000000000000000000000000000000000000dEaD",
+                "optInConfirmed": False,
+            },
+        },
+    )
+    assert preview.status_code == 200
+    preview_body = preview.get_json()
+    assert preview_body["decision"] == "blocked_preview_only"
+    assert preview_body["telegram_send"] is False
+    assert preview_body["blockchain_broadcast"] is False
+    assert preview_body["onchainEnvelope"]["calldata"] is None
 
 
 def test_telegram_routes_do_not_import_live_send_helpers():
@@ -692,7 +771,7 @@ def test_cross_chain_integration_routes_are_read_only(client):
     assert next_hackathons.status_code == 200
     next_body = next_hackathons.get_json()
     assert next_body["schema"] == "0guard.next_hackathon_plan.v1"
-    assert next_body["opportunities"][0]["id"] == "arbitrum_open_house_london_online_buildathon"
+    assert next_body["opportunities"][0]["id"] == "metamask_smart_accounts_1shot_api_dev_cookoff"
 
     developer_kit = client.get("/api/developer-kit")
     assert developer_kit.status_code == 200
@@ -736,9 +815,36 @@ def test_cross_chain_integration_routes_are_read_only(client):
     assert arbitrum.status_code == 200
     assert arbitrum.get_json()["schema"] == "0guard.arbitrum_integration_plan.v1"
 
+    arbitrum_buildathon = client.get("/api/hackathons/arbitrum-open-house")
+    assert arbitrum_buildathon.status_code == 200
+    arbitrum_buildathon_body = arbitrum_buildathon.get_json()
+    assert (
+        arbitrum_buildathon_body["schema"]
+        == "0guard.arbitrum_open_house_buildathon_plan.v1"
+    )
+    assert arbitrum_buildathon_body["qualification"]["mustDeployOnArbitrumChain"] is True
+    assert arbitrum_buildathon_body["safety"]["moneyMovementEnabled"] is False
+
     metamask = client.get("/api/integrations/metamask")
     assert metamask.status_code == 200
     assert metamask.get_json()["schema"] == "0guard.metamask_integration_plan.v1"
+
+    metamask_1shot = client.get("/api/hackathons/metamask-1shot")
+    assert metamask_1shot.status_code == 200
+    metamask_1shot_body = metamask_1shot.get_json()
+    assert metamask_1shot_body["schema"] == "0guard.metamask_1shot_cookoff_plan.v1"
+    assert metamask_1shot_body["fundingGate"]["send25OgNow"] is False
+
+    metamask_preview = client.post(
+        "/api/hackathons/metamask-1shot/permission-preview",
+        json={"network": "eip155:84532", "maxAmount": "10000"},
+    )
+    assert metamask_preview.status_code == 200
+    metamask_preview_body = metamask_preview.get_json()
+    assert metamask_preview_body["schema"] == "0guard.metamask_1shot_permission_preview.v1"
+    assert metamask_preview_body["oneShot"]["x402Requirement"]["extra"]["assetTransferMethod"] == "erc7710"
+    assert metamask_preview_body["zeroGuard"]["unsafeVariantPreflight"]["decision"] == "deny"
+    assert metamask_preview_body["safety"]["transactionSigningEnabled"] is False
 
     evaluation = client.post(
         "/api/integrations/external-guardrails/evaluate",
@@ -818,6 +924,145 @@ def test_0g_status_is_read_only_and_reports_runtime_config(monkeypatch, client):
     assert data["safety"]["broadcastingEnabled"] is False
 
 
+def test_0g_da_node_status_and_telegram_preview_are_no_send(monkeypatch, client):
+    monkeypatch.setattr(
+        app_module,
+        "build_da_node_status",
+        lambda live=False: {
+            "schema": "0guard.0g_da_node_status.v1",
+            "mode": "live_rpc_read_only" if live else "configured_snapshot",
+            "node": {"publicSocket": "35.254.123.37:34000"},
+            "balances": {
+                "signer": {"balanceOg": 0.0, "balanceWei": "0", "status": "ok"},
+                "miner": {"balanceOg": 0.0, "balanceWei": "0", "status": "ok"},
+            },
+            "readiness": {"status": "blocked", "blockedBy": ["signer_zero_balance"]},
+            "yield": {"status": "not_claimed_without_reward_source"},
+            "safety": {
+                "networkCalls": live,
+                "telegramSendsEnabled": False,
+                "moneyMovementEnabled": False,
+            },
+        },
+    )
+
+    status_response = client.get("/api/0g/da-node/status?live=1")
+    assert status_response.status_code == 200
+    status = status_response.get_json()
+    assert status["schema"] == "0guard.0g_da_node_status.v1"
+    assert status["mode"] == "live_rpc_read_only"
+    assert status["safety"]["telegramSendsEnabled"] is False
+
+    preview_response = client.get("/api/telegram/da-node-preview?live=1")
+    assert preview_response.status_code == 200
+    preview = preview_response.get_json()
+    assert preview["schema"] == "0guard.telegram_da_node_preview.v1"
+    assert preview["delivery"] == "preview_no_send"
+    assert preview["telegram_send"] is False
+    assert preview["digestPolicy"]["shouldSendNow"] is False
+    assert preview["safety"]["moneyMovementEnabled"] is False
+
+
+def test_0g_storage_node_status_and_telegram_preview_are_no_send(monkeypatch, client):
+    monkeypatch.setattr(
+        app_module,
+        "build_storage_node_status",
+        lambda live=False: {
+            "schema": "0guard.0g_storage_node_status.v1",
+            "mode": "live_storage_rpc_read_only" if live else "configured_snapshot",
+            "node": {"publicSocket": "35.254.123.37:1234"},
+            "storageRpc": {
+                "connectedPeers": 4,
+                "logSyncHeight": 3041488,
+                "networkIdentity": {"chainId": 16661},
+            },
+            "readiness": {"status": "ready_for_no_key_soak", "blockedBy": []},
+            "funding": {"status": "not_ready_for_mainnet_funds"},
+            "yield": {"status": "not_inferred_without_official_reward_source"},
+            "safety": {
+                "networkCalls": live,
+                "telegramSendsEnabled": False,
+                "moneyMovementEnabled": False,
+            },
+        },
+    )
+
+    status_response = client.get("/api/0g/storage-node/status?live=1")
+    assert status_response.status_code == 200
+    status = status_response.get_json()
+    assert status["schema"] == "0guard.0g_storage_node_status.v1"
+    assert status["mode"] == "live_storage_rpc_read_only"
+    assert status["safety"]["telegramSendsEnabled"] is False
+
+    preview_response = client.get("/api/telegram/storage-node-preview?live=1")
+    assert preview_response.status_code == 200
+    preview = preview_response.get_json()
+    assert preview["schema"] == "0guard.telegram_storage_node_preview.v1"
+    assert preview["delivery"] == "preview_no_send"
+    assert preview["telegram_send"] is False
+    assert preview["summary"]["connectedPeers"] == 4
+    assert preview["safety"]["moneyMovementEnabled"] is False
+
+
+def test_0g_node_business_routes_are_read_only(monkeypatch, client):
+    monkeypatch.setattr(
+        app_module,
+        "build_alignment_node_status",
+        lambda live=False: {
+            "schema": "0guard.0g_alignment_node_status.v1",
+            "readiness": {"status": "operator_action_required", "blockedBy": []},
+            "economics": {"part2ApproxDailyOg": 0.52},
+            "safety": {"networkCalls": live, "moneyMovementEnabled": False},
+        },
+    )
+    monkeypatch.setattr(
+        app_module,
+        "build_validator_capacity_status",
+        lambda: {
+            "schema": "0guard.0g_validator_capacity.v1",
+            "readiness": {"status": "not_recommended_in_wsl", "validatorReady": False},
+            "safety": {"moneyMovementEnabled": False},
+        },
+    )
+    monkeypatch.setattr(
+        app_module,
+        "build_0g_node_business_plan",
+        lambda live=False: {
+            "schema": "0guard.0g_node_business.v1",
+            "currentReadiness": {
+                "storage": {"status": "ready_for_no_key_soak"},
+                "alignment": {"status": "operator_action_required"},
+                "validator": {"status": "not_recommended_in_wsl"},
+                "storageEconomics": {"perActiveMinerMonthlyOg": 0.150483},
+            },
+            "operatorGates": ["No 100 0G funding until proven."],
+            "safety": {"networkCalls": live, "moneyMovementEnabled": False},
+        },
+    )
+
+    alignment = client.get("/api/0g/alignment-node/status?live=1")
+    assert alignment.status_code == 200
+    assert alignment.get_json()["schema"] == "0guard.0g_alignment_node_status.v1"
+
+    validator = client.get("/api/0g/validator-capacity")
+    assert validator.status_code == 200
+    assert validator.get_json()["schema"] == "0guard.0g_validator_capacity.v1"
+
+    business = client.get("/api/0g/node-business?live=1")
+    assert business.status_code == 200
+    body = business.get_json()
+    assert body["schema"] == "0guard.0g_node_business.v1"
+    assert body["safety"]["moneyMovementEnabled"] is False
+
+    preview = client.get("/api/telegram/node-business-preview?live=1")
+    assert preview.status_code == 200
+    preview_body = preview.get_json()
+    assert preview_body["schema"] == "0guard.telegram_node_business_preview.v1"
+    assert preview_body["delivery"] == "preview_no_send"
+    assert preview_body["telegram_send"] is False
+    assert preview_body["safety"]["moneyMovementEnabled"] is False
+
+
 def test_0g_receipt_verifier_is_read_only_without_contract(client):
     receipt_hash = "0x" + "a" * 64
     r = client.get(f"/api/0g/receipt?receipt_hash={receipt_hash}")
@@ -850,7 +1095,13 @@ def test_telegram_mira_status_is_preview_only(client):
     assert "/api/telegram/miniapp/preview" in data["apiRoutes"]
     assert "/api/telegram/miniapp/ton-preview" in data["apiRoutes"]
     assert "/api/telegram/wallet-alert-preview" in data["apiRoutes"]
+    assert "/api/telegram/da-node-preview" in data["apiRoutes"]
+    assert "/api/telegram/storage-node-preview" in data["apiRoutes"]
+    assert "/api/telegram/node-business-preview" in data["apiRoutes"]
     assert "/api/ton/status" in data["apiRoutes"]
+    assert "da_node.digest" in data["registration"]["nodeScopes"]
+    assert "storage_node.digest" in data["registration"]["nodeScopes"]
+    assert "node_business.digest" in data["registration"]["nodeScopes"]
     assert data["registration"]["walletAlertPolicy"]["telegramSendEnabled"] is False
     # Compatibility keys for steward readbacks (flat shape)
     assert isinstance(data["botTokenConfigured"], bool)
@@ -1177,6 +1428,7 @@ def test_wallet_alert_preview_denies_negative_amount_intents(client):
 
 def test_telegram_registration_and_mira_preview_are_local_and_redacted(monkeypatch, client):
     monkeypatch.setenv("TELEGRAM_REGISTRATION_SECRET", "test-secret-for-telegram-registration")
+    monkeypatch.setenv("TELEGRAM_WEBHOOK_SECRET_TOKEN", "test-webhook-secret")
 
     challenge_response = client.post(
         "/api/telegram/registrations",
@@ -1235,6 +1487,24 @@ def test_telegram_registration_and_mira_preview_are_local_and_redacted(monkeypat
     assert preview["telegram_send"] is False
     assert preview["network_calls"] is False
     assert preview["decision"]["decision"] == "deny"
+
+    da_webhook_response = client.post(
+        "/api/telegram/webhook",
+        json={
+            "message": {
+                "text": "/da",
+                "from": {"id": 123456, "username": "ari"},
+                "chat": {"id": 123456},
+            }
+        },
+        headers={"X-Telegram-Bot-Api-Secret-Token": "test-webhook-secret"},
+    )
+    assert da_webhook_response.status_code == 200
+    da_webhook = da_webhook_response.get_json()
+    assert da_webhook["schema"] == "0guard.telegram_da_node_preview.v1"
+    assert da_webhook["action"] == "da_node_preview"
+    assert da_webhook["telegram_send"] is False
+    assert da_webhook["digestPolicy"]["enabled"] is False
 
 
 def test_telegram_opt_in_store_persists_records_without_sends(monkeypatch, tmp_path, client):

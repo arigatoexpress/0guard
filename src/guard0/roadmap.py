@@ -38,6 +38,28 @@ def intelligence_stream_plan() -> dict[str, Any]:
         },
         {
             "rank": 2,
+            "id": "0g_private_computer_attested_ai",
+            "name": "0GM-1.0 through 0G Private Computer",
+            "cost": "0G_compute_balance_or_api_key_required",
+            "sources": [
+                "https://0g.ai/blog/0gm-1-0-35b-a3b",
+                "https://pc.0g.ai/api-reference/0GM-1.0-35B-A3B",
+                "https://0g.ai/blog/0g-private-computer",
+            ],
+            "whyItMatters": (
+                "Gives 0guard a 0G-native, TEE-verifiable explanation layer for "
+                "sensitive peer and wallet risk packets."
+            ),
+            "integrationShape": (
+                "OpenAI-compatible adapter that uses deterministic guard verdicts "
+                "as inputs, never as authority."
+            ),
+            "rightsEnvelope": "Send minimized risk packets; never send secrets or raw private wallet material.",
+            "status": "manifest_live_no_paid_calls",
+            "buildPhase": "phase_1",
+        },
+        {
+            "rank": 3,
             "id": "forta_attack_labels_digest",
             "name": "Forta attack detector and labelled datasets",
             "cost": "public_labels_plus_possible_subscription",
@@ -54,7 +76,7 @@ def intelligence_stream_plan() -> dict[str, Any]:
             "buildPhase": "phase_1",
         },
         {
-            "rank": 3,
+            "rank": 4,
             "id": "evm_simulation_adapter",
             "name": "Tenderly or BlockSec transaction simulation",
             "cost": "free_tier_or_paid_developer_plan",
@@ -69,7 +91,7 @@ def intelligence_stream_plan() -> dict[str, Any]:
             "buildPhase": "phase_2",
         },
         {
-            "rank": 4,
+            "rank": 5,
             "id": "ton_telegram_risk_passport",
             "name": "TON Center / TONAPI read-only activity for Telegram wallets",
             "cost": "free_or_affordable_keyed_infra",
@@ -87,7 +109,7 @@ def intelligence_stream_plan() -> dict[str, Any]:
             "buildPhase": "phase_2",
         },
         {
-            "rank": 5,
+            "rank": 6,
             "id": "solana_read_only_risk",
             "name": "Helius enhanced transactions and webhooks",
             "cost": "free_tier_then_paid_if_usage_grows",
@@ -102,7 +124,7 @@ def intelligence_stream_plan() -> dict[str, Any]:
             "buildPhase": "phase_2",
         },
         {
-            "rank": 6,
+            "rank": 7,
             "id": "cross_chain_message_monitors",
             "name": "LayerZero Scan and Wormholescan APIs",
             "cost": "public_api",
@@ -117,7 +139,7 @@ def intelligence_stream_plan() -> dict[str, Any]:
             "buildPhase": "phase_2",
         },
         {
-            "rank": 7,
+            "rank": 8,
             "id": "hyperliquid_read_only_exposure",
             "name": "Hyperliquid Info/WebSocket API",
             "cost": "official_free_read_api",
@@ -132,7 +154,7 @@ def intelligence_stream_plan() -> dict[str, Any]:
             "buildPhase": "phase_3",
         },
         {
-            "rank": 8,
+            "rank": 9,
             "id": "multi_chain_feature_store",
             "name": "Dune, Allium, or Bitquery",
             "cost": "trial_then_paid_subscription",
@@ -206,6 +228,24 @@ def ecosystem_roadmap() -> dict[str, Any]:
                 "Domain guard suffix-hardening and phishing vote aggregation",
             ],
             "successMetric": "Every alert cites source ids, confidence, TTL, and why it did or did not notify.",
+        },
+        {
+            "id": "phase_1b_peer_protection_ops",
+            "timeframe": "1-3 weeks",
+            "goal": "Turn our own 0G node into a peer-protection operating loop.",
+            "productionLevelInfra": [
+                "0G storage node telemetry and funded-mode soak readbacks",
+                "0G Private Computer manifest and TEE-first model posture",
+                "Peer outreach preview with onchain message hashes and opt-in gates",
+                "Raspberry Pi sentinel plan for LAN evidence collection",
+            ],
+            "nextBuild": [
+                "Operator-approved peer bulletin sender",
+                "Pi heartbeat ingestion endpoint",
+                "0G Storage bulletin upload/readback",
+                "0GM explanation adapter with verify_tee=true",
+            ],
+            "successMetric": "A peer can opt in and receive one useful, cited node-risk digest without 0guard ever touching their funds.",
         },
         {
             "id": "phase_2_native_ecosystem_expansion",

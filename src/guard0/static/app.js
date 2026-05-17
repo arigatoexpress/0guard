@@ -273,6 +273,79 @@ async function load0gStatus(){
   const j = await r.json();
   writeJson('zg-status-output', j);
 }
+async function loadDaNodeStatus(){
+  const r = await fetch('/api/0g/da-node/status?live=1');
+  const j = await r.json();
+  writeJson('da-node-output', j);
+}
+async function runTelegramDaNodePreview(){
+  const r = await fetch('/api/telegram/da-node-preview?live=1');
+  const j = await r.json();
+  writeJson('da-node-output', j);
+}
+async function loadNodeBusiness(){
+  const r = await fetch('/api/0g/node-business?live=1');
+  const j = await r.json();
+  writeJson('da-node-output', j);
+}
+async function loadAlignmentNodeStatus(){
+  const r = await fetch('/api/0g/alignment-node/status?live=1');
+  const j = await r.json();
+  writeJson('da-node-output', j);
+}
+async function loadValidatorCapacity(){
+  const r = await fetch('/api/0g/validator-capacity');
+  const j = await r.json();
+  writeJson('da-node-output', j);
+}
+async function loadPrivateComputer(){
+  const r = await fetch('/api/0g/private-computer');
+  const j = await r.json();
+  writeJson('da-node-output', j);
+}
+async function loadPeerProtection(){
+  const r = await fetch('/api/0g/peer-protection?live=1');
+  const j = await r.json();
+  writeJson('da-node-output', j);
+}
+async function runPeerOutreachPreview(){
+  const payload = {
+    peer: {
+      id: '0g-storage-peer-demo',
+      network: '0g_mainnet',
+      publicSocket: 'unknown'
+    },
+    risk: {
+      title: 'Storage node peer-health review',
+      severity: 'review',
+      evidence: ['connectedPeers', 'logSyncHeight', 'public relay probe']
+    },
+    channel: 'onchain_message_hash_draft',
+    contact: {
+      label: 'demo peer',
+      evmAddress: '0x000000000000000000000000000000000000dEaD',
+      source: 'operator-provided-demo',
+      optInConfirmed: false
+    }
+  };
+  const r = await fetch('/api/peer/outreach-preview', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  });
+  const j = await r.json();
+  writeJson('da-node-output', j);
+}
+async function loadPiMesh(){
+  const r = await fetch('/api/0g/pi-mesh');
+  const j = await r.json();
+  writeJson('da-node-output', j);
+}
+async function runTelegramNodeBusinessPreview(){
+  const r = await fetch('/api/telegram/node-business-preview?live=1');
+  const j = await r.json();
+  writeJson('da-node-output', j);
+}
 async function verifyReceipt(){
   const receiptHash = encodeURIComponent(document.getElementById('verify-receipt-hash').value);
   const r = await fetch('/api/0g/receipt?receipt_hash=' + receiptHash);
@@ -401,8 +474,33 @@ async function loadArbitrumIntegration(){
   const j = await r.json();
   writeJson('cross-chain-output', j);
 }
+async function loadArbitrumBuildathon(){
+  const r = await fetch('/api/hackathons/arbitrum-open-house');
+  const j = await r.json();
+  writeJson('cross-chain-output', j);
+}
 async function loadMetamaskIntegration(){
   const r = await fetch('/api/integrations/metamask');
+  const j = await r.json();
+  writeJson('cross-chain-output', j);
+}
+async function loadMetamask1ShotPlan(){
+  const r = await fetch('/api/hackathons/metamask-1shot');
+  const j = await r.json();
+  writeJson('cross-chain-output', j);
+}
+async function runMetamask1ShotPreview(){
+  const payload = {
+    network: 'eip155:84532',
+    resource: 'GET /api/threat-packets/permission-risk',
+    price: '$0.01',
+    maxAmount: '10000'
+  };
+  const r = await fetch('/api/hackathons/metamask-1shot/permission-preview', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  });
   const j = await r.json();
   writeJson('cross-chain-output', j);
 }
@@ -598,6 +696,16 @@ document.getElementById('run-safe-scenario').addEventListener('click', () => run
 document.getElementById('run-hack-check').addEventListener('click', hackCheck);
 document.getElementById('run-domain-check').addEventListener('click', domainCheck);
 document.getElementById('verify-receipt').addEventListener('click', verifyReceipt);
+document.getElementById('load-da-node-status').addEventListener('click', loadDaNodeStatus);
+document.getElementById('run-telegram-da-node-preview').addEventListener('click', runTelegramDaNodePreview);
+document.getElementById('load-node-business').addEventListener('click', loadNodeBusiness);
+document.getElementById('load-alignment-node-status').addEventListener('click', loadAlignmentNodeStatus);
+document.getElementById('load-validator-capacity').addEventListener('click', loadValidatorCapacity);
+document.getElementById('load-private-computer').addEventListener('click', loadPrivateComputer);
+document.getElementById('load-peer-protection').addEventListener('click', loadPeerProtection);
+document.getElementById('run-peer-outreach-preview').addEventListener('click', runPeerOutreachPreview);
+document.getElementById('load-pi-mesh').addEventListener('click', loadPiMesh);
+document.getElementById('run-telegram-node-business-preview').addEventListener('click', runTelegramNodeBusinessPreview);
 document.getElementById('load-data-summary').addEventListener('click', loadDataSummary);
 document.getElementById('load-provenance-matrix').addEventListener('click', loadProvenanceMatrix);
 document.getElementById('load-live-provenance').addEventListener('click', loadLiveProvenanceMatrix);
@@ -623,7 +731,10 @@ document.getElementById('load-threat-passport').addEventListener('click', loadTh
 document.getElementById('load-cross-chain-catalog').addEventListener('click', loadCrossChainCatalog);
 document.getElementById('load-cross-chain-readiness').addEventListener('click', loadCrossChainReadiness);
 document.getElementById('load-arbitrum-integration').addEventListener('click', loadArbitrumIntegration);
+document.getElementById('load-arbitrum-buildathon').addEventListener('click', loadArbitrumBuildathon);
 document.getElementById('load-metamask-integration').addEventListener('click', loadMetamaskIntegration);
+document.getElementById('load-metamask-1shot-plan').addEventListener('click', loadMetamask1ShotPlan);
+document.getElementById('run-metamask-1shot-preview').addEventListener('click', runMetamask1ShotPreview);
 document.getElementById('load-virtuals-facilitator').addEventListener('click', loadVirtualsFacilitator);
 document.getElementById('load-ika-integration').addEventListener('click', loadIkaIntegration);
 document.getElementById('run-reputation-probe').addEventListener('click', runReputationProbe);
@@ -648,6 +759,7 @@ document.getElementById('load-allow-sample').addEventListener('click', () => {
 });
 loadContracts();
 load0gStatus();
+loadDaNodeStatus();
 loadDataSummary();
 loadOsintSources();
 loadCrossChainCatalog();

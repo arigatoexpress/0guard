@@ -73,7 +73,7 @@ Mainnet proof for this exact receipt:
 - Anchored receipt hash:
   `0x9739dbd4afb6ab21f15ccb634b49dabc9144550ef06d346cb4e7cd363e74afd1`
 - Anchor transaction:
-  `https://chainscan.0g.ai/tx/64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed`
+  `https://chainscan.0g.ai/tx/0x64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed`
 
 Check source evidence:
 
@@ -94,7 +94,7 @@ Completed on May 14, 2026 UTC:
 
 ```text
 0G_MAINNET_CONTRACT_ADDRESS=0xBaC59b1571b7c7195915c5B36D8A719Ed7182abc
-0G_MAINNET_EXPLORER_URL=https://chainscan.0g.ai/tx/64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed
+0G_MAINNET_EXPLORER_URL=https://chainscan.0g.ai/tx/0x64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed
 ANCHORED_RECEIPT_HASH=0x9739dbd4afb6ab21f15ccb634b49dabc9144550ef06d346cb4e7cd363e74afd1
-ANCHOR_TRANSACTION_HASH=64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed
+ANCHOR_TRANSACTION_HASH=0x64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed
 ```

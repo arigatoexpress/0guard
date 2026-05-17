@@ -58,6 +58,14 @@ The workbench exposes a demo-safe API surface:
 | `POST` | `/api/telegram/mira-preview` | Builds a deterministic Mira policy response preview. No Telegram send. |
 | `POST` | `/api/mira/claim-preview` | Builds an external-Mira-ready claim/evidence packet without making an external Mira call. |
 | `POST` | `/api/telegram/wallet-alert-preview` | Builds a no-send wallet alert message preview with score, dedupe, cooldown, and source ids. |
+| `GET` | `/api/0g/da-node/status` | Read-only DA node telemetry for signer/miner balances, relay socket, readiness, and yield-source honesty. |
+| `GET`/`POST` | `/api/telegram/da-node-preview` | Builds a no-send DA node digest preview for balance/readiness updates. |
+| `GET` | `/api/0g/storage-node/status` | Read-only mainnet storage-node telemetry for peer count, log sync height, relay socket, and no-key funding gate. |
+| `GET`/`POST` | `/api/telegram/storage-node-preview` | Builds a no-send storage-node digest preview for peer/sync/funding-gate updates. |
+| `GET` | `/api/0g/alignment-node/status` | Read-only Alignment Node license, reward, and operator-readiness posture. |
+| `GET` | `/api/0g/validator-capacity` | Validator fit for the Windows/RV host: CPU, WSL memory, disk, bandwidth, and workarounds. |
+| `GET` | `/api/0g/node-business` | Business plan for storage, Alignment, validator, and ZeroGuard service-revenue lanes. |
+| `GET`/`POST` | `/api/telegram/node-business-preview` | Builds a no-send business digest for node economics and readiness. |
 | `GET` | `/tonconnect-manifest.json` | Presentation-only TON Connect manifest for wallet UI context. |
 | `GET` | `/api/ton/status` | TON integration posture and safety flags. |
 | `GET` | `/api/ton/risk-rules` | Source-cited TON risk rules. |
@@ -96,6 +104,9 @@ The intended flow is:
 7. The user can paste or connect a TON address for `/api/telegram/miniapp/ton-preview`;
    the response is a TON Risk Passport with a Mira claim packet and no wallet
    prompt.
+8. Opted-in users can send `/da`, `/node`, or `/balance` to the webhook path;
+   the route returns a DA node digest preview and still does not call Telegram
+   `sendMessage`.
 
 BotFather setup values:
 
@@ -150,6 +161,84 @@ does not pretend that a Telegram user has been verified.
 - Webhook handling requires `TELEGRAM_WEBHOOK_SECRET_TOKEN` and checks the
   `X-Telegram-Bot-Api-Secret-Token` header. The app does not call
   `setWebhook`; webhook registration remains an explicit operator action.
+
+## 0G DA Node Digest Boundary
+
+`guard0.da_node` exposes a public telemetry contract for Ari's DA node without
+touching private keys or signing. The default runtime points at the prepared
+Galileo testnet DA node:
+
+- Public socket: `35.254.123.37:34000`
+- Signer: `0x6De500690f88A920Db7976b161034fC835b96A49`
+- Miner: `0x8c497E41405C924D81dB24aB033CAca71ED559E9`
+- RPC: `https://evmrpc-testnet.0g.ai`
+
+Routes:
+
+- `/api/0g/da-node/status` defaults to a configured snapshot. Add `?live=1`
+  for read-only RPC chain/balance checks.
+- `/api/telegram/da-node-preview` wraps that status as a Telegram-safe digest
+  with `telegram_send=false`.
+
+The digest policy is deliberately conservative:
+
+- `enabled=false`
+- `shouldSendNow=false`
+- `minIntervalSeconds=3600`
+- `maxMessagesPerDay=6`
+- `sendOnlyOnStateChange=true`
+
+Yield is not estimated from guesses. The route reports
+`not_claimed_without_reward_source` until an official reward contract, indexer,
+or documented 0G source is wired in.
+
+## 0G Storage Node Digest Boundary
+
+`guard0.da_node` also exposes a public read-only contract for the staged
+mainnet storage node. The default runtime is the RV Windows host behind the GCP
+relay:
+
+- Public socket: `35.254.123.37:1234`
+- RPC: `http://127.0.0.1:5678`
+- Chain ID: `16661`
+- Flow contract: `0x62d4144db0f0a6fbbaeb6296c785c71B3D57C526`
+
+Routes:
+
+- `/api/0g/storage-node/status` defaults to a configured snapshot. Add
+  `?live=1` only from a runtime that can reach the storage node RPC.
+- `/api/telegram/storage-node-preview` wraps that status as a Telegram-safe
+  digest with `telegram_send=false`.
+
+Funding is deliberately gated. The route reports
+`not_ready_for_mainnet_funds` while the node is in no-key soak mode and never
+returns private keys, signs, broadcasts, or recommends a mainnet transfer.
+
+## 0G Node Business Digest Boundary
+
+`guard0.node_business` packages the revenue and capacity story without turning
+the workbench into a signer or operator console.
+
+Routes:
+
+- `/api/0g/alignment-node/status` checks configured owner wallets or token IDs
+  against the public Alignment Node subgraph when `?live=1` is supplied. It
+  reports license count, running/delegated status, published reward schedule,
+  and the KYC/wallet-signature blocker. It never asks for or returns a private
+  key.
+- `/api/0g/validator-capacity` reports the RV Windows host fit against 0G
+  validator guidance. Current defaults model the Ryzen 9 9900X3D host with 24
+  logical processors, about 58 GiB WSL RAM, 32 GB swap, and 1.7 TB free disk.
+- `/api/0g/node-business` combines storage economics, Alignment readiness,
+  validator capacity, and ZeroGuard product monetization into one operator
+  packet.
+- `/api/telegram/node-business-preview` wraps the business packet as a
+  Telegram-safe digest with `telegram_send=false`.
+
+The business digest is intentionally conservative. Storage rewards are labeled
+as tiny current protocol yield, Alignment rewards are license-dependent, and
+validator APR is not guessed. The durable monetization path is operator
+monitoring, proof receipts, pre-signing wallet-risk APIs, and readiness reports.
 
 ## Wallet Alert Quality Gate
 

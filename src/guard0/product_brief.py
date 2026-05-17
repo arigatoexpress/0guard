@@ -32,6 +32,10 @@ def product_brief() -> dict[str, Any]:
         "/api/experiments/run",
         "/api/developer-kit",
         "/api/0g/proof-ladder",
+        "/api/0g/private-computer",
+        "/api/0g/peer-protection",
+        "/api/0g/pi-mesh",
+        "/api/peer/outreach-preview",
     ]
     return {
         "schema": PRODUCT_BRIEF_SCHEMA,
@@ -59,6 +63,9 @@ def product_brief() -> dict[str, Any]:
             "A frontier experiment lab ranks the next integrations while proving no live side effects occurred.",
             "A no-network adapter normalizer turns PhishDestroy, CryptoScamDB, Forta, GoPlus, and Chainabuse-shaped payloads into derived evidence.",
             "A derived reputation shadow cache composes multiple reviewed feeds into one reusable alert snapshot without live fetches or raw resale.",
+            "0G Private Computer gives ZeroGuard a credible path to sealed AI explanations without making model output the policy authority.",
+            "Peer-protection drafts turn node telemetry into useful, opt-in help for other operators instead of unsolicited spam.",
+            "Raspberry Pis can become cheap edge sentinels for node health, alert dedupe, and proof-cache work while the Windows host does heavy 0G runtime work.",
             "Real source-linked incident data and detector coverage instead of mock security claims.",
             "A live Telegram Mini App surface that remains preview-only and no-send.",
             "Portable developer-kit routes that other wallets, agents, Mini Apps, CI jobs, and dWallet flows can call.",
@@ -71,6 +78,9 @@ def product_brief() -> dict[str, Any]:
             "The reputation shadow cache is derived from caller-supplied reviewed payloads; it is not a live autonomous feed fetcher yet.",
             "The Telegram bot and Mini App are live, but outbound Telegram sends are intentionally disabled.",
             "X, LinkedIn, Substack, wallet signing, x402 settlement, bridge/swap actions, and exchange actions require separate operator-controlled paths.",
+            "0G Private Computer calls are documented and API-compatible, but no paid inference call is made unless an operator configures a key and prompt-minimization policy.",
+            "Peer outreach is a draft/outbox system until opt-in contacts, rate limits, and operator-approved sender infrastructure are configured.",
+            "Pi mesh work is edge-sentinel compute, not validator, miner, or 35B-model inference work.",
         ],
         "nextBestBuilds": [
             {
@@ -102,6 +112,12 @@ def product_brief() -> dict[str, Any]:
                 "id": "telegram_ton_risk_passport",
                 "why": "Telegram users are the natural first audience; TON should be native rather than bridged.",
                 "ship": "TON Center or TONAPI read-only account/Jetton context feeding the Mini App passport.",
+            },
+            {
+                "rank": 6,
+                "id": "peer_protection_and_pi_sentinels",
+                "why": "Turns our live 0G node operation into a differentiated product loop for other operators.",
+                "ship": "Run Pi sentinels, draft peer bulletins, and keep direct outreach behind opt-in review.",
             },
         ],
         "socialPositioning": {
@@ -189,6 +205,27 @@ def _built_systems(summary: dict[str, Any], coverage: dict[str, Any]) -> list[di
                 "/api/0g/proof-ladder",
                 "/api/hackathon/threat-passport",
             ],
+        },
+        {
+            "id": "0g_private_computer",
+            "label": "0G Private Computer integration",
+            "status": "manifest_live_no_paid_calls",
+            "whatItDoes": "Documents how 0GM-1.0 can produce sealed, OpenAI-compatible explanations over ZeroGuard risk packets.",
+            "proofRoutes": ["/api/0g/private-computer"],
+        },
+        {
+            "id": "peer_protection_outbox",
+            "label": "Peer-protection outbox",
+            "status": "preview_no_send",
+            "whatItDoes": "Builds opt-in peer help drafts and onchain message hashes without sending or broadcasting.",
+            "proofRoutes": ["/api/0g/peer-protection", "/api/peer/outreach-preview"],
+        },
+        {
+            "id": "pi_edge_mesh",
+            "label": "Raspberry Pi edge mesh",
+            "status": "rvpi_a_reachable_plan_live",
+            "whatItDoes": "Assigns Pis to node sentinel, proof-cache, and dedupe work without keys or signing.",
+            "proofRoutes": ["/api/0g/pi-mesh"],
         },
         {
             "id": "developer_kit",

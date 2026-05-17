@@ -205,7 +205,7 @@ Repo: https://github.com/arigatoexpress/0guard
 Demo page: https://arigatoexpress.github.io/0guard/
 0G contract: 0xBaC59b1571b7c7195915c5B36D8A719Ed7182abc
 0G anchor tx:
-https://chainscan.0g.ai/tx/64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed
+https://chainscan.0g.ai/tx/0x64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed
 ```
 
 ## Final X Post

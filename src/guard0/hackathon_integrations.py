@@ -8,14 +8,21 @@ enough for APIs, docs, and judges to inspect.
 
 from __future__ import annotations
 
+import hashlib
+import json
 from datetime import datetime, timezone
 from typing import Any
 
 from guard0.crosschain import cross_chain_catalog
+from guard0.external_guardrails import evaluate_external_guardrail
+from guard0.native_preflight import build_native_preflight
 
 NEXT_HACKATHON_PLAN_SCHEMA = "0guard.next_hackathon_plan.v1"
 ARBITRUM_INTEGRATION_PLAN_SCHEMA = "0guard.arbitrum_integration_plan.v1"
+ARBITRUM_OPEN_HOUSE_BUILDATHON_SCHEMA = "0guard.arbitrum_open_house_buildathon_plan.v1"
 METAMASK_INTEGRATION_PLAN_SCHEMA = "0guard.metamask_integration_plan.v1"
+METAMASK_1SHOT_COOKOFF_SCHEMA = "0guard.metamask_1shot_cookoff_plan.v1"
+METAMASK_1SHOT_PERMISSION_PREVIEW_SCHEMA = "0guard.metamask_1shot_permission_preview.v1"
 
 
 def next_hackathon_plan() -> dict[str, Any]:
@@ -23,6 +30,46 @@ def next_hackathon_plan() -> dict[str, Any]:
     opportunities = [
         {
             "rank": 1,
+            "id": "metamask_smart_accounts_1shot_api_dev_cookoff",
+            "name": "MetaMask Smart Accounts Kit x 1Shot API Dev Cook Off",
+            "status": "active",
+            "timing": {
+                "registrationWindow": "2026-05-15 03:00 to 2026-06-15 10:59",
+                "submissionWindow": "2026-05-15 03:00 to 2026-06-15 10:59",
+                "rewardAnnouncement": "2026-06-22 10:59",
+            },
+            "primaryTrackFit": "permissioned_agentic_x402",
+            "why0guardFits": (
+                "0guard can become the permission firewall that evaluates "
+                "MetaMask Smart Accounts Kit Advanced Permissions, ERC-7710 "
+                "delegations, and 1Shot/x402 payment intents before an agent "
+                "requests authority or calls a paid API."
+            ),
+            "buildNow": [
+                "Make MetaMask Smart Accounts Kit the main demo flow, not a footnote.",
+                "Use ERC-7715 Advanced Permissions or Smart Accounts Kit delegation in the working video.",
+                "Preflight x402 payment requirements, facilitator scope, pay-to address, max amount, and expiry before ERC-7710 redemption.",
+                "Show 1Shot API use only when API credentials, server wallet funding, and testnet boundaries are explicit.",
+                "Keep 0G as the private inference/proof layer for risk explanations and receipts.",
+            ],
+            "doNotClaimYet": [
+                "No live 1Shot transaction, x402 settlement, or MetaMask signature is performed by this repo state.",
+                "No production Snap, wallet custody, or MetaMask partnership is claimed.",
+                "No mainnet token transfer is required for the hackathon proof until the exact recipient and action are confirmed.",
+            ],
+            "officialSources": [
+                "https://www.hackquest.io/hackathons/MetaMask-Smart-Accounts-Kit-x-1Shot-API-Dev-Cook-Off",
+                "https://docs.metamask.io/smart-accounts-kit/guides/advanced-permissions/execute-on-metamask-users-behalf/",
+                "https://docs.metamask.io/smart-accounts-kit/guides/x402/overview/",
+                "https://docs.metamask.io/smart-accounts-kit/guides/x402/buyer/delegations/",
+                "https://docs.metamask.io/smart-accounts-kit/guides/x402/seller/",
+                "https://docs.1shotapi.com/x402/index.html",
+                "https://docs.1shotapi.com/api/api.html",
+                "https://0g.ai/blog/0gm-1-0-35b-a3b",
+            ],
+        },
+        {
+            "rank": 2,
             "id": "arbitrum_open_house_london_online_buildathon",
             "name": "Arbitrum Open House London Online Buildathon",
             "status": "active",
@@ -56,7 +103,7 @@ def next_hackathon_plan() -> dict[str, Any]:
             ],
         },
         {
-            "rank": 2,
+            "rank": 3,
             "id": "ethglobal_new_york_2026_metamask_wallet_security",
             "name": "ETHGlobal New York 2026 / MetaMask wallet-safety lane",
             "status": "upcoming",
@@ -88,7 +135,7 @@ def next_hackathon_plan() -> dict[str, Any]:
             ],
         },
         {
-            "rank": 3,
+            "rank": 4,
             "id": "nanda_hack_ai_agent_trust",
             "name": "NANDA Hack / AI-agent trust and safety lane",
             "status": "upcoming",
@@ -215,6 +262,112 @@ def arbitrum_integration_plan() -> dict[str, Any]:
     }
 
 
+def arbitrum_open_house_buildathon_plan() -> dict[str, Any]:
+    """Return the active Arbitrum Open House London submission plan."""
+    return {
+        "schema": ARBITRUM_OPEN_HOUSE_BUILDATHON_SCHEMA,
+        "generatedAt": _now(),
+        "sourceCheckedAt": "2026-05-17",
+        "name": "ZeroGuard Arbitrum Agent Safety Pack",
+        "positioning": (
+            "A deployed Arbitrum proof lane for agent-wallet risk receipts: "
+            "ZeroGuard preflights the action offchain, then writes or verifies "
+            "a compact policy receipt on Arbitrum Sepolia, Arbitrum One, "
+            "Robinhood Chain, or another qualifying Arbitrum chain."
+        ),
+        "hackathon": {
+            "host": "Arbitrum Foundation",
+            "mode": "online",
+            "registrationWindow": "2026-03-24 16:54 to 2026-05-25 15:54",
+            "submissionWindow": "2026-03-24 16:54 to 2026-06-14 16:00",
+            "rewardAnnouncement": "2026-06-17 15:54",
+            "techStack": ["Solidity", "Rust", "Stylus", "Orbit"],
+            "participantsSeenOnSource": "331+",
+            "prizePoolUsd": 115000,
+            "targetTracks": [
+                {
+                    "id": "overall_prize",
+                    "amountUsdc": 70000,
+                    "breakdown": {"first": 40000, "second": 20000, "third": 10000},
+                    "fit": "stretch",
+                },
+                {
+                    "id": "best_agentic_project",
+                    "amountUsdc": 15000,
+                    "breakdown": {"first": 7000, "second": 5000, "third": 3000},
+                    "fit": "primary",
+                },
+                {
+                    "id": "follow_on_grants",
+                    "amountUsdc": 30000,
+                    "fit": "operator_follow_up",
+                },
+            ],
+        },
+        "qualification": {
+            "mustDeployOnArbitrumChain": True,
+            "eligibleChains": [
+                "Arbitrum Sepolia",
+                "Arbitrum One",
+                "Robinhood Chain",
+                "custom Orbit chain",
+            ],
+            "judgingCriteria": [
+                "smart contract quality",
+                "product-market fit",
+                "innovation and creativity",
+                "real problem solving",
+            ],
+            "strategicNote": "At least one overall prize is reserved for Robinhood Chain and at least one for Arbitrum according to the HackQuest page.",
+        },
+        "buildNow": [
+            "Ship a tiny Solidity receipt registry on Arbitrum Sepolia first.",
+            "Write one receipt hash from /api/native-preflight for a denied or reviewed agent wallet action.",
+            "Read the receipt back into the ZeroGuard workbench and docs.",
+            "Keep the MetaMask x 1Shot permission firewall as the product story, then use Arbitrum as the deployable proof contract lane.",
+            "Add a Stylus/Rust verifier only if Solidity proof is already green.",
+        ],
+        "contractScope": {
+            "minimumViableContract": "PolicyReceiptRegistry",
+            "stores": ["receiptHash", "decision", "surface", "createdAt", "operator"],
+            "doesNotStore": [
+                "private keys",
+                "raw prompts",
+                "raw exploit payloads",
+                "Telegram identifiers",
+                "personal data",
+            ],
+            "securityPosture": [
+                "append-only receipt events",
+                "small audited surface",
+                "OpenZeppelin Ownable or AccessControl only if admin mutation is needed",
+                "no custody, token transfer, bridge, swap, or signer logic",
+            ],
+        },
+        "demoFlow": [
+            "Run an agent-wallet or permission request through /api/native-preflight.",
+            "Show the allow/review/deny receipt and why it was produced.",
+            "Anchor the compact receipt hash on Arbitrum Sepolia.",
+            "Read back the explorer transaction and contract event.",
+            "Use the same receipt inside the MetaMask x 1Shot demo as proof that the permission firewall is portable.",
+        ],
+        "operatorGates": [
+            "Do not deploy until the exact contract source, chain, deployer address, gas estimate, and rollback note are reviewed.",
+            "Use testnet first; mainnet Arbitrum One is optional only after the Sepolia proof is green.",
+            "Robinhood Chain is attractive but should not be claimed until its live docs/RPC/faucet path is verified.",
+        ],
+        "officialSources": [
+            "https://www.hackquest.io/hackathons/Arbitrum-Open-House-London-Online-Buildathon",
+            "https://docs.arbitrum.io/welcome/get-started",
+            "https://docs.arbitrum.io/for-devs/quickstart-solidity-hardhat",
+            "https://docs.arbitrum.io/stylus/quickstart",
+            "https://docs.robinhood.com/",
+            "https://bridge.arbitrum.io/",
+        ],
+        "safety": _safety(),
+    }
+
+
 def metamask_integration_plan() -> dict[str, Any]:
     """Return the MetaMask/agent-wallet integration plan."""
     return {
@@ -282,6 +435,280 @@ def metamask_integration_plan() -> dict[str, Any]:
     }
 
 
+def metamask_1shot_cookoff_plan() -> dict[str, Any]:
+    """Return the active MetaMask x 1Shot hackathon build plan."""
+    return {
+        "schema": METAMASK_1SHOT_COOKOFF_SCHEMA,
+        "generatedAt": _now(),
+        "sourceCheckedAt": "2026-05-17",
+        "name": "ZeroGuard Permission Firewall for MetaMask Smart Accounts + 1Shot Agents",
+        "positioning": (
+            "A no-custody agent-wallet guard that checks Advanced Permissions, "
+            "ERC-7710 delegation payments, and 1Shot/x402 automation before "
+            "a user grants authority or an agent calls a paid onchain API."
+        ),
+        "hackathon": {
+            "host": "MetaMask Developer",
+            "mode": "online",
+            "registrationWindow": "2026-05-15 03:00 to 2026-06-15 10:59",
+            "submissionWindow": "2026-05-15 03:00 to 2026-06-15 10:59",
+            "rewardAnnouncement": "2026-06-22 10:59",
+            "prizePoolUsd": 10000,
+            "targetTracks": [
+                {
+                    "id": "best_x402_erc7710",
+                    "amountUsd": 3000,
+                    "fit": "primary",
+                    "requiredProof": "Use MetaMask Smart Accounts or Advanced Permissions to do x402 calls using ERC-7710.",
+                },
+                {
+                    "id": "best_agent",
+                    "amountUsd": 3000,
+                    "fit": "primary",
+                    "requiredProof": "Main flow uses Smart Accounts Kit and shows useful agent behavior.",
+                },
+                {
+                    "id": "best_a2a_coordination",
+                    "amountUsd": 3000,
+                    "fit": "stretch",
+                    "requiredProof": "Redelegation or agent-to-agent handoff with scoped permissions.",
+                },
+            ],
+        },
+        "mainDemoFlow": [
+            "User connects MetaMask and views a paid ZeroGuard threat-packet API request.",
+            "The app receives x402 payment requirements with ERC-7710 delegation metadata.",
+            "ZeroGuard preflights pay-to, facilitator, asset, max amount, expiry, resource hash, and requested agent scope.",
+            "Only a bounded Smart Accounts Kit Advanced Permission or Smart Account delegation reaches MetaMask.",
+            "A 1Shot-backed relay/payment step is shown in testnet or explicitly marked prepared-not-live until credentials are configured.",
+            "0G Private Computer generates the private risk explanation and ZeroGuard emits a receipt hash.",
+        ],
+        "whyThisIsBetterThanSubmissionOne": [
+            "Start from sponsor requirements and one main video path instead of a broad ecosystem tour.",
+            "Make the judged integration visible in the first minute: Smart Accounts Kit before wallet authority.",
+            "Use 0G as proof and sealed-inference infrastructure, not a competing narrative.",
+            "Expose deterministic API evidence that judges can curl before watching the video.",
+            "Keep every unsafe action testnet, preview-only, or explicitly operator-gated.",
+        ],
+        "routeMap": [
+            {"method": "GET", "path": "/api/hackathons/metamask-1shot", "mode": "active_plan"},
+            {
+                "method": "GET/POST",
+                "path": "/api/hackathons/metamask-1shot/permission-preview",
+                "mode": "no_sign_no_settle_demo_packet",
+            },
+            {"method": "POST", "path": "/api/native-preflight", "mode": "shared_pre_signer_guard"},
+            {
+                "method": "POST",
+                "path": "/api/integrations/external-guardrails/evaluate",
+                "mode": "metamask_x402_guardrail_checks",
+            },
+        ],
+        "0gIntegration": {
+            "privateComputer": "Use 0GM-1.0-35B-A3B for private natural-language risk explanations once the pc.0g.ai API key and funding are configured.",
+            "storageNode": "Keep the current 0G storage node as a proof and telemetry backdrop; it is not the payment wallet.",
+            "proofReceipt": "Hash every permission preview and optionally anchor/upload after operator approval.",
+        },
+        "fundingGate": {
+            "send25OgNow": False,
+            "recommendedTarget": "The wallet/account actually connected to pc.0g.ai or the 0G Private Computer funding flow, not the storage miner.",
+            "reason": "0G Compute/Private Computer token spend belongs with the provider/app account. Miner funding is separate node operations capital.",
+            "confirmationNeeded": "Confirm the exact 0G recipient address and purpose before any 25 0G transfer is broadcast.",
+        },
+        "officialSources": [
+            "https://www.hackquest.io/hackathons/MetaMask-Smart-Accounts-Kit-x-1Shot-API-Dev-Cook-Off",
+            "https://docs.metamask.io/smart-accounts-kit/guides/x402/overview/",
+            "https://docs.metamask.io/smart-accounts-kit/guides/x402/buyer/delegations/",
+            "https://docs.metamask.io/smart-accounts-kit/guides/advanced-permissions/execute-on-metamask-users-behalf/",
+            "https://docs.1shotapi.com/x402/index.html",
+            "https://docs.1shotapi.com/",
+            "https://0g.ai/blog/0gm-1-0-35b-a3b",
+        ],
+        "safety": _safety(),
+    }
+
+
+def metamask_1shot_permission_preview(payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Build a deterministic no-sign preview for the cook-off main flow."""
+    body = payload or {}
+    if not isinstance(body, dict):
+        raise ValueError("payload must be an object")
+
+    network = str(body.get("network") or body.get("chain") or "eip155:84532")
+    chain_id = _chain_id(network) or 84532
+    token_address = str(body.get("tokenAddress") or "0x0000000000000000000000000000000000000000")
+    pay_to = str(body.get("payTo") or "0x1111111111111111111111111111111111111111")
+    facilitator = str(body.get("facilitator") or "0x2222222222222222222222222222222222222222")
+    session_account = str(body.get("sessionAccount") or "0x3333333333333333333333333333333333333333")
+    delegator = str(body.get("delegator") or "0x4444444444444444444444444444444444444444")
+    resource = str(body.get("resource") or "GET /api/threat-packets/permission-risk")
+    price = str(body.get("price") or "$0.01")
+    max_amount = str(body.get("maxAmount") or "10000")
+    expiry = int(body.get("expiry") or 1_783_987_200)  # 2026-07-15T00:00:00Z.
+    live_settlement = _truthy(body.get("liveSettlement"))
+
+    content_hash = _hash_json(
+        {
+            "resource": resource,
+            "network": network,
+            "payTo": pay_to,
+            "maxAmount": max_amount,
+            "purpose": "zeroguard permission-risk packet",
+        }
+    )
+    nonce = _hash_json({"resource": resource, "delegator": delegator, "network": network})[:24]
+    provisional_receipt = f"preview:{content_hash[:16]}"
+
+    permission_request = {
+        "standard": "erc7715_advanced_permissions",
+        "kitAction": "walletClient.requestExecutionPermissions",
+        "chainId": chain_id,
+        "expiry": expiry,
+        "to": session_account,
+        "permission": {
+            "type": "erc20-token-periodic",
+            "data": {
+                "tokenAddress": token_address,
+                "periodAmount": max_amount,
+                "periodDuration": 86400,
+                "justification": "Allow a ZeroGuard agent to pay bounded x402 threat-packet API fees.",
+            },
+        },
+    }
+    x402_requirement = {
+        "scheme": "exact",
+        "network": network,
+        "price": price,
+        "amount": max_amount,
+        "asset": token_address,
+        "payTo": pay_to,
+        "resource": resource,
+        "contentHash": content_hash,
+        "nonce": nonce,
+        "extra": {
+            "assetTransferMethod": "erc7710",
+            "facilitators": [facilitator],
+        },
+    }
+    delegation_payload_shape = {
+        "x402Version": 2,
+        "accepted": x402_requirement,
+        "payload": {
+            "delegationManager": "0x5555555555555555555555555555555555555555",
+            "permissionContext": "0x<encoded-delegation-chain>",
+            "delegator": delegator,
+        },
+    }
+
+    bounded_preflight = build_native_preflight(
+        {
+            "surface": "metamask_smart_accounts",
+            "operation": "requestExecutionPermissions",
+            "chain": network,
+            "target": pay_to,
+            "valueEth": 0,
+            "intentText": "Bounded MetaMask Advanced Permission for ERC-7710 x402 threat-packet payments.",
+            "config": {
+                "method": "requestExecutionPermissions",
+                "expiry": expiry,
+                "maxAmount": max_amount,
+                "nativePreflightReceipt": provisional_receipt,
+                "chain": network,
+            },
+        }
+    )
+    delegation_execution_preflight = build_native_preflight(
+        {
+            "surface": "metamask_delegation",
+            "operation": "sendTransactionWithDelegation",
+            "chain": network,
+            "target": pay_to,
+            "valueEth": 0,
+            "intentText": "Redeem an ERC-7710 delegation for one x402 API payment after ZeroGuard review.",
+            "config": {
+                "method": "sendTransactionWithDelegation",
+                "expiry": expiry,
+                "maxAmount": max_amount,
+                "nativePreflightReceipt": bounded_preflight["receipt"]["hash"],
+                "chain": network,
+            },
+        }
+    )
+    unsafe_variant = build_native_preflight(
+        {
+            "surface": "metamask_delegation",
+            "operation": "requestExecutionPermissions",
+            "chain": network,
+            "target": pay_to,
+            "intentText": "Unsafe agent asks for unbounded delegation without expiry or 0guard receipt.",
+            "config": {"method": "requestExecutionPermissions"},
+        }
+    )
+    x402_guardrail = evaluate_external_guardrail(
+        {
+            "target_id": "x402",
+            "action": "settle" if live_settlement else "prepare_payment",
+            "intent_text": "Use 1Shot/x402 for a paid ZeroGuard threat-packet API call.",
+            "config": {
+                "networkId": network,
+                "token": token_address,
+                "amount": max_amount,
+                "payTo": pay_to,
+                "contentHash": content_hash,
+                "nonce": nonce,
+                "liveSettlement": live_settlement,
+                "rawPayloadResale": False,
+            },
+        }
+    )
+
+    packet = {
+        "schema": METAMASK_1SHOT_PERMISSION_PREVIEW_SCHEMA,
+        "generatedAt": _now(),
+        "mode": "no_sign_no_settle_preview",
+        "hackathonTrack": "best_x402_erc7710",
+        "network": network,
+        "metaMask": {
+            "usesSmartAccountsKit": True,
+            "standards": ["ERC-7715", "ERC-7710"],
+            "permissionRequest": permission_request,
+            "delegationPayloadShape": delegation_payload_shape,
+        },
+        "oneShot": {
+            "mode": "prepared_not_live",
+            "requires": [
+                "1Shot API account",
+                "API key and secret stored outside repo",
+                "server wallet provisioned and funded with gas on the target network",
+                "x402-compatible token method imported, such as transferWithAuthorization",
+            ],
+            "x402Requirement": x402_requirement,
+            "guardrail": x402_guardrail,
+        },
+        "zeroGuard": {
+            "boundedPermissionPreflight": bounded_preflight,
+            "delegationExecutionPreflight": delegation_execution_preflight,
+            "unsafeVariantPreflight": unsafe_variant,
+            "receiptHash": _hash_json(
+                {
+                    "permissionRequest": permission_request,
+                    "x402Requirement": x402_requirement,
+                    "boundedReceipt": bounded_preflight["receipt"]["hash"],
+                    "delegationReceipt": delegation_execution_preflight["receipt"]["hash"],
+                }
+            ),
+        },
+        "demoAssertions": [
+            "The app can prove a bounded permission path before asking MetaMask.",
+            "The app can deny an unbounded delegation request deterministically.",
+            "The 1Shot/x402 leg is prepared and source-cited but not settled unless liveSettlement is explicitly enabled by an operator.",
+        ],
+        "safety": _safety(),
+    }
+    packet["safety"]["x402SettlementEnabled"] = live_settlement
+    return packet
+
+
 def _safety() -> dict[str, bool]:
     return {
         "readOnly": True,
@@ -294,6 +721,29 @@ def _safety() -> dict[str, bool]:
         "socialPostingEnabled": False,
         "rawPayloadsReturned": False,
     }
+
+
+def _chain_id(network: str) -> int:
+    if network.startswith("eip155:"):
+        try:
+            return int(network.split(":", 1)[1])
+        except ValueError:
+            return 0
+    return 0
+
+
+def _hash_json(value: Any) -> str:
+    return hashlib.sha256(
+        json.dumps(value, sort_keys=True, separators=(",", ":"), default=str).encode("utf-8")
+    ).hexdigest()
+
+
+def _truthy(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "on", "enabled"}
+    return bool(value)
 
 
 def _now() -> str:

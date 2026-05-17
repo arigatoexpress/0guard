@@ -39,7 +39,7 @@ Submission proof artifact: `docs/hackathon-0g/hackquest-submission-proof.json`
 - 0G mainnet contract:
   `0xBaC59b1571b7c7195915c5B36D8A719Ed7182abc`
 - 0G anchor transaction:
-  https://chainscan.0g.ai/tx/64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed
+  https://chainscan.0g.ai/tx/0x64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed
 - Copy/paste form packet: `docs/hackathon-0g/submission-form-fields.md`
 - Judge proof drill: `docs/hackathon-0g/threat-receipt-passport.md`
 - License/source policy: Apache-2.0, `NOTICE`, and
@@ -66,7 +66,7 @@ Use these values in HackQuest:
 - Contract URL:
   https://chainscan.0g.ai/address/0xBaC59b1571b7c7195915c5B36D8A719Ed7182abc
 - Anchor transaction:
-  https://chainscan.0g.ai/tx/64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed
+  https://chainscan.0g.ai/tx/0x64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed
 - Receipt hash:
   `0x9739dbd4afb6ab21f15ccb634b49dabc9144550ef06d346cb4e7cd363e74afd1`
 
