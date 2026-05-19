@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Iterable
@@ -245,10 +246,19 @@ def _discover_active_base_url_from_sapphire(*, timeout: float) -> str | None:
 
 
 def _probe_url(url: str, *, timeout: float) -> dict[str, Any]:
-    try:
-        resp = requests.get(url, timeout=timeout, headers={"User-Agent": "0guard-osint-steward/1.0"})
-    except requests.RequestException as exc:
-        return {"url": url, "statusCode": None, "error": str(exc)}
+    last_error: Exception | None = None
+    for attempt in range(2):
+        try:
+            resp = requests.get(url, timeout=timeout, headers={"User-Agent": "0guard-osint-steward/1.0"})
+            break
+        except requests.RequestException as exc:
+            last_error = exc
+            if attempt == 0:
+                time.sleep(0.4)
+                continue
+            return {"url": url, "statusCode": None, "error": str(exc)}
+    else:  # pragma: no cover - defensive; loop returns on final failure.
+        return {"url": url, "statusCode": None, "error": str(last_error or "unknown error")}
 
     entry: dict[str, Any] = {
         "url": url,
@@ -271,23 +281,36 @@ def _probe_paths(base_url: str, paths: Iterable[str], *, timeout: float) -> Iter
     session.headers.update({"User-Agent": "0guard-osint-steward/1.0"})
     for path in paths:
         url = urljoin(base_url.rstrip("/") + "/", path.lstrip("/"))
-        try:
-            resp = session.get(url, timeout=timeout)
-            yield ProbeResult(
-                path=path,
-                status_code=resp.status_code,
-                elapsed_ms=int(resp.elapsed.total_seconds() * 1000),
-                content_type=resp.headers.get("content-type", ""),
-                snippet=_snippet(resp.text or ""),
-            )
-        except requests.RequestException as exc:
+        resp: requests.Response | None = None
+        last_error: Exception | None = None
+        for attempt in range(2):
+            try:
+                resp = session.get(url, timeout=timeout)
+                break
+            except requests.RequestException as exc:
+                last_error = exc
+                if attempt == 0:
+                    time.sleep(0.4)
+                    continue
+                resp = None
+
+        if resp is None:
             yield ProbeResult(
                 path=path,
                 status_code=None,
                 elapsed_ms=None,
                 content_type="",
-                snippet=f"error: {exc}",
+                snippet=f"error: {last_error}",
             )
+            continue
+
+        yield ProbeResult(
+            path=path,
+            status_code=resp.status_code,
+            elapsed_ms=int(resp.elapsed.total_seconds() * 1000),
+            content_type=resp.headers.get("content-type", ""),
+            snippet=_snippet(resp.text or ""),
+        )
 
 
 def _select_base_url(requested: str, *, timeout: float) -> str:
