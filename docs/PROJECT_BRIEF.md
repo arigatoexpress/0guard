@@ -9,6 +9,10 @@ and risky signing paths stop before the signer is touched.
 - A Flask API and browser workbench for allow/review/deny evaluations.
 - A live Telegram Mini App at `https://guard0-miniapp-s77j6bxyra-uc.a.run.app/telegram`.
 - A live Telegram bot at `https://t.me/Raris0guardBot` with outbound sends disabled.
+- A live wallet-provider guard API at
+  `https://guard0-miniapp-s77j6bxyra-uc.a.run.app/api/wallet/provider-guard`.
+- A hosted provider demo at
+  `https://guard0-miniapp-s77j6bxyra-uc.a.run.app/demo/wallet-provider-guard`.
 - A public proof hub at `https://arigatoexpress.github.io/0guard/hackathon-0g/`.
 - A 0G mainnet receipt anchor recorded in the hackathon proof packet.
 - A live `/api/0g/proof-ladder` route that builds Chain, Storage, DA, Compute,
@@ -20,11 +24,12 @@ and risky signing paths stop before the signer is touched.
 ## What The System Does
 
 1. Reads an agent or app intent before wallet access.
-2. Checks policy, calldata, prompt text, domains, counterparties, labels, and source evidence.
-3. Compares the action with source-linked exploit patterns and local indicators.
-4. Returns `allow`, `review`, or `deny`.
-5. Produces deterministic receipts that are ready for 0G Chain / 0G Storage workflows.
-6. Shows human-readable Telegram/Mira/wallet explanations without sending messages or moving funds.
+2. Checks EIP-1193 provider requests before a dapp forwards them to a wallet.
+3. Checks policy, calldata, prompt text, domains, counterparties, labels, and source evidence.
+4. Compares the action with source-linked exploit patterns and local indicators.
+5. Returns `allow`, `review`, or `deny`.
+6. Produces deterministic receipts that are ready for 0G Chain / 0G Storage workflows.
+7. Shows human-readable Telegram/Mira/wallet explanations without sending messages or moving funds.
 
 ## Why It Matters
 

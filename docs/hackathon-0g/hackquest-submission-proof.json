@@ -27,6 +27,8 @@
     "required_x_post": "https://x.com/rariwrldd/status/2054779961425461542",
     "mainnet_anchor_tx": "https://chainscan.0g.ai/tx/0x64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed",
     "telegram_miniapp": "https://guard0-miniapp-s77j6bxyra-uc.a.run.app/telegram",
+    "wallet_provider_guard_demo": "https://guard0-miniapp-s77j6bxyra-uc.a.run.app/demo/wallet-provider-guard",
+    "wallet_provider_guard_api": "https://guard0-miniapp-s77j6bxyra-uc.a.run.app/api/wallet/provider-guard",
     "telegram_bot": "https://t.me/Raris0guardBot",
     "project_images": [
       "https://arigatoexpress.github.io/0guard/hackathon-0g/assets/0guard-workbench-provenance.png",
@@ -56,9 +58,9 @@
     }
   ],
   "post_submit_public_updates": {
-    "verified_at": "2026-05-16T15:30:01Z",
-    "production_source_commit": "112c7b7",
-    "production_revision": "guard0-miniapp-112c7b7",
+    "verified_at": "2026-05-19T17:36:00Z",
+    "production_source_commit": "1d095ae",
+    "production_revision": "guard0-miniapp-00054-gej",
     "license": "Apache-2.0",
     "notice": "https://github.com/arigatoexpress/0guard/blob/main/NOTICE",
     "source_asset_policy": "https://github.com/arigatoexpress/0guard/blob/main/docs/LEGAL_AND_ASSET_POLICY.md",
@@ -66,6 +68,8 @@
     "media_archive": "https://arigatoexpress.github.io/0guard/hackathon-0g/assets/README.md",
     "readyz": "https://guard0-miniapp-s77j6bxyra-uc.a.run.app/api/readyz",
     "reputation_shadow_cache": "https://guard0-miniapp-s77j6bxyra-uc.a.run.app/api/reputation/shadow-cache",
+    "wallet_provider_guard_demo": "https://guard0-miniapp-s77j6bxyra-uc.a.run.app/demo/wallet-provider-guard",
+    "wallet_provider_guard_api": "https://guard0-miniapp-s77j6bxyra-uc.a.run.app/api/wallet/provider-guard",
     "osint_sources": "https://guard0-miniapp-s77j6bxyra-uc.a.run.app/api/osint/sources",
     "reputation_connectors": "https://guard0-miniapp-s77j6bxyra-uc.a.run.app/api/reputation/connectors",
     "source_count": 30,

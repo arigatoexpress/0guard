@@ -244,6 +244,10 @@ Completed on May 14, 2026 and refreshed on May 15, 2026:
    `guard0-miniapp-112c7b7`, 34 source lanes, 20 no-network connector
    candidates, and disabled-by-default ThreatFox, Chainalysis sanctions
    API/Oracle, TRM Wallet Screening/BLOCKINT, and Google Cloud Web Risk lanes.
+7. Promoted production revision `guard0-miniapp-00054-gej` on May 19, 2026
+   with the hosted Wallet Provider Guard API and demo. The demo proves
+   EIP-1193 read-only requests can forward while chain switching and unlimited
+   approval requests stop before provider access.
 
 ## Manual Recovery Note
 
