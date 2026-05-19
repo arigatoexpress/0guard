@@ -27,6 +27,11 @@ FALLBACK_BASE_URLS: tuple[str, ...] = (
     "https://candidate-acdc011---guard0-miniapp-s77j6bxyra-uc.a.run.app",
     "https://candidate-6f07f89---guard0-miniapp-s77j6bxyra-uc.a.run.app",
 )
+REQUIRED_API_SURFACE: tuple[str, ...] = (
+    "/api/hackathons/next",
+    "/api/intelligence/events?live=1&limit=1",
+    "/api/reputation/connectors/live?live=1&limit=1",
+)
 DEFAULT_GCLOUD_PROJECT = "sapphire-479610"
 DEFAULT_BOT_SECRET = "guard0-telegram-bot-token"
 DEFAULT_WEBHOOK_SECRET = "guard0-telegram-webhook-secret-token"
@@ -218,6 +223,8 @@ def _select_base_url(requested: str) -> str:
     for candidate in candidates:
         try:
             _load_health(candidate)
+            if not _has_required_api_surface(candidate):
+                continue
         except requests.RequestException as exc:
             last_error = exc
             continue
@@ -226,6 +233,17 @@ def _select_base_url(requested: str) -> str:
     if last_error is not None:
         raise last_error
     return requested
+
+
+def _has_required_api_surface(base_url: str) -> bool:
+    for path in REQUIRED_API_SURFACE:
+        try:
+            response = requests.get(f"{base_url}{path}", timeout=10)
+        except requests.RequestException:
+            return False
+        if response.status_code == 404:
+            return False
+    return True
 
 
 def _load_secret(env_name: str, secret_name: str, project: str) -> str:
