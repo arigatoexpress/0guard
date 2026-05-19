@@ -20,6 +20,7 @@ import secrets
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 from flask import Flask, Response, jsonify, render_template, request
 
@@ -140,6 +141,17 @@ from guard0.wallet_provider_guard import build_wallet_provider_guard
 from guard0.x402_guard import build_x402_wallet_preflight_dry_run
 
 app = Flask(__name__)
+
+DEFAULT_WALLET_PROVIDER_GUARD_ORIGINS = frozenset(
+    {
+        "https://arigatoexpress.github.io",
+        "https://guard0-miniapp-s77j6bxyra-uc.a.run.app",
+        "http://localhost:8109",
+        "http://localhost:8142",
+        "http://127.0.0.1:8109",
+        "http://127.0.0.1:8142",
+    }
+)
 
 # Stable demo address used for read-only previews. Keep this constant explicit
 # so GET endpoints remain usable without requiring query params.
@@ -1501,13 +1513,47 @@ def api_native_preflight():
         return jsonify({"error": str(exc)}), 400
 
 
-@app.route("/api/wallet/provider-guard", methods=["POST"])
+def _wallet_provider_allowed_origin(origin: str | None) -> str | None:
+    normalized = (origin or "").strip().rstrip("/")
+    if not normalized:
+        return None
+    configured = {
+        item.strip().rstrip("/")
+        for item in os.getenv("ZEROGUARD_WALLET_PROVIDER_ALLOWED_ORIGINS", "").split(",")
+        if item.strip()
+    }
+    allowed = DEFAULT_WALLET_PROVIDER_GUARD_ORIGINS | configured
+    if "*" in allowed:
+        return normalized
+    if normalized in allowed:
+        return normalized
+    parsed = urlparse(normalized)
+    if parsed.scheme == "http" and parsed.hostname in {"127.0.0.1", "localhost"}:
+        return normalized
+    return None
+
+
+def _wallet_provider_cors(response: Response, *, status_code: int = 200) -> Response:
+    response.status_code = status_code
+    allowed_origin = _wallet_provider_allowed_origin(request.headers.get("Origin"))
+    if allowed_origin:
+        response.headers["Access-Control-Allow-Origin"] = allowed_origin
+        response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+        response.headers["Access-Control-Max-Age"] = "600"
+        response.headers["Vary"] = "Origin"
+    return response
+
+
+@app.route("/api/wallet/provider-guard", methods=["POST", "OPTIONS"])
 def api_wallet_provider_guard():
+    if request.method == "OPTIONS":
+        return _wallet_provider_cors(jsonify({}), status_code=204)
     body = request.get_json(silent=True) or {}
     try:
-        return jsonify(build_wallet_provider_guard(body))
+        return _wallet_provider_cors(jsonify(build_wallet_provider_guard(body)))
     except (TypeError, ValueError) as exc:
-        return jsonify({"error": str(exc)}), 400
+        return _wallet_provider_cors(jsonify({"error": str(exc)}), status_code=400)
 
 
 @app.route("/api/hackathon/strategy", methods=["GET"])

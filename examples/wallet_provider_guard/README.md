@@ -25,6 +25,30 @@ Sensitive methods such as transaction sends, message signing, and permission
 grants return a `WalletGuardBlockedError` when 0guard says `review` or `deny`.
 Show the receipt and explanation to the user before any wallet prompt.
 
+## External Dapp Smoke
+
+`examples/wallet_provider_guard/external_dapp/` is a browser-ready static dapp
+that runs on its own origin and calls a hosted or local 0guard API before
+touching `window.ethereum`.
+
+Local smoke:
+
+```bash
+PYTHONPATH=src .venv/bin/python scripts/wallet_provider_external_dapp_smoke.py
+```
+
+Manual empty-wallet check:
+
+```bash
+cd examples/wallet_provider_guard/external_dapp
+python3 -m http.server 8142
+```
+
+Then open `http://127.0.0.1:8142` in a wallet-enabled browser, keep the API
+base as `https://guard0-miniapp-s77j6bxyra-uc.a.run.app`, and use a throwaway
+empty account. `Read chain` may forward; `Switch chain` and `Unlimited approval`
+should stop before a wallet prompt.
+
 ## Safety
 
 - 0guard does not forward provider calls itself.

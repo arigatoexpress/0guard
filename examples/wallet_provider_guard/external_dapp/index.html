@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>0guard External Wallet Demo</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div>
+        <span class="eyebrow">External dapp example</span>
+        <h1>0guard before <code>window.ethereum</code></h1>
+        <p>This page runs on its own origin and calls the hosted 0guard API before forwarding anything to an injected EIP-1193 wallet provider.</p>
+      </div>
+      <strong id="decision-pill" class="pill review">waiting</strong>
+    </header>
+
+    <section class="panel">
+      <label>
+        0guard API base URL
+        <input id="guard-base-url" value="https://guard0-miniapp-s77j6bxyra-uc.a.run.app">
+      </label>
+      <div class="actions">
+        <button id="run-read-chain" type="button">Read chain</button>
+        <button id="run-switch-chain" type="button" class="secondary">Switch chain</button>
+        <button id="run-unlimited-approval" type="button" class="secondary">Unlimited approval</button>
+      </div>
+      <p class="note">Use an empty throwaway wallet for manual testing. The dangerous buttons should stop before the wallet prompt.</p>
+    </section>
+
+    <section class="grid">
+      <div class="panel">
+        <h2>Guard result</h2>
+        <pre id="result-output">Awaiting request.</pre>
+      </div>
+      <div class="panel">
+        <h2>Provider call log</h2>
+        <pre id="provider-log">[]</pre>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
