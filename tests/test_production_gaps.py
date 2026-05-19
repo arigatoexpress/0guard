@@ -24,6 +24,10 @@ def test_production_gap_matrix_classifies_real_local_pending_and_mock_lanes():
 
     by_id = {gap["id"]: gap for gap in matrix["gaps"]}
     assert by_id["data.incident_corpus"]["currentStatus"] == "live_real_data"
+    assert by_id["data.historical_feature_store"]["currentEvidence"]["featureCount"] >= 29
+    assert by_id["data.historical_feature_store"]["currentEvidence"]["featureStoreReceiptHash"]
+    assert "scheduled_backfill_runner" in by_id["data.historical_feature_store"]["blockedBy"]
+    assert "/api/data/historical-feature-store" in by_id["data.historical_feature_store"]["routes"]
     assert "firstOpenFeedLatestRunExists" in by_id["data.live_reputation_feeds"]["currentEvidence"]
     assert "/api/reputation/backfill/status" in by_id["data.live_reputation_feeds"]["routes"]
     assert by_id["onchain.0g_storage_upload_readback"]["currentStatus"] == (
