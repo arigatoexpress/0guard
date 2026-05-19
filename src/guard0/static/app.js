@@ -283,6 +283,16 @@ async function loadStorageNodeStatus(){
   const j = await r.json();
   writeJson('da-node-output', j);
 }
+async function loadStoragePeerDiagnostics(){
+  const r = await fetch('/api/0g/storage-node/peer-diagnostics?snapshot=1');
+  const j = await r.json();
+  writeJson('da-node-output', j);
+}
+async function loadStorageUploadManifest(){
+  const r = await fetch('/api/0g/storage-upload/manifest');
+  const j = await r.json();
+  writeJson('da-node-output', j);
+}
 async function runTelegramDaNodePreview(){
   const r = await fetch('/api/telegram/da-node-preview?live=1');
   const j = await r.json();
@@ -305,6 +315,11 @@ async function loadValidatorCapacity(){
 }
 async function loadPrivateComputer(){
   const r = await fetch('/api/0g/private-computer?live=1');
+  const j = await r.json();
+  writeJson('da-node-output', j);
+}
+async function loadPrivateComputeSmokePreview(){
+  const r = await fetch('/api/0g/private-computer/smoke-preview');
   const j = await r.json();
   writeJson('da-node-output', j);
 }
@@ -424,6 +439,11 @@ async function loadPhishDestroyWorker(){
   const j = await r.json();
   writeJson('osint-output', j);
 }
+async function loadReputationBackfillStatus(){
+  const r = await fetch('/api/reputation/backfill/status');
+  const j = await r.json();
+  writeJson('osint-output', j);
+}
 async function loadEvolvingIntel(){
   const r = await fetch('/api/intelligence/evolving?limit=10');
   const j = await r.json();
@@ -436,6 +456,11 @@ async function loadIntelligenceStreamPlan(){
 }
 async function loadX402DataProducts(){
   const r = await fetch('/api/x402/data-products');
+  const j = await r.json();
+  writeJson('osint-output', j);
+}
+async function loadX402DryRun(){
+  const r = await fetch('/api/x402/dry-run/wallet-preflight');
   const j = await r.json();
   writeJson('osint-output', j);
 }
@@ -456,6 +481,26 @@ async function loadProductBrief(){
 }
 async function loadProductionReadiness(){
   const r = await fetch('/api/readyz');
+  const j = await r.json();
+  writeJson('osint-output', j);
+}
+async function loadDeploymentReadiness(){
+  const r = await fetch('/api/deployment/readiness?live=1');
+  const j = await r.json();
+  writeJson('osint-output', j);
+}
+async function loadProductionGaps(){
+  const r = await fetch('/api/production/gaps');
+  const j = await r.json();
+  writeJson('osint-output', j);
+}
+async function loadModelTrainingRoadmap(){
+  const r = await fetch('/api/model/training-roadmap');
+  const j = await r.json();
+  writeJson('osint-output', j);
+}
+async function loadIncidentEvalSet(){
+  const r = await fetch('/api/model/incident-eval-set?limit=6');
   const j = await r.json();
   writeJson('osint-output', j);
 }
@@ -728,11 +773,14 @@ document.getElementById('run-domain-check').addEventListener('click', domainChec
 document.getElementById('verify-receipt').addEventListener('click', verifyReceipt);
 document.getElementById('load-da-node-status').addEventListener('click', loadDaNodeStatus);
 document.getElementById('load-storage-node-status').addEventListener('click', loadStorageNodeStatus);
+document.getElementById('load-storage-peer-diagnostics').addEventListener('click', loadStoragePeerDiagnostics);
+document.getElementById('load-storage-upload-manifest').addEventListener('click', loadStorageUploadManifest);
 document.getElementById('run-telegram-da-node-preview').addEventListener('click', runTelegramDaNodePreview);
 document.getElementById('load-node-business').addEventListener('click', loadNodeBusiness);
 document.getElementById('load-alignment-node-status').addEventListener('click', loadAlignmentNodeStatus);
 document.getElementById('load-validator-capacity').addEventListener('click', loadValidatorCapacity);
 document.getElementById('load-private-computer').addEventListener('click', loadPrivateComputer);
+document.getElementById('load-private-compute-smoke-preview').addEventListener('click', loadPrivateComputeSmokePreview);
 document.getElementById('load-local-inference').addEventListener('click', loadLocalInference);
 document.getElementById('run-telegram-local-inference-preview').addEventListener('click', runTelegramLocalInferencePreview);
 document.getElementById('load-hot-wallet-resources').addEventListener('click', loadHotWalletResources);
@@ -751,13 +799,19 @@ document.getElementById('load-osint-sources').addEventListener('click', loadOsin
 document.getElementById('load-osint-readiness').addEventListener('click', loadOsintReadiness);
 document.getElementById('load-osint-signals').addEventListener('click', loadOsintSignals);
 document.getElementById('load-phishdestroy-worker').addEventListener('click', loadPhishDestroyWorker);
+document.getElementById('load-reputation-backfill-status').addEventListener('click', loadReputationBackfillStatus);
 document.getElementById('load-evolving-intel').addEventListener('click', loadEvolvingIntel);
 document.getElementById('load-intelligence-stream-plan').addEventListener('click', loadIntelligenceStreamPlan);
 document.getElementById('load-x402-data-products').addEventListener('click', loadX402DataProducts);
+document.getElementById('load-x402-dry-run').addEventListener('click', loadX402DryRun);
 document.getElementById('load-intelligence-events').addEventListener('click', loadIntelligenceEvents);
 document.getElementById('load-detector-candidates').addEventListener('click', loadDetectorCandidates);
 document.getElementById('load-product-brief').addEventListener('click', loadProductBrief);
 document.getElementById('load-production-readiness').addEventListener('click', loadProductionReadiness);
+document.getElementById('load-deployment-readiness').addEventListener('click', loadDeploymentReadiness);
+document.getElementById('load-production-gaps').addEventListener('click', loadProductionGaps);
+document.getElementById('load-model-training-roadmap').addEventListener('click', loadModelTrainingRoadmap);
+document.getElementById('load-incident-eval-set').addEventListener('click', loadIncidentEvalSet);
 document.getElementById('load-ecosystem-roadmap').addEventListener('click', loadEcosystemRoadmap);
 document.getElementById('load-frontier-experiments').addEventListener('click', loadFrontierExperiments);
 document.getElementById('load-submission-brief').addEventListener('click', loadSubmissionBrief);

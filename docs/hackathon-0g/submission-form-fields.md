@@ -195,7 +195,7 @@ Anchored receipt hash:
 Post-submit professionalization note:
 
 ```text
-The public proof packet now also exposes Apache-2.0 licensing, NOTICE/source-rights boundaries, a public media registry, /api/readyz, /api/reputation/shadow-cache, /api/osint/sources with 30 tracked source lanes, and /api/reputation/connectors with 17 no-network connector candidates. The submitted media is archived behind the proof links; the canonical evidence is the 0G mainnet transaction, proof JSON, and API readbacks.
+The public proof packet now also exposes Apache-2.0 licensing, NOTICE/source-rights boundaries, a public media registry, /api/readyz, /api/reputation/shadow-cache, /api/osint/sources with 34 tracked source lanes, and /api/reputation/connectors with 20 no-network connector candidates. The submitted media is archived behind the proof links; the canonical evidence is the 0G mainnet transaction, proof JSON, and API readbacks.
 ```
 
 ## X Post
@@ -239,10 +239,11 @@ Completed on May 14, 2026 and refreshed on May 15, 2026:
    policy, and asset registry on May 16, 2026; on May 17, 2026 the public
    proof links were normalized to `0x` transaction hashes and media was
    demoted behind proof/readback links.
-6. Refreshed the production source/intelligence proof on May 16, 2026:
-   production revision `guard0-miniapp-112c7b7`, 30 source lanes, 17
-   no-network connector candidates, and new disabled-by-default ThreatFox,
-   Chainalysis sanctions oracle, and Google Cloud Web Risk lanes.
+6. Refreshed the production source/intelligence proof on May 16, 2026, then
+   expanded the AML/vendor lane on May 17, 2026: production revision
+   `guard0-miniapp-112c7b7`, 34 source lanes, 20 no-network connector
+   candidates, and disabled-by-default ThreatFox, Chainalysis sanctions
+   API/Oracle, TRM Wallet Screening/BLOCKINT, and Google Cloud Web Risk lanes.
 
 ## Manual Recovery Note
 

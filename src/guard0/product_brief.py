@@ -31,6 +31,7 @@ def product_brief() -> dict[str, Any]:
         "/api/experiments/frontier",
         "/api/experiments/run",
         "/api/developer-kit",
+        "/api/product/strategy-review",
         "/api/0g/proof-ladder",
         "/api/0g/private-computer",
         "/api/0g/peer-protection",

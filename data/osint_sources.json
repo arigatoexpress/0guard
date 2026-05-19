@@ -1,6 +1,6 @@
 {
   "schema": "0guard.osint_source_registry.v1",
-  "generated_at": "2026-05-16T14:40:00Z",
+  "generated_at": "2026-05-17T14:17:28Z",
   "sources": [
     {
       "id": "defillama_hacks",
@@ -157,6 +157,20 @@
       "caveats": "Not specific to DeFi or 0G; keep separate from transaction-level policy decisions."
     },
     {
+      "id": "mitre_attack_lazarus_g0032",
+      "name": "MITRE ATT&CK Lazarus Group G0032",
+      "owner": "MITRE ATT&CK",
+      "url": "https://attack.mitre.org/groups/G0032/",
+      "homepage": "https://attack.mitre.org/",
+      "retrieval_mode": "public_manual_review",
+      "adapter": "catalog_only",
+      "enabled_by_default": true,
+      "freshness_ttl_seconds": 86400,
+      "license_or_rights": "Public ATT&CK knowledge-base material. Use technique IDs, group aliases, links, and defensive mappings with attribution.",
+      "output_policy": "Use as adversary TTP context for DPRK/Lazarus defense narratives and detector hypotheses; do not assert wallet attribution from ATT&CK alone.",
+      "caveats": "TTP context is not a blockchain-address verdict and must be corroborated by wallet, domain, transaction, or vendor evidence before user-facing blocking."
+    },
+    {
       "id": "ofac_sanctions",
       "name": "OFAC Sanctions List Service",
       "owner": "U.S. Treasury OFAC",
@@ -174,8 +188,8 @@
       "id": "chainalysis_sanctions_oracle",
       "name": "Chainalysis Sanctions Oracle",
       "owner": "Chainalysis",
-      "url": "https://go.chainalysis.com/chainalysis-oracle-docs.html",
-      "homepage": "https://www.chainalysis.com/",
+      "url": "https://auth-developers.chainalysis.com/sanctions-screening/oracle/chainalysis-oracle/introduction",
+      "homepage": "https://auth-developers.chainalysis.com/sanctions-screening/docs/get-started/get-more-help",
       "retrieval_mode": "public_onchain_oracle",
       "adapter": "planned_sanctions_oracle",
       "enabled_by_default": false,
@@ -183,6 +197,48 @@
       "license_or_rights": "Free on-chain sanctions oracle with no accuracy guarantee. Treat as one defensive signal, not legal advice.",
       "output_policy": "Use as a binary sanctions precheck for EVM addresses, returning oracle result, chain, contract link, and receipt hash only.",
       "caveats": "Disabled by default; do not represent the result as compliance certification or a complete sanctions screen."
+    },
+    {
+      "id": "chainalysis_sanctions_api",
+      "name": "Chainalysis Sanctions Screening API",
+      "owner": "Chainalysis",
+      "url": "https://auth-developers.chainalysis.com/sanctions-screening/api-reference/reference/check-if-an-address-is-sanctioned",
+      "homepage": "https://auth-developers.chainalysis.com/sanctions-screening/api-reference/api-overview",
+      "retrieval_mode": "api_key_required",
+      "adapter": "planned_chainalysis_sanctions_api",
+      "enabled_by_default": false,
+      "freshness_ttl_seconds": 3600,
+      "license_or_rights": "Chainalysis API key and platform terms apply. Use for backend-only exact-address sanctions checks after credential custody and retention rules are approved.",
+      "output_policy": "Return only sanctions category/name, source URL hash, redacted checked address, lookup timestamp, and derived verdict; do not expose raw descriptions or API keys.",
+      "caveats": "Disabled by default; API results are not legal advice and should be paired with OFAC/source links and operator review for compliance decisions."
+    },
+    {
+      "id": "trm_wallet_screening",
+      "name": "TRM Wallet Screening",
+      "owner": "TRM Labs",
+      "url": "https://www.trmlabs.com/blockchain-intelligence-platform/wallet-screening",
+      "homepage": "https://www.trmlabs.com/contact-us",
+      "retrieval_mode": "commercial_api_vendor_review",
+      "adapter": "planned_trm_wallet_screening",
+      "enabled_by_default": false,
+      "freshness_ttl_seconds": 300,
+      "license_or_rights": "TRM commercial terms and product access apply. Use only after a vendor-approved integration path, security review, and attribution/retention policy are agreed.",
+      "output_policy": "Return derived wallet risk category, confidence band, source ids or links, redacted wallet, and review recommendation only; do not mirror TRM raw intelligence or investigation data.",
+      "caveats": "Disabled by default; do not claim live TRM screening until credentials, terms, and operator acceptance are in place."
+    },
+    {
+      "id": "trm_blockint_api",
+      "name": "TRM BLOCKINT API",
+      "owner": "TRM Labs",
+      "url": "https://www.trmlabs.com/blockchain-intelligence-platform/blockint-api",
+      "homepage": "https://www.trmlabs.com/contact-us",
+      "retrieval_mode": "commercial_api_vendor_review",
+      "adapter": "planned_trm_blockint_api",
+      "enabled_by_default": false,
+      "freshness_ttl_seconds": 300,
+      "license_or_rights": "TRM commercial API terms apply. Use only for approved high-volume blockchain intelligence enrichment after demo/vendor onboarding.",
+      "output_policy": "Return derived exposure, entity/risk class, confidence, redacted address, source links, and evidence hashes only; never resell or expose raw TRM payloads.",
+      "caveats": "Disabled by default; outreach was sent to TRM to request the right developer, sandbox, and partner path."
     },
     {
       "id": "urlhaus",

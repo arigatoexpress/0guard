@@ -28,7 +28,7 @@ no outbound Telegram messages from the workbench.
 | 2 | [0G mainnet anchor tx](https://chainscan.0g.ai/tx/0x64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed) | A real 0G mainnet transaction anchoring a critical `deny` receipt. |
 | 3 | [Mainnet proof JSON](https://arigatoexpress.github.io/0guard/hackathon-0g/mainnet-proof.json) | Contract, deploy tx, anchor tx, receipt hash, and JSON-RPC readback evidence. |
 | 4 | [Hosted Telegram Mini App preview](https://guard0-miniapp-s77j6bxyra-uc.a.run.app/telegram) | Mobile wallet-alert UX and Mira explanation preview with sends disabled. |
-| 5 | [Hosted readiness API](https://guard0-miniapp-s77j6bxyra-uc.a.run.app/api/readyz) | Live operational posture, mainnet verifier config, detector coverage, and no-side-effect safety flags. |
+| 5 | [Hosted readiness API](https://guard0-miniapp-s77j6bxyra-uc.a.run.app/api/readyz) | Operational posture, mainnet verifier config, detector coverage, safety flags, and explicit production hard gates. |
 | 6 | Run `pytest -q` locally | Regression proof for policy, data, public docs, app routes, and integration contracts. |
 
 ## Mainnet Proof
@@ -57,16 +57,19 @@ format accepted by 0G Chain Scan.
 | Incident intelligence | Live | `GET /api/data/summary`, `GET /api/data/provenance`, `GET /api/data/signature-map` |
 | Detector coverage | Live | 28 of 28 incident-derived seeds covered; `coverageRatio: 1.0` |
 | 0G Chain receipt anchor | Live on mainnet | `docs/hackathon-0g/mainnet-proof.json` |
-| 0G Storage receipts | Storage-ready, not auto-uploaded | `zero_g.storage_receipt.root_hash` from `/api/evaluate` |
+| 0G Storage receipts | Storage-ready bundle manifest and local hash readback, not auto-uploaded | `zero_g.storage_receipt.root_hash`, `/api/0g/storage-upload/manifest` |
 | 0G node telemetry | Live read-only routes, no funding action | `/api/0g/da-node/status`, `/api/0g/storage-node/status`, `/api/0g/node-business` |
 | RV funded storage soak | Local snapshot collector, funding expansion blocked | `scripts/rv_0g_storage_soak_snapshot.py`, `/api/0g/storage-node/status?snapshot=1` |
-| 0G Private Computer | Adapter-ready manifest, no paid inference | `/api/0g/private-computer` |
+| RV storage peer diagnostics | Redacted collector shows peer issue is shallow discovery, not local TCP/UDP bind failure | `scripts/rv_0g_peer_diagnostics.py`, `/api/0g/storage-node/peer-diagnostics?snapshot=1` |
+| 0G Private Computer | Adapter-ready manifest plus no-inference smoke contract and prompt scrubber | `/api/0g/private-computer`, `/api/0g/private-computer/smoke-preview` |
 | Local Windows/Pi inference mesh | Read-only live status, no prompt execution | `/api/local-inference/status?live=1`, `/api/telegram/local-inference-preview` |
+| Production gap matrix | Live claim classifier for real/local/source-ready/mock lanes | `/api/production/gaps`, `/api/model/training-roadmap` |
+| Strategic review | Critical product spine, build order, and what to defer | `/api/product/strategy-review`, `docs/STRATEGIC_REVIEW.md` |
 | Peer protection and Pi mesh | Live no-send/no-broadcast previews plus RV Pi Ethernet snapshot ingest | `scripts/rv_pi_mesh_snapshot.py`, `/api/0g/pi-mesh?snapshot=1`, `/api/0g/peer-protection`, `/api/peer/outreach-preview` |
-| x402 data products | Rights-cleared product manifest, no settlement | `/api/x402/data-products` |
-| Historical backfill | Durable data plan, no live fetch | `/api/data/backfill-plan` |
+| x402 data products | Rights-cleared product manifest plus HTTP-402 dry-run, no settlement | `/api/x402/data-products`, `/api/x402/dry-run/wallet-preflight` |
+| Historical backfill | Durable data plan plus first eval/backfill artifacts | `/api/data/backfill-plan`, `/api/model/incident-eval-set`, `/api/reputation/backfill/status` |
 | 0G Compute | Router/direct setup path documented, not claimed live | Stated in `docs/hackathon-0g/mainnet-gap-register.md` |
-| Reputation layer | Live derived normalizer and shadow cache | `/api/reputation/*` routes |
+| Reputation layer | Live derived normalizer, shadow cache, and first PhishDestroy derived backfill artifact | `/api/reputation/*` routes, `data/backfill/reputation_features/phishdestroy/latest.json` |
 | Telegram Mini App | Live preview, no outbound sends | `/telegram`, `/api/telegram/miniapp/preview` |
 | Cross-chain guardrails | Live read-only catalog | `/api/integrations/cross-chain`, `/api/integrations/external-guardrails` |
 | Developer kit | Live | `/api/developer-kit`, `examples/native_preflight/` |
@@ -111,9 +114,15 @@ through public read-only APIs. Current repo truth:
 | Incidents | 28 |
 | Reported losses covered | `$634,862,000` |
 | Detector coverage | 28 of 28 incident-derived seeds |
-| Source registry | 30 tracked source lanes |
+| Source registry | 34 tracked source lanes |
 | Provenance coverage | 1.0 without live fetches |
 | Raw upstream payload resale | Disabled |
+
+Examples of source lanes include open phishing feeds, OFAC, Chainalysis
+Sanctions API/Oracle, TRM Wallet Screening/BLOCKINT, Forta labels, GoPlus,
+Chainabuse, MITRE ATT&CK Lazarus context, and Google Web Risk. External vendor
+connectors stay disabled until credentials, terms, retention rules, and
+operator acceptance are reviewed.
 
 Examples of promoted detector categories include durable nonce/social
 engineering, unsafe-cast math, UUPS/admin upgrade compromise, bridge message
@@ -182,9 +191,16 @@ curl -s http://127.0.0.1:8109/api/product/brief | python3 -m json.tool
 curl -s http://127.0.0.1:8109/api/0g/status | python3 -m json.tool
 curl -s 'http://127.0.0.1:8109/api/0g/da-node/status?live=1' | python3 -m json.tool
 curl -s 'http://127.0.0.1:8109/api/0g/storage-node/status?live=1' | python3 -m json.tool
+curl -s 'http://127.0.0.1:8109/api/0g/storage-node/peer-diagnostics?snapshot=1' | python3 -m json.tool
+curl -s http://127.0.0.1:8109/api/0g/storage-upload/manifest | python3 -m json.tool
 curl -s http://127.0.0.1:8109/api/0g/private-computer | python3 -m json.tool
+curl -s http://127.0.0.1:8109/api/0g/private-computer/smoke-preview | python3 -m json.tool
 curl -s 'http://127.0.0.1:8109/api/local-inference/status?live=1' | python3 -m json.tool
 curl -s 'http://127.0.0.1:8109/api/telegram/local-inference-preview?live=1' | python3 -m json.tool
+curl -s http://127.0.0.1:8109/api/production/gaps | python3 -m json.tool
+curl -s http://127.0.0.1:8109/api/product/strategy-review | python3 -m json.tool
+curl -s http://127.0.0.1:8109/api/model/training-roadmap | python3 -m json.tool
+curl -s 'http://127.0.0.1:8109/api/model/incident-eval-set?limit=3' | python3 -m json.tool
 curl -s 'http://127.0.0.1:8109/api/0g/node-business' | python3 -m json.tool
 curl -s 'http://127.0.0.1:8109/api/0g/receipt?receipt_hash=0x0000000000000000000000000000000000000000000000000000000000000000' | python3 -m json.tool
 curl -s http://127.0.0.1:8109/api/data/summary | python3 -m json.tool
@@ -192,6 +208,8 @@ curl -s 'http://127.0.0.1:8109/api/data/provenance?live=1' | python3 -m json.too
 curl -s http://127.0.0.1:8109/api/data/signature-map | python3 -m json.tool
 curl -s http://127.0.0.1:8109/api/data/backfill-plan | python3 -m json.tool
 curl -s http://127.0.0.1:8109/api/x402/data-products | python3 -m json.tool
+curl -s -i http://127.0.0.1:8109/api/x402/dry-run/wallet-preflight
+curl -s http://127.0.0.1:8109/api/reputation/backfill/status | python3 -m json.tool
 curl -s http://127.0.0.1:8109/api/hackathon/threat-passport | python3 -m json.tool
 curl -s http://127.0.0.1:8109/api/data/detection-coverage | python3 -m json.tool
 curl -s http://127.0.0.1:8109/api/reputation/shadow-cache | python3 -m json.tool
@@ -223,13 +241,14 @@ python3 -m guard0.cli proof-ladder \
 
 | Area | Routes |
 | --- | --- |
-| Runtime | `/api/health`, `/api/healthz`, `/api/readyz`, `/api/product/brief` |
+| Runtime | `/api/health`, `/api/healthz`, `/api/readyz`, `/api/product/brief`, `/api/production/gaps` |
 | Policy | `/api/evaluate`, `/api/hack-check`, `/api/native-preflight` |
-| 0G | `/api/0g/status`, `/api/0g/receipt`, `/api/0g/proof-ladder`, `/api/0g/da-node/status`, `/api/0g/storage-node/status`, `/api/0g/node-business`, `/api/0g/private-computer`, `/api/0g/hot-wallet-resources`, `/api/0g/peer-protection`, `/api/0g/pi-mesh` |
+| 0G | `/api/0g/status`, `/api/0g/receipt`, `/api/0g/proof-ladder`, `/api/0g/da-node/status`, `/api/0g/storage-node/status`, `/api/0g/storage-node/peer-diagnostics`, `/api/0g/storage-upload/manifest`, `/api/0g/node-business`, `/api/0g/private-computer`, `/api/0g/private-computer/smoke-preview`, `/api/0g/hot-wallet-resources`, `/api/0g/peer-protection`, `/api/0g/pi-mesh` |
 | Local inference | `/api/local-inference/status`, `/api/telegram/local-inference-preview` |
+| Model roadmap | `/api/model/training-roadmap`, `/api/model/incident-eval-set`, `/api/0g/private-computer`, `/api/0g/private-computer/smoke-preview` |
 | Data | `/api/data/summary`, `/api/data/incidents`, `/api/data/provenance`, `/api/data/detection-coverage`, `/api/data/signature-map`, `/api/data/backfill-plan` |
-| OSINT and x402 | `/api/osint/sources`, `/api/osint/readiness`, `/api/osint/signals`, `/api/intelligence/*`, `/api/x402/data-products` |
-| Reputation | `/api/reputation/probe`, `/api/reputation/connectors`, `/api/reputation/adapters`, `/api/reputation/shadow-cache` |
+| OSINT and x402 | `/api/osint/sources`, `/api/osint/readiness`, `/api/osint/signals`, `/api/intelligence/*`, `/api/x402/data-products`, `/api/x402/dry-run/wallet-preflight` |
+| Reputation | `/api/reputation/probe`, `/api/reputation/connectors`, `/api/reputation/backfill/status`, `/api/reputation/adapters`, `/api/reputation/shadow-cache` |
 | Telegram/Mira | `/telegram`, `/api/telegram/*`, `/api/mira/claim-preview` |
 | Integrations | `/api/integrations/cross-chain`, `/api/integrations/metamask`, `/api/integrations/arbitrum`, `/api/integrations/ika`, `/api/integrations/external-guardrails` |
 | Judge packet | `/api/hackathon/submission-brief`, `/api/hackathon/submission-packet`, `/api/hackathon/readiness`, `/api/hackathon/threat-passport` |
@@ -242,9 +261,12 @@ python3 -m guard0.cli proof-ladder \
 | `src/guard0/` | Flask app, CLI, policy engine, signatures, OSINT, reputation, Telegram, and integration routes. |
 | `contracts/` and `foundry/` | 0G mainnet receipt-anchor Solidity source and build artifacts. |
 | `data/april_2026_incidents.json` | Source-linked incident dataset used for detector coverage. |
+| `data/evals/incident_detector_eval.v1.jsonl` | Deterministic model-eval cases generated from the incident corpus. |
+| `data/backfill/reputation_features/phishdestroy/latest.json` | First live-derived reputation feature artifact: hashes/counts/evidence only, no raw domains. |
 | `data/osint_sources.json` | Rights-aware source registry and output policy. |
 | `docs/hackathon-0g/mainnet-proof.json` | Canonical 0G mainnet contract, deploy tx, anchor tx, and RPC readback proof. |
 | `docs/hackathon-0g/mainnet-gap-register.md` | Honest live-vs-planned status for Chain, Storage, Compute, Telegram, and mainnet operations. |
+| `docs/PRODUCTION_GAP_MATRIX.md` | Real/local/source-ready/mock classification plus the model-training and data-production plan. |
 | `docs/hackathon-0g/assets/README.md` | Public media registry. Submitted video assets are archived behind proof links, not used as the main proof. |
 | `docs/0G_PRIVATE_COMPUTE_AND_HOT_WALLET_RUNBOOK.md` | Operator-gated setup path for Router deposits, API keys, and hot-wallet roles; no spend or key exposure. |
 | `docs/RV_0G_STORAGE_SOAK_OPERATIONS.md` | Read-only RV storage soak collector and expansion blocker runbook; no signing, sends, or fund movement. |
@@ -286,6 +308,11 @@ python scripts/telegram_post.py --health \
 curl -s 'http://127.0.0.1:8109/api/telegram/status?live=1' | python3 -m json.tool
 ```
 
+When `TELEGRAM_OPT_IN_STORE_PATH` is unset, the local app persists opt-ins to
+`content/telegram_opt_ins.local.json`, which is git-ignored and still cannot
+send Telegram messages. Use Firestore, Cloud SQL, or another managed store
+before treating Cloud Run opt-ins as durable production state.
+
 ## RV Pi Mesh Snapshot
 
 The two Raspberry Pis are treated as edge sentinels, not key holders. After the
@@ -296,10 +323,10 @@ Ethernet cable is connected, refresh the public-safe snapshot:
 curl -s 'http://127.0.0.1:8109/api/0g/pi-mesh?snapshot=1' | python3 -m json.tool
 ```
 
-The current expected partial-ready state is:
+The current expected ready state is:
 
 - `rvpi-a` online on Wi-Fi plus Ethernet, with `eth0` carrier and the edge API active.
-- `rvpi-b` reachable over Ethernet on `10.77.4.12:22`, but identity/runtime not yet verified.
+- `rvpi-b` verified over Ethernet on `10.77.4.12`, with SSH, edge API, and node-exporter reachable from `rvpi-a`.
 - no private keys, wallet signatures, Telegram sends, or service mutations from the workbench.
 
 For a real Telegram Mini App, send `window.Telegram.WebApp.initData` to

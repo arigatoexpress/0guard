@@ -59,7 +59,7 @@ def test_0g_proof_receipts_are_returned_when_requested():
     assert payload["zero_g"]["anchor_requested"] is True
     assert payload["zero_g"]["storage_requested"] is True
     assert payload["zero_g"]["chain_anchor"]["status"] == "preflight"
-    assert payload["zero_g"]["chain_anchor"]["chain_id"] == 16602
+    assert payload["zero_g"]["chain_anchor"]["chain_id"] == 16661
     assert payload["zero_g"]["storage_receipt"]["stored"] is False
     assert payload["zero_g"]["storage_receipt"]["storage_mode"] == "receipt_only_no_live_upload"
     assert payload["zero_g"]["storage_receipt"]["root_hash"]

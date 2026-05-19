@@ -2,7 +2,7 @@
   "title": "Main account 0guard HackQuest update",
   "tweets": [
     "0guard is submitted for the 0G APAC Hackathon.\n\nBuilt as a pre-wallet firewall for AI agents: intent, calldata, policy, reputation context, and exploit signatures are checked before a signer sees the request.\n\n#0GHackathon #BuildOn0G",
-    "What is live now:\n\n- Telegram Mini App\n- public proof hub\n- 0G mainnet receipt anchor\n- 30 rights-aware source lanes\n- 17 no-network reputation connector candidates\n- deterministic receipts\n\nNo signing. No broadcasts. No fund movement.",
+    "What is live now:\n\n- Telegram Mini App\n- public proof hub\n- 0G mainnet receipt anchor\n- 34 rights-aware source lanes\n- 20 no-network reputation connector candidates\n- deterministic receipts\n\nNo signing. No broadcasts. No fund movement.",
     "The thesis is simple: AI agents should not get to the wallet first.\n\n0guard makes the security checkpoint native to agent workflows instead of stapled on after the wallet prompt.",
     "Live proof:\nhttps://arigatoexpress.github.io/0guard/hackathon-0g/\n\nMini App:\nhttps://guard0-miniapp-s77j6bxyra-uc.a.run.app/telegram\n\nRepo:\nhttps://github.com/arigatoexpress/0guard\n\nNext: the cleaner video cut."
   ]

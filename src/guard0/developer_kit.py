@@ -70,6 +70,11 @@ def developer_kit_manifest() -> dict[str, Any]:
                 "purpose": "Operational readiness profile for mainnet verifier config, data freshness, shadow cache, and safety posture.",
             },
             {
+                "method": "GET",
+                "path": "/api/deployment/readiness",
+                "purpose": "No-side-effect promotion packet for Pages, hosted API, Docker, Render, and Cloud Run readiness.",
+            },
+            {
                 "method": "POST",
                 "path": "/api/native-preflight",
                 "purpose": "Primary allow/review/deny verdict before a signing surface.",

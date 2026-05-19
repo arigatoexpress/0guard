@@ -124,7 +124,8 @@ def exercise_workbench(page: Page) -> None:
     expect(page.locator("#zg-status-output")).to_contain_text('"signingEnabled": false')
     page.locator("#verify-receipt").click()
     expect(page.locator("#zg-status-output")).to_contain_text("0guard.0g_receipt_verifier.v1")
-    expect(page.locator("#zg-status-output")).to_contain_text("contract_not_configured")
+    expect(page.locator("#zg-status-output")).to_contain_text('"verified": false')
+    expect(page.locator("#zg-status-output")).to_contain_text('"readOnly": true')
     expect(page.locator("#zg-status-output")).to_contain_text('"signingEnabled": false')
     expect(page.locator("#data-flow-output")).to_contain_text("0guard.incident_summary.v1")
     expect(page.locator("#data-flow-output")).to_contain_text('"incidentCount": 28')
@@ -625,7 +626,8 @@ def exercise_workbench(page: Page) -> None:
     assert receipt.ok
     receipt_body = receipt.json()
     assert receipt_body["schema"] == "0guard.0g_receipt_verifier.v1"
-    assert receipt_body["status"] == "contract_not_configured"
+    assert receipt_body["status"] in {"contract_not_configured", "not_found"}
+    assert receipt_body["verified"] is False
     assert receipt_body["safety"]["signingEnabled"] is False
 
     evaluate = page.request.post(

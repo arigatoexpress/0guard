@@ -94,6 +94,9 @@ def test_reputation_connector_manifest_is_no_network_and_activation_ready():
         "forta_graphql_api",
         "scam_sniffer_database",
         "chainalysis_sanctions_oracle",
+        "chainalysis_sanctions_api",
+        "trm_wallet_screening",
+        "trm_blockint_api",
         "urlhaus",
         "threatfox_iocs",
         "google_web_risk",
@@ -104,10 +107,16 @@ def test_reputation_connector_manifest_is_no_network_and_activation_ready():
     assert by_id["goplus_security"]["credentialRequired"] is True
     assert by_id["chainabuse"]["credentialRequired"] is True
     assert by_id["chainalysis_sanctions_oracle"]["credentialRequired"] is False
+    assert by_id["chainalysis_sanctions_api"]["credentialRequired"] is True
+    assert by_id["trm_wallet_screening"]["credentialRequired"] is True
+    assert by_id["trm_blockint_api"]["credentialRequired"] is True
     assert by_id["threatfox_iocs"]["credentialRequired"] is True
     assert by_id["google_web_risk"]["credentialRequired"] is True
     assert by_id["goplus_security"]["appliesToSubject"] is True
     assert by_id["chainalysis_sanctions_oracle"]["appliesToSubject"] is True
+    assert by_id["chainalysis_sanctions_api"]["appliesToSubject"] is True
+    assert by_id["trm_wallet_screening"]["appliesToSubject"] is True
+    assert by_id["trm_blockint_api"]["appliesToSubject"] is True
     assert by_id["threatfox_iocs"]["appliesToSubject"] is True
     assert by_id["google_web_risk"]["appliesToSubject"] is True
     assert by_id["tonapi_jettons"]["appliesToSubject"] is False

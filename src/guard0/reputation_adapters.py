@@ -210,7 +210,9 @@ def normalize_reputation_adapter_payload(payload: dict[str, Any] | None = None) 
     if not isinstance(body, dict):
         raise ValueError("payload must be an object")
 
-    source_id = str(body.get("sourceId") or body.get("source_id") or "").strip()
+    source_id = str(
+        body.get("sourceId") or body.get("source_id") or body.get("source") or ""
+    ).strip()
     if not source_id:
         raise ValueError("sourceId is required")
     if source_id not in {adapter["id"] for adapter in _ADAPTERS}:

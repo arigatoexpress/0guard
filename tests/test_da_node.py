@@ -164,6 +164,7 @@ def test_storage_node_status_loads_rv_funded_soak_snapshot(tmp_path):
                     "logSyncHeight": 24345245,
                     "logSyncBlock": "0xabc",
                     "nextTxSeq": 46135,
+                    "shardConfig": {"shardId": 0, "numShard": 1},
                     "networkIdentity": {
                         "chainId": 16661,
                         "flowAddress": "0x62d4144db0f0a6fbbaeb6296c785c71b3d57c526",
@@ -203,17 +204,75 @@ def test_storage_node_status_loads_rv_funded_soak_snapshot(tmp_path):
     status = build_storage_node_status(live=False, status_file=str(status_path))
 
     assert status["mode"] == "rv_soak_snapshot_file"
+    assert status["source"] == "rv_soak_snapshot_file"
+    assert status["status"] == "funded_soak_syncing"
+    assert status["processStatus"] == "running"
+    assert "connected_peers_below_target_8" in status["blockers"]
     assert status["storageRpc"]["source"] == "rv_soak_snapshot_file"
     assert status["storageRpc"]["connectedPeers"] == 4
+    assert status["storageRpc"]["syncGapBlocks"] == 9173492
+    assert status["storageRpc"]["shardConfig"] == {"shardId": 0, "numShard": 1}
+    assert status["sync"]["latestMainnetBlock"] == 33518737
+    assert status["sync"]["shardConfig"] == {"shardId": 0, "numShard": 1}
+    assert status["sync"]["dbSizeHuman"] == "7.7G"
     assert status["readiness"]["status"] == "funded_soak_syncing"
     assert status["readiness"]["noKeyMode"] is False
     assert status["funding"]["status"] == "funded_soak_monitoring_only"
+    assert status["fundingSummary"]["activeMinerBalanceOg"] == 0.25
+    assert status["fundingSummary"]["largeFundingExpansionReady"] is False
     assert status["funding"]["activeMinerBalanceOg"] == 0.25
     assert status["funding"]["hundredOgTransferSent"] is False
     assert status["fundedSoak"]["syncGapBlocks"] == 9173492
+    assert status["fundedSoak"]["shardConfig"] == {"shardId": 0, "numShard": 1}
     encoded = json.dumps(status)
     assert "must_strip" not in encoded
     assert status["safety"]["privateKeysReturned"] is False
+
+
+def test_storage_node_peer_only_blocker_is_not_reported_as_syncing(tmp_path):
+    status_path = tmp_path / "rv-soak-peer-only.json"
+    status_path.write_text(
+        json.dumps(
+            {
+                "schema": "0guard.rv_0g_storage_soak_snapshot.v1",
+                "storageRpc": {
+                    "status": "ok",
+                    "connectedPeers": 2,
+                    "logSyncHeight": 33532334,
+                    "nextTxSeq": 105577,
+                    "networkIdentity": {
+                        "chainId": 16661,
+                        "flowAddress": "0x62d4144db0f0a6fbbaeb6296c785c71b3d57c526",
+                    },
+                },
+                "health": {
+                    "zgsRunning": True,
+                    "expansionBlockers": ["connected_peers_below_target_8"],
+                },
+                "sync": {
+                    "latestMainnetBlock": 33532335,
+                    "logSyncHeight": 33532334,
+                    "syncGapBlocks": 1,
+                    "nextTxSeq": 105577,
+                },
+                "config": {"minerKeyPresent": True},
+                "funding": {
+                    "activeMinerAddress": "0xf5c1c3eb88c262adb451c1ce3b1c391f7d968ecd",
+                    "activeMinerBalanceOg": 0.25,
+                    "onlyPriorTestFundingObserved": True,
+                    "hundredOgTransferSent": False,
+                    "largeTransferDetected": False,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    status = build_storage_node_status(live=False, status_file=str(status_path))
+
+    assert status["status"] == "funded_soak_blocked"
+    assert status["sync"]["syncGapBlocks"] == 1
+    assert status["blockers"] == ["connected_peers_below_target_8"]
 
 
 def test_telegram_storage_node_preview_is_no_send_digest():

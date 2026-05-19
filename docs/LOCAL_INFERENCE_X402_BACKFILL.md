@@ -10,8 +10,13 @@ safety boundary.
 | --- | --- | --- |
 | Local inference mesh | `/api/local-inference/status` | Read-only live probe when `?live=1`; no prompts. |
 | Telegram digest | `/api/telegram/local-inference-preview` | Preview-only message body; no Telegram send. |
-| x402 data products | `/api/x402/data-products` | Product manifest only; no 402 settlement. |
-| Historical backfill | `/api/data/backfill-plan` | Backfill schema and source plan; no live fetch. |
+| 0G Private Computer smoke | `/api/0g/private-computer/smoke-preview` | Prompt scrub and no-inference request contract; paid calls blocked by env/key/budget gates. |
+| x402 data products | `/api/x402/data-products`, `/api/x402/dry-run/wallet-preflight` | Product manifest plus dry-run HTTP 402; no settlement. |
+| Historical backfill | `/api/data/backfill-plan`, `/api/reputation/backfill/status` | Backfill schema plus first derived reputation artifact. |
+| Production gap matrix | `/api/production/gaps` | Real/local/source-ready/mock classifier; no live fetch. |
+| Model training roadmap | `/api/model/training-roadmap` | Eval-first 0GM/local model data plan; no training run. |
+| Incident eval set | `/api/model/incident-eval-set` | Deterministic JSONL-ready cases from the real incident corpus. |
+| Storage bundle | `/api/0g/storage-upload/manifest` | Public-safe bundle hashes and local readback; no live upload. |
 
 The Windows machine is treated as the future heavy local inference host. The
 Raspberry Pis are treated as sentinels and proof caches, not key holders. The
@@ -57,7 +62,8 @@ facilitator. For ZeroGuard, the sellable unit is derived defensive analysis:
 Preparation order:
 
 1. Keep `/api/x402/data-products` as a manifest.
-2. Add a dry-run protected route that returns fixture 402 metadata.
+2. Use `/api/x402/dry-run/wallet-preflight` as the dry-run protected route
+   that returns fixture 402 metadata.
 3. Add MetaMask Smart Account / ERC-7710 permission checks for bounded access.
 4. Add 1Shot or CDP facilitator testing on testnet after spend limits are fixed.
 5. Only then enable mainnet settlement for a single low-cost route.
@@ -85,6 +91,43 @@ Rules:
 - Put every paid or licensed source behind a rights envelope before it can affect
   a product route.
 
-The current schema is exposed by `/api/data/backfill-plan`; implementation should
-start with append-only JSONL, then graduate to DuckDB or SQLite when query volume
-justifies it.
+The current schema is exposed by `/api/data/backfill-plan`, and the first live
+derived reputation artifact is exposed by `/api/reputation/backfill/status`.
+Regenerate it with:
+
+```bash
+PYTHONPATH=src .venv/bin/python scripts/reputation_backfill_worker.py \
+  --source phishdestroy_destroylist \
+  --live \
+  --out data/backfill/reputation_features/phishdestroy/latest.json
+```
+
+Implementation should continue with append-only JSONL, then graduate to DuckDB
+or SQLite when query volume justifies it.
+
+## Production Gap And Model Roadmap
+
+`/api/production/gaps` is the higher-level truth surface. It joins the source
+registry, readiness checks, storage-node snapshot, Pi mesh snapshot, x402 plan,
+0G Private Computer manifest, and backfill plan into one machine-readable
+matrix. Its job is to keep claims crisp:
+
+- `live_real_data` means we can safely claim it today.
+- `local_only` means real operator evidence exists but it is not hosted or
+  externally durable yet.
+- `source_ready_live_pending` means the API/SDK/source is known but the live
+  production path is not active.
+- `mock_fixture_only` means the artifact is a demo or test fixture.
+
+`/api/model/training-roadmap` keeps the 0GM/local model loop eval-first. The
+allowed model jobs are summarization, dedupe, draft review, and explanation of
+deterministic verdict packets. The model is not authority for allow/deny
+decisions, money movement, Telegram sends, or node funding.
+
+The first export is `data/evals/incident_detector_eval.v1.jsonl`, generated from
+the existing 28 source-linked April 2026 incidents:
+
+```bash
+PYTHONPATH=src .venv/bin/python scripts/build_incident_eval_set.py \
+  --out data/evals/incident_detector_eval.v1.jsonl
+```

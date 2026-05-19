@@ -22,9 +22,9 @@ from urllib.parse import urlencode
 
 import requests
 
-DEFAULT_BASE_URL = "https://candidate-acdc011---guard0-miniapp-s77j6bxyra-uc.a.run.app"
+DEFAULT_BASE_URL = "https://guard0-miniapp-s77j6bxyra-uc.a.run.app"
 FALLBACK_BASE_URLS: tuple[str, ...] = (
-    "https://guard0-miniapp-s77j6bxyra-uc.a.run.app",
+    "https://candidate-acdc011---guard0-miniapp-s77j6bxyra-uc.a.run.app",
     "https://candidate-6f07f89---guard0-miniapp-s77j6bxyra-uc.a.run.app",
 )
 DEFAULT_GCLOUD_PROJECT = "sapphire-479610"

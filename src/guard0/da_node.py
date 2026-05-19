@@ -133,10 +133,17 @@ def build_storage_node_status(
 
     readiness = _storage_readiness(cfg, rpc_status, file_status)
     funded_soak = _storage_funded_soak_summary(file_status)
+    sync_summary = _storage_sync_summary(rpc_status, funded_soak)
+    funding_status = _storage_funding_status(cfg, readiness, funded_soak)
     return {
         "schema": STORAGE_NODE_STATUS_SCHEMA,
         "generatedAt": _utc_now(),
         "mode": _storage_mode(live=live, rpc_status=rpc_status, file_status=file_status),
+        "status": readiness["status"],
+        "source": rpc_status.get("source")
+        or ("live_storage_rpc_read_only" if live else "configured_snapshot"),
+        "processStatus": readiness["processStatus"],
+        "blockers": readiness["blockedBy"],
         "node": {
             "name": cfg["nodeName"],
             "host": cfg["host"],
@@ -158,9 +165,18 @@ def build_storage_node_status(
         "storageRpc": rpc_status,
         "fileStatus": file_status,
         "fundedSoak": funded_soak,
+        "sync": sync_summary,
         "readiness": readiness,
-        "funding": {
-            **_storage_funding_status(cfg, readiness, funded_soak),
+        "funding": funding_status,
+        "fundingSummary": {
+            "status": funding_status["status"],
+            "activeMinerAddress": funded_soak.get("activeMinerAddress"),
+            "activeMinerBalanceOg": funded_soak.get("activeMinerBalanceOg"),
+            "onlyPriorTestFundingObserved": funded_soak.get("onlyPriorTestFundingObserved"),
+            "hundredOgTransferSent": funded_soak.get("hundredOgTransferSent"),
+            "largeTransferDetected": funded_soak.get("largeTransferDetected"),
+            "largeFundingExpansionReady": readiness["largeFundingExpansionReady"],
+            "mainnetFundingRecommended": False,
         },
         "yield": {
             "status": "not_inferred_without_official_reward_source",
@@ -442,7 +458,12 @@ def _storage_readiness(
         process_status = (file_status or {}).get("processStatus", "not_reported")
 
     if funded_soak.get("activeMinerKeyPresent"):
-        status = "funded_soak_expansion_ready" if not blockers else "funded_soak_syncing"
+        if not blockers:
+            status = "funded_soak_expansion_ready"
+        elif any("sync" in blocker or "log" in blocker for blocker in blockers):
+            status = "funded_soak_syncing"
+        else:
+            status = "funded_soak_blocked"
     else:
         status = "ready_for_no_key_soak" if not blockers else "blocked"
     return {
@@ -508,6 +529,7 @@ def _read_storage_status(rpc: str, timeout_seconds: float) -> dict[str, Any]:
                 "logSyncBlock": result.get("logSyncBlock"),
                 "nextTxSeq": result.get("nextTxSeq"),
                 "networkIdentity": identity,
+                "shardConfig": _read_storage_shard_config(rpc, timeout_seconds),
                 "latencyMs": int((time.perf_counter() - started) * 1000),
             }
         )
@@ -520,6 +542,21 @@ def _read_storage_status(rpc: str, timeout_seconds: float) -> dict[str, Any]:
             }
         )
     return status
+
+
+def _read_storage_shard_config(rpc: str, timeout_seconds: float) -> dict[str, Any] | None:
+    try:
+        response = requests.post(
+            rpc,
+            json={"jsonrpc": "2.0", "id": 1, "method": "zgs_getShardConfig", "params": []},
+            timeout=timeout_seconds,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        result = payload.get("result")
+        return result if isinstance(result, dict) else None
+    except Exception:
+        return None
 
 
 def _read_rpc_status(cfg: dict[str, Any], *, timeout_seconds: float) -> dict[str, Any]:
@@ -597,6 +634,7 @@ def _storage_rpc_status_unknown(cfg: dict[str, Any]) -> dict[str, Any]:
         "logSyncBlock": None,
         "nextTxSeq": None,
         "networkIdentity": None,
+        "shardConfig": None,
         "latencyMs": None,
         "error": None,
     }
@@ -623,6 +661,17 @@ def _storage_rpc_status_from_file(
         "logSyncBlock": storage_rpc.get("logSyncBlock"),
         "nextTxSeq": storage_rpc.get("nextTxSeq"),
         "networkIdentity": identity,
+        "shardConfig": storage_rpc.get("shardConfig"),
+        "latestMainnetBlock": (file_status.get("sync") or {}).get("latestMainnetBlock"),
+        "syncGapBlocks": (file_status.get("sync") or {}).get("syncGapBlocks"),
+        "dbSizeHuman": (file_status.get("disk") or {}).get("dbSizeHuman"),
+        "expansionBlockers": (file_status.get("health") or {}).get("expansionBlockers", []),
+        "onlyPriorTestFundingObserved": (file_status.get("funding") or {}).get(
+            "onlyPriorTestFundingObserved"
+        ),
+        "hundredOgTransferSent": (file_status.get("funding") or {}).get(
+            "hundredOgTransferSent"
+        ),
         "latencyMs": storage_rpc.get("latencyMs"),
         "error": storage_rpc.get("error"),
         "source": "rv_soak_snapshot_file",
@@ -643,6 +692,7 @@ def _storage_funded_soak_summary(file_status: dict[str, Any] | None) -> dict[str
     sync = file_status.get("sync") or {}
     disk = file_status.get("disk") or {}
     public_relay = file_status.get("publicRelay") or {}
+    storage_rpc = file_status.get("storageRpc") or {}
     return {
         "status": "loaded",
         "snapshotGeneratedAt": file_status.get("generatedAt"),
@@ -652,6 +702,7 @@ def _storage_funded_soak_summary(file_status: dict[str, Any] | None) -> dict[str
         "syncGapBlocks": sync.get("syncGapBlocks"),
         "latestMainnetBlock": sync.get("latestMainnetBlock"),
         "dbSizeHuman": disk.get("dbSizeHuman"),
+        "shardConfig": storage_rpc.get("shardConfig"),
         "activeMinerAddress": funding.get("activeMinerAddress"),
         "activeMinerBalanceOg": funding.get("activeMinerBalanceOg"),
         "activeMinerKeyPresent": bool(config.get("minerKeyPresent")),
@@ -705,6 +756,35 @@ def _storage_funding_status(
             "and explicit transaction confirmation are complete."
         ),
     }
+
+
+def _storage_sync_summary(
+    rpc_status: dict[str, Any],
+    funded_soak: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "connectedPeers": rpc_status.get("connectedPeers"),
+        "logSyncHeight": rpc_status.get("logSyncHeight"),
+        "latestMainnetBlock": _first_present(
+            funded_soak.get("latestMainnetBlock"), rpc_status.get("latestMainnetBlock")
+        ),
+        "syncGapBlocks": _first_present(
+            funded_soak.get("syncGapBlocks"), rpc_status.get("syncGapBlocks")
+        ),
+        "nextTxSeq": rpc_status.get("nextTxSeq"),
+        "shardConfig": rpc_status.get("shardConfig") or funded_soak.get("shardConfig"),
+        "dbSizeHuman": _first_present(funded_soak.get("dbSizeHuman"), rpc_status.get("dbSizeHuman")),
+        "expansionBlockers": _first_present(
+            funded_soak.get("expansionBlockers"), rpc_status.get("expansionBlockers"), []
+        ),
+    }
+
+
+def _first_present(*values: Any) -> Any:
+    for value in values:
+        if value is not None:
+            return value
+    return None
 
 
 def _storage_mode(

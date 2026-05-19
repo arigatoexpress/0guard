@@ -28,10 +28,11 @@ def test_postsubmit_x_update_thread_is_review_ready_and_within_limits():
     assert len(tweets) == 4
     assert all(1 <= len(tweet) <= 280 for tweet in tweets)
     combined = "\n".join(tweets).lower()
-    assert "30 rights-aware source lanes" in combined
-    assert "17 no-network reputation connector" in combined
+    assert "34 rights-aware source lanes" in combined
+    assert "20 no-network reputation connector" in combined
     assert "threatfox" in combined
     assert "chainalysis" in combined
+    assert "trm" in combined
     assert "web risk" in combined
     assert "#0ghackathon" in combined
     assert "#buildon0g" in combined

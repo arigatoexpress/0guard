@@ -152,17 +152,7 @@ def build_snapshot(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def read_remote_storage_rpc(args: argparse.Namespace) -> dict[str, Any]:
-    payload = {
-        "jsonrpc": "2.0",
-        "id": 1,
-        "method": "zgs_getStatus",
-        "params": [],
-    }
-    command = (
-        f"curl -sS -m 5 -H 'Content-Type: application/json' "
-        f"-d '{json.dumps(payload)}' {shell_quote(args.storage_rpc)}"
-    )
-    result = wsl(args, command)
+    result = read_remote_zgs_rpc(args, "zgs_getStatus")
     if result["returncode"] != 0:
         return {
             "status": "degraded",
@@ -175,6 +165,7 @@ def read_remote_storage_rpc(args: argparse.Namespace) -> dict[str, Any]:
     rpc_result = body.get("result")
     if not isinstance(rpc_result, dict):
         return {"status": "degraded", "error": "zgs_getStatus returned no result object"}
+    shard_config = read_remote_shard_config(args)
     identity = rpc_result.get("networkIdentity") or {}
     status = "ok"
     if identity.get("chainId") != 16661:
@@ -186,7 +177,34 @@ def read_remote_storage_rpc(args: argparse.Namespace) -> dict[str, Any]:
         "logSyncBlock": rpc_result.get("logSyncBlock"),
         "nextTxSeq": rpc_result.get("nextTxSeq"),
         "networkIdentity": identity,
+        "shardConfig": shard_config,
     }
+
+
+def read_remote_shard_config(args: argparse.Namespace) -> dict[str, Any] | None:
+    result = read_remote_zgs_rpc(args, "zgs_getShardConfig")
+    if result["returncode"] != 0:
+        return None
+    try:
+        body = json.loads(result["stdout"])
+    except json.JSONDecodeError:
+        return None
+    rpc_result = body.get("result")
+    return rpc_result if isinstance(rpc_result, dict) else None
+
+
+def read_remote_zgs_rpc(args: argparse.Namespace, method: str) -> dict[str, Any]:
+    payload = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": method,
+        "params": [],
+    }
+    command = (
+        f"curl -sS -m 5 -H 'Content-Type: application/json' "
+        f"-d '{json.dumps(payload)}' {shell_quote(args.storage_rpc)}"
+    )
+    return wsl(args, command)
 
 
 def read_task_states(args: argparse.Namespace) -> dict[str, Any]:

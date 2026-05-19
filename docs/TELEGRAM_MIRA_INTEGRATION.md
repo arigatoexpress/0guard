@@ -153,6 +153,9 @@ does not pretend that a Telegram user has been verified.
 - Tokens are one-time-use by contract. Persist `verified["token_id"]` after
   successful opt-in and pass consumed ids to `ensure_registration_token_not_replayed`.
 - `build_opt_in_record` stores Telegram identifiers for local registry use.
+- When `TELEGRAM_OPT_IN_STORE_PATH` is unset, the local app writes opt-ins and
+  consumed token ids to `content/telegram_opt_ins.local.json`. This file is
+  git-ignored, local-only, and still does not enable Telegram sends.
 - `public_opt_in_status` redacts user labels, Telegram ids, chat ids, usernames,
   first/last names, and token ids before public display.
 - No bot token, chat id, or other secret should be committed with this flow.

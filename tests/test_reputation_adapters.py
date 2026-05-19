@@ -23,6 +23,26 @@ def test_reputation_adapter_catalog_is_no_network_and_rights_safe():
     assert catalog["rightsPolicy"]["rawPayloadResaleAllowed"] is False
 
 
+def test_reputation_adapter_normalize_accepts_source_alias_for_source_id():
+    result = normalize_reputation_adapter_payload(
+        {
+            "source": "cryptoscamdb",
+            "payload": {
+                "urls": [
+                    {
+                        "url": "https://wallet-help.example/0g",
+                        "category": "phishing",
+                        "updated": "2026-05-15T00:00:00Z",
+                    }
+                ]
+            },
+        }
+    )
+
+    assert result["sourceId"] == "cryptoscamdb"
+    assert result["rawPayloadReturned"] is False
+
+
 def test_phishdestroy_payload_normalizes_active_domain_without_raw_url_echo():
     result = normalize_reputation_adapter_payload(
         {

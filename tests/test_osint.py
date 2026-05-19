@@ -65,12 +65,22 @@ def test_source_registry_exposes_rights_metadata_without_raw_payloads():
     assert "forta_labelled_datasets" in source_ids
     assert "threatfox_iocs" in source_ids
     assert "chainalysis_sanctions_oracle" in source_ids
+    assert "chainalysis_sanctions_api" in source_ids
+    assert "trm_wallet_screening" in source_ids
+    assert "trm_blockint_api" in source_ids
+    assert "mitre_attack_lazarus_g0032" in source_ids
     assert "google_web_risk" in source_ids
 
     by_id = {source["id"]: source for source in public["sources"]}
     assert by_id["threatfox_iocs"]["enabledByDefault"] is False
     assert by_id["chainalysis_sanctions_oracle"]["enabledByDefault"] is False
+    assert by_id["chainalysis_sanctions_api"]["enabledByDefault"] is False
+    assert by_id["trm_wallet_screening"]["enabledByDefault"] is False
+    assert by_id["trm_blockint_api"]["enabledByDefault"] is False
+    assert by_id["mitre_attack_lazarus_g0032"]["enabledByDefault"] is True
     assert by_id["google_web_risk"]["enabledByDefault"] is False
+    assert "not legal advice" in by_id["chainalysis_sanctions_api"]["caveats"].lower()
+    assert "do not claim live trm" in by_id["trm_wallet_screening"]["caveats"].lower()
     assert "never expose" in by_id["google_web_risk"]["outputPolicy"].lower()
 
 
@@ -344,7 +354,7 @@ def test_hackquest_readiness_audit_uses_mainnet_proof_file():
     assert audit["event"]["deadline"]["utc8"] == "2026-05-16T23:59:00+08:00"
     assert audit["event"]["publicProjectUrl"] == "https://www.hackquest.io/projects/0guard"
     assert audit["mainnetRequirement"]["chainId"] == 16661
-    assert audit["current0GConfig"]["chainId"] == 16602
+    assert audit["current0GConfig"]["chainId"] == 16661
     assert audit["submittableNow"] is True
     assert audit["current0GConfig"]["mainnetProofReady"] is True
     blockers = {item["id"] for item in audit["operatorBlockers"]}

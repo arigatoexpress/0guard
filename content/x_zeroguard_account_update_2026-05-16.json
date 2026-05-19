@@ -2,8 +2,8 @@
   "title": "ZeroGuard account 0guard product update",
   "tweets": [
     "0guard is submitted for the 0G APAC Hackathon.\n\nThe live stack is a read-only pre-wallet firewall for AI agents and Telegram wallet surfaces: intent in, verdict/proof out, signer untouched.\n\n#0GHackathon #BuildOn0G",
-    "Current proof stack:\n\n- 28/28 incident-derived detections\n- 0G mainnet receipt anchor\n- Telegram Mini App\n- wallet alert previews\n- 30 rights-aware source lanes\n- 17 no-network connector candidates",
-    "New source lanes: ThreatFox IOC API, Chainalysis sanctions oracle, Google Cloud Web Risk.\n\nDisabled by default until auth, commercial terms, privacy, and retention rules are reviewed.\n\nDerived evidence only. No raw feed resale.",
+    "Current proof stack:\n\n- 28/28 incident-derived detections\n- 0G mainnet receipt anchor\n- Telegram Mini App\n- wallet alert previews\n- 34 rights-aware source lanes\n- 20 no-network connector candidates",
+    "New source lanes: ThreatFox, Chainalysis Sanctions API/Oracle, TRM Wallet Screening/BLOCKINT, MITRE Lazarus context, and Web Risk.\n\nDisabled by default until auth, terms, privacy, and retention are reviewed. Derived evidence only.",
     "Proof hub:\nhttps://arigatoexpress.github.io/0guard/hackathon-0g/\n\nMini App:\nhttps://guard0-miniapp-s77j6bxyra-uc.a.run.app/telegram\n\nGitHub:\nhttps://github.com/arigatoexpress/0guard"
   ]
 }

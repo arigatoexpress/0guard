@@ -35,6 +35,7 @@ from guard0.da_node import (
     build_telegram_da_node_preview,
     build_telegram_storage_node_preview,
 )
+from guard0.deployment_readiness import build_deployment_readiness
 from guard0.node_business import (
     build_0g_node_business_plan,
     build_alignment_node_status,
@@ -49,6 +50,7 @@ from guard0.peer_protection import (
     build_peer_protection_plan,
     build_pi_mesh_plan,
 )
+from guard0.private_compute_adapter import build_private_compute_smoke_preview
 from guard0.case_file import build_threat_case_file
 from guard0.developer_kit import developer_kit_manifest
 from guard0.external_guardrails import (
@@ -90,6 +92,7 @@ from guard0.osint import (
 )
 from guard0.policy import evaluate_intent
 from guard0.product_brief import product_brief
+from guard0.production_gaps import build_model_training_roadmap, build_production_gap_matrix
 from guard0.proof_ladder import build_proof_ladder
 from guard0.readiness import production_readiness
 from guard0.roadmap import ecosystem_roadmap, intelligence_stream_plan
@@ -99,6 +102,7 @@ from guard0.reputation import (
     domain_decision,
     reputation_connector_manifest,
 )
+from guard0.reputation_backfill import build_reputation_backfill_status
 from guard0.reputation_connector_worker import reputation_connector_snapshot
 from guard0.reputation_adapters import (
     normalize_reputation_adapters_from_payload,
@@ -106,12 +110,14 @@ from guard0.reputation_adapters import (
     reputation_adapter_catalog,
 )
 from guard0.reputation_shadow import build_reputation_shadow_cache
+from guard0.strategy_review import build_strategy_review
 from guard0.ton import (
     build_ton_wallet_risk_preview,
     ton_risk_rules,
     ton_status,
     tonconnect_manifest,
 )
+from guard0.training_data import build_incident_detector_eval_set
 from guard0.crypto_hack_guard import check_crypto_hack_signatures
 from guard0.chain import build_0g_status, get_0g_config, verify_anchor
 from guard0.telegram_bot import TelegramWebAppAuthError, validate_webapp_init_data
@@ -124,7 +130,13 @@ from guard0.telegram_subscriptions import (
     public_opt_in_status,
     verify_telegram_registration_token,
 )
+from guard0.storage_upload_manifest import build_storage_upload_manifest
+from guard0.storage_peer_diagnostics import (
+    DEFAULT_STORAGE_PEER_DIAGNOSTICS_PATH,
+    build_storage_peer_diagnostics,
+)
 from guard0.wallet_alerts import build_wallet_alert_preview, wallet_alert_quality_policy
+from guard0.x402_guard import build_x402_wallet_preflight_dry_run
 
 app = Flask(__name__)
 
@@ -137,6 +149,7 @@ _PENDING_TELEGRAM_CHALLENGES: dict[str, dict] = {}
 _CONSUMED_TELEGRAM_TOKEN_IDS: set[str] = set()
 _TELEGRAM_OPT_IN_RECORDS: dict[str, dict] = {}
 _TELEGRAM_STORE_LOADED_PATH: str | None = None
+DEFAULT_TELEGRAM_OPT_IN_STORE_PATH = Path("content/telegram_opt_ins.local.json")
 
 FRONTEND_REQUIRED_SELECTORS = (
     "#nav-intent",
@@ -181,16 +194,22 @@ FRONTEND_REQUIRED_SELECTORS = (
     "#load-osint-readiness",
     "#load-osint-signals",
     "#load-phishdestroy-worker",
+    "#load-reputation-backfill-status",
     "#load-evolving-intel",
     "#load-intelligence-events",
     "#load-detector-candidates",
     "#load-product-brief",
     "#load-production-readiness",
+    "#load-deployment-readiness",
+    "#load-production-gaps",
+    "#load-model-training-roadmap",
+    "#load-incident-eval-set",
     "#load-submission-brief",
     "#load-submission-packet",
     "#load-submission-readiness",
     "#load-threat-passport",
     "#load-x402-data-products",
+    "#load-x402-dry-run",
     "#load-cross-chain-catalog",
     "#load-cross-chain-readiness",
     "#load-arbitrum-integration",
@@ -215,11 +234,14 @@ FRONTEND_REQUIRED_SELECTORS = (
     "#verify-receipt",
     "#load-da-node-status",
     "#load-storage-node-status",
+    "#load-storage-peer-diagnostics",
+    "#load-storage-upload-manifest",
     "#run-telegram-da-node-preview",
     "#load-node-business",
     "#load-alignment-node-status",
     "#load-validator-capacity",
     "#load-private-computer",
+    "#load-private-compute-smoke-preview",
     "#load-local-inference",
     "#run-telegram-local-inference-preview",
     "#load-hot-wallet-resources",
@@ -348,7 +370,11 @@ def _telegram_store_path() -> Path | None:
     if not raw_path and raw_url.startswith("file://"):
         raw_path = raw_url.removeprefix("file://")
     if not raw_path:
-        return None
+        if raw_url:
+            return None
+        if app.config.get("TESTING"):
+            return None
+        return DEFAULT_TELEGRAM_OPT_IN_STORE_PATH
     return Path(raw_path).expanduser()
 
 
@@ -356,10 +382,13 @@ def _telegram_store_status() -> dict[str, Any]:
     path = _telegram_store_path()
     external_url = os.getenv("TELEGRAM_OPT_IN_STORE_URL", "").strip()
     if path:
+        default_path = path == DEFAULT_TELEGRAM_OPT_IN_STORE_PATH
         return {
-            "mode": "local_json",
+            "mode": "local_json_default" if default_path else "local_json",
             "persistent": True,
             "configured": True,
+            "path": str(path),
+            "defaultLocalStore": default_path,
             "recordCount": len(_TELEGRAM_OPT_IN_RECORDS),
             "consumedTokenCount": len(_CONSUMED_TELEGRAM_TOKEN_IDS),
             "network_calls": False,
@@ -866,10 +895,13 @@ def api_frontend_contract():
                 "/api/0g/status",
                 "/api/0g/da-node/status",
                 "/api/0g/storage-node/status",
+                "/api/0g/storage-node/peer-diagnostics",
+                "/api/0g/storage-upload/manifest",
                 "/api/0g/alignment-node/status",
                 "/api/0g/validator-capacity",
                 "/api/0g/node-business",
                 "/api/0g/private-computer",
+                "/api/0g/private-computer/smoke-preview",
                 "/api/local-inference/status",
                 "/api/telegram/local-inference-preview",
                 "/api/0g/hot-wallet-resources",
@@ -890,9 +922,15 @@ def api_frontend_contract():
                 "/api/intelligence/evolving",
                 "/api/intelligence/data-streams",
                 "/api/x402/data-products",
+                "/api/x402/dry-run/wallet-preflight",
                 "/api/intelligence/events",
                 "/api/intelligence/detector-candidates",
                 "/api/product/brief",
+                "/api/product/strategy-review",
+                "/api/deployment/readiness",
+                "/api/production/gaps",
+                "/api/model/training-roadmap",
+                "/api/model/incident-eval-set",
                 "/api/readyz",
                 "/api/roadmap",
                 "/api/experiments/frontier",
@@ -917,6 +955,7 @@ def api_frontend_contract():
                 "/api/reputation/probe",
                 "/api/reputation/connectors",
                 "/api/reputation/connectors/live",
+                "/api/reputation/backfill/status",
                 "/api/reputation/adapters",
                 "/api/reputation/adapters/normalize",
                 "/api/reputation/shadow-cache",
@@ -973,6 +1012,10 @@ def api_frontend_contract():
                 "load-intelligence-events",
                 "load-product-brief",
                 "load-production-readiness",
+                "load-deployment-readiness",
+                "load-production-gaps",
+                "load-model-training-roadmap",
+                "load-incident-eval-set",
                 "load-ecosystem-roadmap",
                 "load-frontier-experiments",
                 "load-submission-brief",
@@ -980,6 +1023,7 @@ def api_frontend_contract():
                 "load-submission-readiness",
                 "load-threat-passport",
                 "load-x402-data-products",
+                "load-x402-dry-run",
                 "load-cross-chain-catalog",
                 "load-cross-chain-readiness",
                 "load-arbitrum-integration",
@@ -987,6 +1031,7 @@ def api_frontend_contract():
                 "load-virtuals-facilitator",
                 "load-ika-integration",
                 "run-reputation-probe",
+                "load-reputation-backfill-status",
                 "load-reputation-adapters",
                 "load-reputation-shadow-cache",
                 "run-native-preflight",
@@ -999,11 +1044,14 @@ def api_frontend_contract():
                 "run-telegram-wallet-alert-preview",
                 "load-da-node-status",
                 "load-storage-node-status",
+                "load-storage-peer-diagnostics",
+                "load-storage-upload-manifest",
                 "run-telegram-da-node-preview",
                 "load-node-business",
                 "load-alignment-node-status",
                 "load-validator-capacity",
                 "load-private-computer",
+                "load-private-compute-smoke-preview",
                 "load-local-inference",
                 "run-telegram-local-inference-preview",
                 "load-hot-wallet-resources",
@@ -1126,6 +1174,16 @@ def api_x402_data_products():
     return jsonify(build_x402_data_products())
 
 
+@app.route("/api/x402/dry-run/wallet-preflight", methods=["GET", "POST"])
+def api_x402_dry_run_wallet_preflight():
+    body = request.get_json(silent=True) or {} if request.method == "POST" else {}
+    payload = build_x402_wallet_preflight_dry_run(
+        payment_header=request.headers.get("X-PAYMENT", ""),
+        body=body,
+    )
+    return jsonify(payload), int(payload["httpStatus"])
+
+
 @app.route("/api/intelligence/events", methods=["GET"])
 def api_intelligence_events():
     live = _truthy_query_arg("live")
@@ -1157,6 +1215,38 @@ def api_intelligence_detector_candidates():
 @app.route("/api/product/brief", methods=["GET"])
 def api_product_brief():
     return jsonify(product_brief())
+
+
+@app.route("/api/product/strategy-review", methods=["GET"])
+def api_product_strategy_review():
+    return jsonify(build_strategy_review())
+
+
+@app.route("/api/production/gaps", methods=["GET"])
+def api_production_gaps():
+    return jsonify(build_production_gap_matrix())
+
+
+@app.route("/api/deployment/readiness", methods=["GET"])
+def api_deployment_readiness():
+    return jsonify(build_deployment_readiness(live=_truthy_query_arg("live")))
+
+
+@app.route("/api/model/training-roadmap", methods=["GET"])
+def api_model_training_roadmap():
+    return jsonify(build_model_training_roadmap())
+
+
+@app.route("/api/model/incident-eval-set", methods=["GET"])
+def api_model_incident_eval_set():
+    limit = request.args.get("limit")
+    try:
+        limit_value = int(limit) if limit is not None else None
+    except ValueError:
+        return jsonify({"error": "limit must be an integer"}), 400
+    if limit_value is not None and (limit_value < 1 or limit_value > 200):
+        return jsonify({"error": "limit must be between 1 and 200"}), 400
+    return jsonify(build_incident_detector_eval_set(limit=limit_value))
 
 
 @app.route("/api/readyz", methods=["GET"])
@@ -1362,6 +1452,11 @@ def api_reputation_connectors_live():
         )
     except (TypeError, ValueError) as exc:
         return jsonify({"error": str(exc)}), 400
+
+
+@app.route("/api/reputation/backfill/status", methods=["GET"])
+def api_reputation_backfill_status():
+    return jsonify(build_reputation_backfill_status())
 
 
 @app.route("/api/reputation/adapters", methods=["GET"])
@@ -2009,6 +2104,9 @@ def api_health():
             "local_inference_mesh": build_local_inference_mesh(live=False),
             "x402_data_products": build_x402_data_products(),
             "historical_backfill_plan": build_historical_backfill_plan(),
+            "production_gaps": build_production_gap_matrix(),
+            "model_training_roadmap": build_model_training_roadmap(),
+            "incident_eval_set": build_incident_detector_eval_set(limit=3),
             "0g_hot_wallet_resources": build_0g_hot_wallet_resources(),
             "peer_protection": build_peer_protection_plan(live=False),
             "pi_mesh": build_pi_mesh_plan(),
@@ -2057,6 +2155,17 @@ def api_0g_storage_node_status():
     return jsonify(build_storage_node_status(live=live))
 
 
+@app.route("/api/0g/storage-node/peer-diagnostics", methods=["GET"])
+def api_0g_storage_node_peer_diagnostics():
+    status_file = DEFAULT_STORAGE_PEER_DIAGNOSTICS_PATH if _truthy_query_arg("snapshot") else None
+    return jsonify(build_storage_peer_diagnostics(status_file=status_file))
+
+
+@app.route("/api/0g/storage-upload/manifest", methods=["GET"])
+def api_0g_storage_upload_manifest():
+    return jsonify(build_storage_upload_manifest())
+
+
 @app.route("/api/0g/alignment-node/status", methods=["GET"])
 def api_0g_alignment_node_status():
     return jsonify(build_alignment_node_status(live=_truthy_query_arg("live")))
@@ -2075,6 +2184,12 @@ def api_0g_node_business():
 @app.route("/api/0g/private-computer", methods=["GET"])
 def api_0g_private_computer():
     return jsonify(build_0g_private_computer_integration(live=_truthy_query_arg("live")))
+
+
+@app.route("/api/0g/private-computer/smoke-preview", methods=["GET", "POST"])
+def api_0g_private_computer_smoke_preview():
+    body = request.get_json(silent=True) or {} if request.method == "POST" else {}
+    return jsonify(build_private_compute_smoke_preview(body))
 
 
 @app.route("/api/local-inference/status", methods=["GET"])
@@ -2148,7 +2263,7 @@ def api_telegram_node_business_preview():
 
 @app.route("/api/0g/receipt", methods=["GET"])
 def api_0g_receipt():
-    receipt_hash = request.args.get("receipt_hash", "")
+    receipt_hash = request.args.get("receipt_hash") or request.args.get("receipt") or ""
     tx_hash = request.args.get("tx_hash")
     return jsonify(verify_anchor(receipt_hash=receipt_hash, tx_hash=tx_hash))
 

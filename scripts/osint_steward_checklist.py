@@ -1,0 +1,337 @@
+#!/usr/bin/env python3
+"""OSINT steward checklist for 0guard.
+
+This is a read-only probe script intended for recurring automation runs.
+It verifies:
+  - Local repo readiness scripts (run separately)
+  - Public endpoints (HackQuest / Pages)
+  - Sapphire apex 0guard progress API (read-only)
+  - Cloud Run base/candidate API surfaces for the steward checklist routes
+
+Safety:
+  - Never prints secrets
+  - Never sends Telegram messages
+  - Never signs or broadcasts transactions
+  - Uses only GET requests (no stateful POSTs)
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from typing import Any, Iterable
+from urllib.parse import urljoin
+
+import requests
+
+DEFAULT_BASE_URL = "https://guard0-miniapp-s77j6bxyra-uc.a.run.app"
+FALLBACK_BASE_URLS: tuple[str, ...] = (
+    "https://candidate-acdc011---guard0-miniapp-s77j6bxyra-uc.a.run.app",
+    "https://candidate-6f07f89---guard0-miniapp-s77j6bxyra-uc.a.run.app",
+)
+
+SAPPHIRE_PROGRESS_URLS: tuple[str, ...] = (
+    "https://sapphirealpha.xyz/api/0guard/progress",
+    "https://www.sapphirealpha.xyz/api/0guard/progress",
+)
+SAPPHIRE_HEALTH_URL = "https://sapphirealpha.xyz/health"
+SAPPHIRE_0GUARD_PAGE_URL = "https://sapphirealpha.xyz/p/0guard"
+THO_HEALTHZ_URL = "https://tho.sapphirealpha.xyz/healthz/"
+
+PAGES_ROOT_URL = "https://arigatoexpress.github.io/0guard/"
+PAGES_HACKATHON_URL = "https://arigatoexpress.github.io/0guard/hackathon-0g/"
+
+
+CHECKLIST_PATHS: tuple[str, ...] = (
+    "/api/healthz",
+    "/api/readyz",
+    "/api/hackathon/submission-packet",
+    "/api/hackathon/readiness",
+    "/api/osint/sources",
+    "/api/osint/readiness",
+    "/api/osint/signals?live=1&limit=10",
+    "/api/intelligence/evolving",
+    "/api/intelligence/data-streams",
+    "/api/intelligence/events?live=1&limit=10",
+    "/api/intelligence/detector-candidates?live=1&limit=10",
+    "/api/reputation/connectors/live?live=1&limit=3",
+    "/api/integrations/cross-chain",
+    "/api/integrations/cross-chain/readiness?live=1&include_non_default=1",
+    "/api/integrations/arbitrum",
+    "/api/integrations/metamask",
+    "/api/hackathons/next",
+    "/api/hackathon/strategy",
+    "/api/developer-kit",
+    "/api/product/brief",
+    "/api/experiments/frontier",
+    "/api/reputation/adapters",
+    "/api/reputation/connectors",
+    "/api/reputation/shadow-cache",
+    "/api/reputation/probe",
+    "/api/native-preflight",
+    "/api/integrations/external-guardrails",
+    "/api/integrations/external-guardrails/evaluate",
+    "/api/integrations/ika",
+    "/api/integrations/ika/evaluate",
+    "/api/0g/proof-ladder",
+    "/api/0g/receipt",
+    "/api/telegram/status",
+    "/api/telegram/miniapp/preview",
+    "/api/telegram/wallet-alert-preview",
+    "/api/wallet/alert-preview",
+)
+
+
+@dataclass(frozen=True)
+class ProbeResult:
+    path: str
+    status_code: int | None
+    elapsed_ms: int | None
+    content_type: str
+    snippet: str
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="0guard OSINT steward checklist probes")
+    parser.add_argument("--base-url", default=DEFAULT_BASE_URL)
+    parser.add_argument("--timeout", type=float, default=20.0)
+    parser.add_argument("--format", choices=("markdown", "json"), default="markdown")
+    args = parser.parse_args(argv)
+
+    base_url = _select_base_url(args.base_url.rstrip("/"), timeout=args.timeout)
+    probes = list(_probe_paths(base_url, CHECKLIST_PATHS, timeout=args.timeout))
+    sapphire = _probe_sapphire(timeout=args.timeout)
+    public = _probe_public(timeout=args.timeout)
+    silo = _probe_silo(timeout=args.timeout)
+
+    payload: dict[str, Any] = {
+        "schema": "0guard.osint_steward_checklist.v1",
+        "generatedAt": _now(),
+        "baseUrl": base_url,
+        "requestedBaseUrl": args.base_url.rstrip("/"),
+        "probes": [probe.__dict__ for probe in probes],
+        "sapphire": sapphire,
+        "public": public,
+        "siloBoundary": silo,
+        "notes": [
+            "This is a read-only probe script; 405 on POST-only endpoints is expected.",
+            "Use --base-url to force a candidate/no-traffic Cloud Run revision.",
+        ],
+    }
+
+    ok = _overall_ok(probes, sapphire=sapphire, public=public, silo=silo)
+    payload["ok"] = ok
+
+    if args.format == "json":
+        print(json.dumps(payload, indent=2, sort_keys=True))
+    else:
+        print(_markdown(payload))
+    return 0 if ok else 1
+
+
+def _overall_ok(
+    probes: Iterable[ProbeResult],
+    *,
+    sapphire: dict[str, Any] | None = None,
+    public: dict[str, Any] | None = None,
+    silo: dict[str, Any] | None = None,
+) -> bool:
+    """Treat 200/204 as ok; allow 405 only for POST-only route probes."""
+    for probe in probes:
+        if probe.status_code in (200, 204, 405):
+            continue
+        return False
+    if sapphire is not None:
+        if not _url_entry_ok(sapphire.get("health")):
+            return False
+        for entry in sapphire.get("progress") or []:
+            if not _url_entry_ok(entry):
+                return False
+    if public is not None:
+        for entry in public.get("urls") or []:
+            if not _url_entry_ok(entry):
+                return False
+    if silo is not None and not _url_entry_ok(silo.get("tho_healthz")):
+        return False
+    return True
+
+
+def _url_entry_ok(entry: dict[str, Any] | None) -> bool:
+    return bool(entry and entry.get("statusCode") in (200, 204))
+
+
+def _probe_public(*, timeout: float) -> dict[str, Any]:
+    results: list[dict[str, Any]] = []
+    for url in (PAGES_ROOT_URL, PAGES_HACKATHON_URL, SAPPHIRE_0GUARD_PAGE_URL):
+        results.append(_probe_url(url, timeout=timeout))
+    return {"urls": results}
+
+
+def _probe_silo(*, timeout: float) -> dict[str, Any]:
+    return {"tho_healthz": _probe_url(THO_HEALTHZ_URL, timeout=timeout)}
+
+
+def _probe_sapphire(*, timeout: float) -> dict[str, Any]:
+    progress: list[dict[str, Any]] = []
+    for url in SAPPHIRE_PROGRESS_URLS:
+        entry = _probe_url(url, timeout=timeout)
+        parsed: dict[str, Any] = {}
+        if entry.get("statusCode") == 200 and entry.get("json"):
+            data = entry["json"]
+            live_streams = data.get("live_streams") or {}
+            parsed = {
+                "base_url": data.get("base_url") or data.get("baseUrl"),
+                "candidate_url": data.get("candidate_url") or data.get("candidateUrl"),
+                "active_domain_count": live_streams.get("active_domain_count"),
+                "detector_candidate_count": live_streams.get("detector_candidate_count"),
+                "live_event_count": live_streams.get("live_event_count"),
+                "raw_payloads_returned": data.get("raw_payloads_returned"),
+            }
+        progress.append({**entry, "parsed": parsed})
+    return {
+        "health": _probe_url(SAPPHIRE_HEALTH_URL, timeout=timeout),
+        "progress": progress,
+    }
+
+
+def _probe_url(url: str, *, timeout: float) -> dict[str, Any]:
+    try:
+        resp = requests.get(url, timeout=timeout, headers={"User-Agent": "0guard-osint-steward/1.0"})
+    except requests.RequestException as exc:
+        return {"url": url, "statusCode": None, "error": str(exc)}
+
+    entry: dict[str, Any] = {
+        "url": url,
+        "statusCode": resp.status_code,
+        "contentType": resp.headers.get("content-type", ""),
+        "elapsedMs": int(resp.elapsed.total_seconds() * 1000),
+    }
+    text = resp.text or ""
+    entry["snippet"] = _snippet(text)
+    if "application/json" in entry["contentType"]:
+        try:
+            entry["json"] = resp.json()
+        except ValueError:
+            entry["json"] = None
+    return entry
+
+
+def _probe_paths(base_url: str, paths: Iterable[str], *, timeout: float) -> Iterable[ProbeResult]:
+    session = requests.Session()
+    session.headers.update({"User-Agent": "0guard-osint-steward/1.0"})
+    for path in paths:
+        url = urljoin(base_url.rstrip("/") + "/", path.lstrip("/"))
+        try:
+            resp = session.get(url, timeout=timeout)
+            yield ProbeResult(
+                path=path,
+                status_code=resp.status_code,
+                elapsed_ms=int(resp.elapsed.total_seconds() * 1000),
+                content_type=resp.headers.get("content-type", ""),
+                snippet=_snippet(resp.text or ""),
+            )
+        except requests.RequestException as exc:
+            yield ProbeResult(
+                path=path,
+                status_code=None,
+                elapsed_ms=None,
+                content_type="",
+                snippet=f"error: {exc}",
+            )
+
+
+def _select_base_url(requested: str, *, timeout: float) -> str:
+    candidates: list[str] = []
+    for url in (requested, DEFAULT_BASE_URL, *FALLBACK_BASE_URLS):
+        normalized = url.rstrip("/")
+        if normalized and normalized not in candidates:
+            candidates.append(normalized)
+
+    for candidate in candidates:
+        try:
+            resp = requests.get(
+                urljoin(candidate.rstrip("/") + "/", "api/healthz"),
+                timeout=timeout,
+                headers={"User-Agent": "0guard-osint-steward/1.0"},
+            )
+            if resp.status_code == 200:
+                data = resp.json() if "application/json" in resp.headers.get("content-type", "") else {}
+                if data.get("ok") is True:
+                    return candidate
+        except requests.RequestException:
+            continue
+        except ValueError:
+            continue
+
+    return requested
+
+
+def _snippet(text: str, *, limit: int = 260) -> str:
+    normalized = " ".join(text.strip().split())
+    if len(normalized) <= limit:
+        return normalized
+    return normalized[:limit] + "…"
+
+
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _markdown(payload: dict[str, Any]) -> str:
+    lines: list[str] = []
+    lines.append("# 0guard OSINT Steward Checklist")
+    lines.append("")
+    lines.append(f"- Generated: {payload.get('generatedAt')}")
+    lines.append(f"- Base URL: {payload.get('baseUrl')}")
+    lines.append(f"- Overall: {'ok' if payload.get('ok') else 'needs attention'}")
+    lines.append("")
+
+    lines.append("## Steward API Probes")
+    for probe in payload.get("probes", []):
+        status = probe.get("status_code")
+        ms = probe.get("elapsed_ms")
+        lines.append(f"- `{probe.get('path')}`: {status} ({ms}ms)")
+    lines.append("")
+
+    lines.append("## Sapphire Readback (Read-only)")
+    sapphire = payload.get("sapphire") or {}
+    health = sapphire.get("health") or {}
+    lines.append(f"- `health`: {health.get('statusCode')} ({health.get('elapsedMs')}ms)")
+    for entry in sapphire.get("progress") or []:
+        parsed = entry.get("parsed") or {}
+        lines.append(f"- `progress`: {entry.get('url')} → {entry.get('statusCode')}")
+        if parsed:
+            lines.append(
+                "  - base_url: "
+                + str(parsed.get("base_url"))
+                + " active_domain_count: "
+                + str(parsed.get("active_domain_count"))
+                + " detector_candidate_count: "
+                + str(parsed.get("detector_candidate_count"))
+                + " live_event_count: "
+                + str(parsed.get("live_event_count"))
+                + " raw_payloads_returned: "
+                + str(parsed.get("raw_payloads_returned"))
+            )
+    lines.append("")
+
+    lines.append("## Public Surfaces")
+    for entry in (payload.get("public") or {}).get("urls") or []:
+        lines.append(f"- `{entry.get('url')}`: {entry.get('statusCode')}")
+    lines.append("")
+
+    lines.append("## Silo Boundary Sanity Check")
+    tho = (payload.get("siloBoundary") or {}).get("tho_healthz") or {}
+    lines.append(f"- `tho.sapphirealpha.xyz/healthz/`: {tho.get('statusCode')}")
+    lines.append("")
+
+    lines.append("## Notes")
+    for note in payload.get("notes") or []:
+        lines.append(f"- {note}")
+    return "\n".join(lines)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

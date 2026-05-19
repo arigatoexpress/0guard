@@ -1,0 +1,176 @@
+{
+  "derivedEvidence": [
+    {
+      "categories": [
+        "phishing_domain",
+        "active"
+      ],
+      "confidence": 0.88,
+      "evidenceHash": "d55dc8b93fa6cae6096260395c20c6bead9abd7941d405ea2ed7e79b00d91eac",
+      "label": "PhishDestroy phishing-domain signal",
+      "referenceUrlHash": "36d37bf2e4f73b61d05e882286691e2b220ee5c88b3413ca40257a97bd18682f",
+      "sourceId": "phishdestroy_destroylist",
+      "verdict": "malicious"
+    },
+    {
+      "categories": [
+        "phishing_domain",
+        "active"
+      ],
+      "confidence": 0.88,
+      "evidenceHash": "12ff77012ac9da25eeedb0034f686e10197268cfa0494c1c460756e2cac5c0f3",
+      "label": "PhishDestroy phishing-domain signal",
+      "referenceUrlHash": "0d38b7e76a4698918cec67f2362cda1254f330a7db3e35f6cbeef6bfdf907ff4",
+      "sourceId": "phishdestroy_destroylist",
+      "verdict": "malicious"
+    },
+    {
+      "categories": [
+        "phishing_domain",
+        "active"
+      ],
+      "confidence": 0.88,
+      "evidenceHash": "f144ea29e23e824b5ad730e01ad177fcc79c294d423f401ed7be33b32151f210",
+      "label": "PhishDestroy phishing-domain signal",
+      "referenceUrlHash": "29e9afd4be1592eca9082440e96eb8e7af0f5ff8a702876287c2e471cd68aa9a",
+      "sourceId": "phishdestroy_destroylist",
+      "verdict": "malicious"
+    },
+    {
+      "categories": [
+        "phishing_domain",
+        "active"
+      ],
+      "confidence": 0.88,
+      "evidenceHash": "18e509f2c49a1594c0401aaacf0b0a6df1a1057bb9e178523f18561a9549d7b3",
+      "label": "PhishDestroy phishing-domain signal",
+      "referenceUrlHash": "0bb39d9806ed84a6fd8c01d5f530a56e70590dc80fa91cf2c57feaed0394b7d6",
+      "sourceId": "phishdestroy_destroylist",
+      "verdict": "malicious"
+    },
+    {
+      "categories": [
+        "phishing_domain",
+        "active"
+      ],
+      "confidence": 0.88,
+      "evidenceHash": "d097b5b19667b402b06065b08e8c4f38ad70d4c5991487187645add55a09c3b4",
+      "label": "PhishDestroy phishing-domain signal",
+      "referenceUrlHash": "b8d08a503fdfa88e56adc069e92bd5e1bd7a6cd2213984db32a547aef4b0191a",
+      "sourceId": "phishdestroy_destroylist",
+      "verdict": "malicious"
+    }
+  ],
+  "derivedEvidenceCount": 5,
+  "feedLink": "https://raw.githubusercontent.com/phishdestroy/destroylist/main/dns/active_domains.json",
+  "fetch": {
+    "contentLength": 2278428,
+    "contentType": "text/plain; charset=utf-8",
+    "etag": "\"eceead77ee58c5c3fa0259b0cff7b795717df593f0092c44b21a515762d52d5e\"",
+    "feedHash": "c7535ee914bbac69238f98368bfa7fe9a8d6baf7abd5a3ec8837d074e3c7ef19",
+    "httpStatus": 200,
+    "lastModified": null,
+    "latencyMs": 752,
+    "parsedDomainCount": 81444,
+    "sampledEvidenceCount": 5,
+    "status": "ok",
+    "ttlSeconds": 21600
+  },
+  "generatedAt": "2026-05-17T15:34:50+00:00",
+  "input": {
+    "limit": 5,
+    "live": true,
+    "subjectRawReturned": false,
+    "subjectUrlProvided": false
+  },
+  "mode": "live_fetch_derived_only",
+  "persistence": {
+    "fileHash": "",
+    "path": "data/backfill/reputation_features/phishdestroy/latest.json",
+    "written": true
+  },
+  "reputationPreview": {
+    "decision": {
+      "decision": "deny",
+      "reasons": [
+        "Caller-provided source evidence reports negative reputation.",
+        "Caller-provided source evidence reports negative reputation.",
+        "Caller-provided source evidence reports negative reputation.",
+        "Caller-provided source evidence reports negative reputation.",
+        "Caller-provided source evidence reports negative reputation."
+      ],
+      "riskScore": 88,
+      "severity": "high"
+    },
+    "rawPayloadsReturned": false,
+    "receipt": {
+      "algorithm": "sha256_canonical_json",
+      "hash": "97f67ec45c3c009881cc1fd53c657dd133e0dc6f14842912f0bac951ce73f246",
+      "liveAnchorPerformed": false,
+      "liveUploadPerformed": false,
+      "zeroGChainReady": true,
+      "zeroGStorageReady": true
+    },
+    "schema": "0guard.reputation_probe.v1",
+    "signalCount": 5
+  },
+  "rightsPolicy": {
+    "derivedEvidenceOnly": true,
+    "paidRouteEligible": true,
+    "paidRouteOutput": "derived labels, counts, hashes, freshness, and source links only",
+    "rawDomainsReturned": false,
+    "rawPayloadResaleAllowed": false,
+    "rawPayloadsReturned": false,
+    "sourceLinksOrHashesOnly": true
+  },
+  "runReceipt": {
+    "algorithm": "sha256_canonical_json",
+    "hash": "f81777ff10d343802e19c96c4020269b9bcbbc98ae864ea0d00826e4cc992e75",
+    "liveAnchorPerformed": false,
+    "liveUploadPerformed": false,
+    "zeroGChainReady": true,
+    "zeroGStorageReady": true
+  },
+  "safety": {
+    "bridgingEnabled": false,
+    "liveConnectorFetch": true,
+    "networkCalls": true,
+    "paymentSettlementEnabled": false,
+    "privateKeyRequired": false,
+    "rawDomainsReturned": false,
+    "rawPayloadsReturned": false,
+    "readOnlyNetwork": true,
+    "socialPostingEnabled": false,
+    "swappingEnabled": false,
+    "telegramSendsEnabled": false,
+    "transactionBroadcastingEnabled": false,
+    "transactionSigningEnabled": false,
+    "writeLocalArtifact": true
+  },
+  "scheduleManifest": {
+    "command": "PYTHONPATH=src .venv/bin/python scripts/reputation_backfill_worker.py --source phishdestroy_destroylist --live --out data/backfill/reputation_features/phishdestroy/latest.json",
+    "recommendedIntervalSeconds": 21600,
+    "requiresSecret": false,
+    "supervisorInstalled": false,
+    "ttlSeconds": 21600,
+    "writesRawPayloads": false
+  },
+  "schema": "0guard.reputation_backfill_run.v1",
+  "snapshotReceipt": {
+    "algorithm": "sha256_canonical_json",
+    "hash": "7f304c9ae81e3b04f11a66c1d8a052109f6a798ccd9c692074f0c5128498afbc",
+    "liveAnchorPerformed": false,
+    "liveUploadPerformed": false,
+    "zeroGChainReady": true,
+    "zeroGStorageReady": true
+  },
+  "sourceId": "phishdestroy_destroylist",
+  "sourceLink": "https://phishdestroy.io/dataset",
+  "sourceName": "PhishDestroy active-domain feed",
+  "status": "ok",
+  "subject": {
+    "domainHash": "",
+    "matchedInFeed": null,
+    "rawDomainReturned": false
+  }
+}
