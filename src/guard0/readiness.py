@@ -33,6 +33,7 @@ def production_readiness() -> dict[str, Any]:
     private_compute_smoke = production_gates["private_compute_smoke"]
     storage_upload = production_gates["storage_upload"]
     x402_preflight = production_gates["x402_preflight"]
+    x402_policy = production_gates["x402_policy"]
 
     checks = [
         _check(
@@ -212,10 +213,19 @@ def production_readiness() -> dict[str, Any]:
         _check(
             "x402_settlement_path",
             "ok" if _x402_settlement_enabled(x402_preflight) else "review",
-            "Machine-payable data routes are production only after testnet/live settlement, caps, and refund language are proven.",
+            "Machine-payable data routes are production only after testnet/live settlement readback; caps and terms are tracked separately.",
             {
                 "status": x402_preflight.get("status"),
                 "httpStatus": x402_preflight.get("httpStatus"),
+                "settlementPolicySchema": x402_policy.get("schema"),
+                "spendCapsConfigured": bool(x402_policy.get("spendCaps")),
+                "termsConfigured": bool(x402_policy.get("terms")),
+                "payToConfigured": (
+                    x402_policy.get("paymentRequirement") or {}
+                ).get("payToConfigured"),
+                "perRequestMax": (x402_policy.get("spendCaps") or {}).get(
+                    "perRequestMaxDisplay"
+                ),
                 "settlementEnabled": (x402_preflight.get("safety") or {}).get(
                     "x402SettlementEnabled"
                 ),
@@ -228,6 +238,9 @@ def production_readiness() -> dict[str, Any]:
                 "rawPayloadResaleAllowed": (
                     x402_preflight.get("rightsPolicy") or {}
                 ).get("rawPayloadResaleAllowed"),
+                "policySettlementEnabled": (x402_policy.get("safety") or {}).get(
+                    "x402SettlementEnabled"
+                ),
             },
         ),
         _check(
@@ -318,7 +331,7 @@ def _production_gate_payloads() -> dict[str, dict[str, Any]]:
         build_reputation_backfill_status,
     )
     from guard0.storage_upload_manifest import build_storage_upload_manifest
-    from guard0.x402_guard import build_x402_wallet_preflight_dry_run
+    from guard0.x402_guard import build_x402_settlement_policy, build_x402_wallet_preflight_dry_run
 
     return {
         "storage": _safe_payload(
@@ -345,6 +358,7 @@ def _production_gate_payloads() -> dict[str, dict[str, Any]]:
             "x402_wallet_preflight_dry_run",
             build_x402_wallet_preflight_dry_run,
         ),
+        "x402_policy": _safe_payload("x402_settlement_policy", build_x402_settlement_policy),
     }
 
 

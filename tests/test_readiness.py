@@ -30,6 +30,10 @@ def test_production_readiness_is_honest_and_non_mutating(monkeypatch):
     assert checks["telegram_live_identity"]["status"] == "review"
     assert checks["private_compute_paid_smoke"]["status"] == "review"
     assert checks["x402_settlement_path"]["status"] == "review"
+    assert checks["x402_settlement_path"]["detail"]["spendCapsConfigured"] is True
+    assert checks["x402_settlement_path"]["detail"]["termsConfigured"] is True
+    assert checks["x402_settlement_path"]["detail"]["payToConfigured"] is False
+    assert checks["x402_settlement_path"]["detail"]["perRequestMax"] == "0.01 USDC"
     assert "storage_node_funded_soak" in result["hardGates"]
     assert checks["telegram_state_store"]["detail"]["storeMode"] == "local_json_default"
     assert checks["telegram_state_store"]["detail"]["defaultLocalStore"] is True
@@ -95,6 +99,7 @@ def _blocked_gate_payloads() -> dict:
     payloads["x402_preflight"]["safety"]["x402SettlementEnabled"] = False
     payloads["x402_preflight"]["paymentReadback"]["settlementAttempted"] = False
     payloads["x402_preflight"]["paymentReadback"]["facilitatorCalled"] = False
+    payloads["x402_policy"]["paymentRequirement"]["payToConfigured"] = False
     return payloads
 
 
@@ -178,5 +183,12 @@ def _green_gate_payloads() -> dict:
                 "facilitatorCalled": True,
             },
             "rightsPolicy": {"rawPayloadResaleAllowed": False},
+        },
+        "x402_policy": {
+            "schema": "0guard.x402_settlement_policy.v1",
+            "spendCaps": {"perRequestMaxDisplay": "0.01 USDC"},
+            "terms": {"rawPayloadResaleAllowed": False},
+            "paymentRequirement": {"payToConfigured": True},
+            "safety": {"x402SettlementEnabled": False},
         },
     }
