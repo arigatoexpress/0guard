@@ -171,6 +171,12 @@ _ADAPTERS: tuple[dict[str, Any], ...] = (
     },
 )
 
+_ADAPTER_ALIASES = {
+    "cisa_kev": "software_advisory_cve",
+    "nvd_cve": "software_advisory_cve",
+    "ofac_sanctions": "ofac_sanctions_sls",
+}
+
 
 def reputation_adapter_catalog() -> dict[str, Any]:
     """Return the supported adapter contracts without making external calls."""
@@ -215,8 +221,10 @@ def normalize_reputation_adapter_payload(payload: dict[str, Any] | None = None) 
     ).strip()
     if not source_id:
         raise ValueError("sourceId is required")
+    input_source_id = source_id
+    source_id = _canonical_source_id(source_id)
     if source_id not in {adapter["id"] for adapter in _ADAPTERS}:
-        raise ValueError(f"unsupported sourceId: {source_id}")
+        raise ValueError(f"unsupported sourceId: {input_source_id}")
 
     subject = _subject(body)
     upstream_payload = _upstream_payload(body)
@@ -234,6 +242,7 @@ def normalize_reputation_adapter_payload(payload: dict[str, Any] | None = None) 
         "generatedAt": _now(),
         "mode": "normalize_caller_supplied_payload_no_network_calls",
         "sourceId": source_id,
+        "inputSourceId": input_source_id if input_source_id != source_id else source_id,
         "subject": _public_subject(subject),
         "rawPayloadReturned": False,
         "rawPayloadHash": _hash_json(upstream_payload),
@@ -301,6 +310,10 @@ def _derive(source_id: str, upstream_payload: dict[str, Any]) -> list[dict[str, 
     if source_id == "software_advisory_cve":
         return _derive_software_advisory(upstream_payload)
     return []
+
+
+def _canonical_source_id(source_id: str) -> str:
+    return _ADAPTER_ALIASES.get(str(source_id or "").strip(), str(source_id or "").strip())
 
 
 def _derive_phishdestroy(payload: dict[str, Any]) -> list[dict[str, Any]]:

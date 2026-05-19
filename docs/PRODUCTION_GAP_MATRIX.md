@@ -12,6 +12,7 @@ curl -s http://127.0.0.1:8109/api/product/strategy-review | python3 -m json.tool
 curl -s http://127.0.0.1:8109/api/model/training-roadmap | python3 -m json.tool
 curl -s 'http://127.0.0.1:8109/api/model/incident-eval-set?limit=3' | python3 -m json.tool
 curl -s http://127.0.0.1:8109/api/reputation/backfill/status | python3 -m json.tool
+curl -s 'http://127.0.0.1:8109/api/intelligence/cyber-threats?cves=CVE-2024-3094&limit=5' | python3 -m json.tool
 curl -s http://127.0.0.1:8109/api/0g/storage-upload/manifest | python3 -m json.tool
 curl -s -i http://127.0.0.1:8109/api/x402/dry-run/wallet-preflight
 curl -s http://127.0.0.1:8109/api/0g/private-computer/smoke-preview | python3 -m json.tool
@@ -40,8 +41,12 @@ deferred, and orders the next production gates.
   detector coverage of 28 of 28, and a stable dataset fingerprint.
 - 0G mainnet `PolicyReceiptAnchor`: one public deny receipt is anchored and
   verifier routes are wired to the mainnet profile.
-- Rights-aware source registry: 34 tracked lanes and explicit raw-payload
+- Rights-aware source registry: 36 tracked lanes and explicit raw-payload
   resale prohibition.
+- Web2/Web3 threat repository: `/api/intelligence/cyber-threats` composes CISA
+  KEV, NVD CVE, MITRE ATT&CK Lazarus/Shai-Hulud context, exact-address OFAC
+  screening, and the historical crypto exploit corpus into derived-only
+  defensive signals.
 - First eval/backfill artifacts: `data/evals/incident_detector_eval.v1.jsonl`
   and `data/backfill/reputation_features/phishdestroy/latest.json`.
 - 0G Storage upload manifest: `/api/0g/storage-upload/manifest` hashes the
@@ -69,6 +74,10 @@ The hard gates are deliberately explicit:
 - Live reputation ingestion: the first open-feed derived artifact exists, but
   readiness now requires it to be fresh within TTL and supervised before it is
   green.
+- Sanctions and Web2 vulnerability ingestion: public CISA/NVD/OFAC workers now
+  exist, but production blocking still requires source freshness supervision,
+  dependency/address matching, retention rules, and vendor/legal review before
+  customer compliance claims.
 - 0G Storage upload/readback: bundle manifest and local hash readback exist,
   but no live 0G Storage upload or gateway proof exists.
 - x402 paid routes: product manifest and dry-run HTTP-402 route exist, but no

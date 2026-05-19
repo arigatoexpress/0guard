@@ -72,6 +72,7 @@ format accepted by 0G Chain Scan.
 | Historical backfill | Durable data plan, immutable JSONL run exports, and first eval/backfill artifacts | `/api/data/backfill-plan`, `/api/model/incident-eval-set`, `/api/reputation/backfill/status` |
 | 0G Compute | Router/direct setup path documented, not claimed live | Stated in `docs/hackathon-0g/mainnet-gap-register.md` |
 | Reputation layer | Live derived normalizer, shadow cache, and first PhishDestroy derived backfill artifact | `/api/reputation/*` routes, `data/backfill/reputation_features/phishdestroy/latest.json` |
+| Web2/Web3 threat repository | CISA KEV, NVD CVE, MITRE ATT&CK, OFAC SLS, and crypto exploit context as derived-only defensive signals | `/api/intelligence/cyber-threats`, `/api/reputation/connectors/live` |
 | Telegram Mini App | Live preview, no outbound sends | `/telegram`, `/api/telegram/miniapp/preview` |
 | Cross-chain guardrails | Live read-only catalog | `/api/integrations/cross-chain`, `/api/integrations/external-guardrails` |
 | Developer kit | Live | `/api/developer-kit`, `examples/native_preflight/` |
@@ -116,15 +117,15 @@ through public read-only APIs. Current repo truth:
 | Incidents | 28 |
 | Reported losses covered | `$634,862,000` |
 | Detector coverage | 28 of 28 incident-derived seeds |
-| Source registry | 34 tracked source lanes |
+| Source registry | 36 tracked source lanes |
 | Provenance coverage | 1.0 without live fetches |
 | Raw upstream payload resale | Disabled |
 
-Examples of source lanes include open phishing feeds, OFAC, Chainalysis
-Sanctions API/Oracle, TRM Wallet Screening/BLOCKINT, Forta labels, GoPlus,
-Chainabuse, MITRE ATT&CK Lazarus context, and Google Web Risk. External vendor
-connectors stay disabled until credentials, terms, retention rules, and
-operator acceptance are reviewed.
+Examples of source lanes include open phishing feeds, CISA KEV, NVD CVE, OFAC,
+Chainalysis Sanctions API/Oracle, TRM Wallet Screening/BLOCKINT, Forta labels,
+GoPlus, Chainabuse, MITRE ATT&CK Lazarus/Shai-Hulud context, and Google Web
+Risk. External vendor connectors stay disabled until credentials, terms,
+retention rules, and operator acceptance are reviewed.
 
 Examples of promoted detector categories include durable nonce/social
 engineering, unsafe-cast math, UUPS/admin upgrade compromise, bridge message

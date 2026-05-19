@@ -98,9 +98,10 @@ until a launchd/systemd/cron wrapper is reviewed.
 ## Adapter Normalization Contract
 
 `GET /api/reputation/adapters` exposes the exact no-network payload families
-0guard is ready to normalize first: PhishDestroy, CryptoScamDB, Forta labelled
-datasets, GoPlus Security, Chainabuse, and Forta GraphQL alerts/labels. This is
-a contract, not a fetcher.
+0guard is ready to normalize first: PhishDestroy, CryptoScamDB, OFAC SLS, Forta
+labelled datasets, GoPlus Security, Chainabuse, Forta GraphQL alerts/labels,
+DeFiLlama incidents, EVM event indexes, and software advisory/CVE context. This
+is a contract, not a fetcher.
 
 `POST /api/reputation/adapters/normalize` accepts a caller-provided upstream
 payload from an operator-reviewed worker and returns only derived evidence:
@@ -132,6 +133,18 @@ Expected result: schema `0guard.reputation_adapter_preview.v1`,
 can be passed into `/api/reputation/probe`, `/api/threat-case-file`, wallet
 alert previews, or the Telegram Mini App.
 
+Aliases are accepted for the new cyber/sanctions lane:
+
+- `cisa_kev` and `nvd_cve` normalize through `software_advisory_cve`.
+- `ofac_sanctions` normalizes through `ofac_sanctions_sls`.
+
+`GET/POST /api/reputation/connectors/live` now has reviewed live workers for
+PhishDestroy, CISA KEV, NVD CVE, and OFAC SLS. Live mode is opt-in with
+`live=1`; CISA/NVD reduce official public feeds to CVE ids, severity/context,
+hashes, links, and derived evidence. OFAC is exact-address oriented and returns
+redactions, hashes, counts, and not-legal-advice categories rather than raw SDN
+rows or full wallet lists.
+
 ## Derived Shadow Cache
 
 `GET/POST /api/reputation/shadow-cache` composes several reviewed adapter
@@ -162,6 +175,9 @@ feeds, custody credentials, or make network calls.
   caller supplies a domain, counterparty, label, or source evidence.
 - `/api/reputation/connectors` shows which external streams should be enabled
   next and under which rights/safety rules.
+- `/api/intelligence/cyber-threats` composes CISA/NVD/OFAC connector snapshots,
+  MITRE ATT&CK context, and the historical exploit feature set into one
+  derived-only Web2/Web3 threat repository.
 - `/api/reputation/adapters/normalize` is the bridge between reviewed upstream
   connector workers and public-safe derived evidence.
 - `/api/reputation/shadow-cache` gives Telegram, wallet alerts, and 0G receipt

@@ -170,6 +170,7 @@ def test_frontend_contract_is_browser_smoke_ready_and_non_mutating(client):
     assert "/api/osint/readiness" in data["apiRoutes"]
     assert "/api/osint/signals" in data["apiRoutes"]
     assert "/api/intelligence/evolving" in data["apiRoutes"]
+    assert "/api/intelligence/cyber-threats" in data["apiRoutes"]
     assert "/api/intelligence/data-streams" in data["apiRoutes"]
     assert "/api/x402/data-products" in data["apiRoutes"]
     assert "/api/x402/dry-run/wallet-preflight" in data["apiRoutes"]
@@ -246,6 +247,7 @@ def test_frontend_contract_is_browser_smoke_ready_and_non_mutating(client):
     assert "#load-live-provenance" in data["requiredSelectors"]
     assert "#osint-output" in data["requiredSelectors"]
     assert "#load-evolving-intel" in data["requiredSelectors"]
+    assert "#load-cyber-threat-repository" in data["requiredSelectors"]
     assert "#load-intelligence-stream-plan" in data["requiredSelectors"]
     assert "#load-product-brief" in data["requiredSelectors"]
     assert "#load-production-readiness" in data["requiredSelectors"]
@@ -658,6 +660,18 @@ def test_osint_and_hackathon_routes_are_read_only(client):
     assert evolving_body["qualityBar"]["walletTrackingDefault"] == "preview_no_send_read_only"
     assert evolving_body["safety"]["rawPayloadsReturned"] is False
 
+    cyber = client.get("/api/intelligence/cyber-threats?cves=CVE-2024-3094")
+    assert cyber.status_code == 200
+    cyber_body = cyber.get_json()
+    assert cyber_body["schema"] == "0guard.cyber_threat_repository.v1"
+    assert cyber_body["live"] is False
+    assert cyber_body["rightsPolicy"]["rawPayloadsReturned"] is False
+    assert cyber_body["safety"]["notLegalAdvice"] is True
+    assert cyber_body["safety"]["notAttribution"] is True
+    assert "mitre_attack_lazarus_g0032" in {
+        item["id"] for item in cyber_body["mitreTtpContext"]
+    }
+
     streams = client.get("/api/intelligence/data-streams")
     assert streams.status_code == 200
     stream_body = streams.get_json()
@@ -837,6 +851,15 @@ def test_cross_chain_integration_routes_are_read_only(client):
     assert live_connector_body["mode"] == "live_fetch_disabled"
     assert live_connector_body["safety"]["networkCalls"] is False
     assert live_connector_body["rightsPolicy"]["rawPayloadsReturned"] is False
+
+    cisa_connector = client.get(
+        "/api/reputation/connectors/live?sourceId=cisa_kev&cves=CVE-2024-3094"
+    )
+    assert cisa_connector.status_code == 200
+    cisa_body = cisa_connector.get_json()
+    assert cisa_body["sourceId"] == "cisa_kev"
+    assert cisa_body["mode"] == "live_fetch_disabled"
+    assert cisa_body["subject"]["cveIds"] == ["CVE-2024-3094"]
 
     backfill_status = client.get("/api/reputation/backfill/status")
     assert backfill_status.status_code == 200
@@ -1115,6 +1138,9 @@ def test_osint_signal_route_rejects_bad_limit(client):
     assert client.get("/api/intelligence/detector-candidates?limit=bad").status_code == 400
     assert client.get("/api/intelligence/detector-candidates?limit=0").status_code == 400
     assert client.get("/api/intelligence/detector-candidates?limit=51").status_code == 400
+    assert client.get("/api/intelligence/cyber-threats?limit=bad").status_code == 400
+    assert client.get("/api/intelligence/cyber-threats?limit=0").status_code == 400
+    assert client.get("/api/intelligence/cyber-threats?limit=26").status_code == 400
     assert client.get("/api/reputation/connectors/live?limit=bad").status_code == 400
     assert client.get("/api/reputation/connectors/live?limit=0").status_code == 400
     assert client.get("/api/reputation/connectors/live?limit=51").status_code == 400

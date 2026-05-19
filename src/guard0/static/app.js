@@ -454,6 +454,11 @@ async function loadEvolvingIntel(){
   const j = await r.json();
   writeJson('osint-output', j);
 }
+async function loadCyberThreatRepository(){
+  const r = await fetch('/api/intelligence/cyber-threats?limit=5&cves=CVE-2024-3094');
+  const j = await r.json();
+  writeJson('osint-output', j);
+}
 async function loadIntelligenceStreamPlan(){
   const r = await fetch('/api/intelligence/data-streams');
   const j = await r.json();
@@ -837,6 +842,7 @@ document.getElementById('load-osint-signals').addEventListener('click', loadOsin
 document.getElementById('load-phishdestroy-worker').addEventListener('click', loadPhishDestroyWorker);
 document.getElementById('load-reputation-backfill-status').addEventListener('click', loadReputationBackfillStatus);
 document.getElementById('load-evolving-intel').addEventListener('click', loadEvolvingIntel);
+document.getElementById('load-cyber-threat-repository').addEventListener('click', loadCyberThreatRepository);
 document.getElementById('load-intelligence-stream-plan').addEventListener('click', loadIntelligenceStreamPlan);
 document.getElementById('load-x402-data-products').addEventListener('click', loadX402DataProducts);
 document.getElementById('load-x402-dry-run').addEventListener('click', loadX402DryRun);
