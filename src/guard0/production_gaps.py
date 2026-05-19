@@ -299,11 +299,11 @@ def build_production_gap_matrix() -> dict[str, Any]:
                 "sdkExample": "examples/wallet_provider_guard/providerGuard.ts",
             },
             "Production wallet protection needs a guard in front of real EIP-1193 provider requests before wallet popups appear.",
-            "The API, workbench control, and SDK wrapper are implemented locally; they do not protect external users until deployed and embedded in a dapp or extension flow.",
-            "Deploy the route, wrap one MetaMask-compatible provider surface with the TypeScript helper, and prove deny/review requests stop before `provider.request`.",
+            "The hosted API, workbench control, and SDK wrapper exist; they do not protect external users until the wrapper is embedded in a real dapp or extension flow.",
+            "Wrap one MetaMask-compatible provider surface with the TypeScript helper, and prove deny/review requests stop before `provider.request`.",
             "ZeroGuard wallet integration lane",
             1,
-            ["hosted_route_deploy", "dapp_provider_integration", "production_review_ui"],
+            ["dapp_provider_integration", "production_review_ui"],
             "Embed `examples/wallet_provider_guard/providerGuard.ts` in one demo dapp and verify read-only requests pass while signing/broadcast requests block before the wallet prompt.",
             "Do not ask for private keys, forward denied requests, auto-broadcast transactions, or treat 0guard as wallet custody.",
             [
@@ -548,7 +548,7 @@ def build_production_gap_matrix() -> dict[str, Any]:
         "whyNotProductionReadyYet": [
             "Historical feature store has a seed API/export from current curated/local artifacts, but not the wider scheduled 2020-present backfill and query index.",
             "0G Storage bundle/readback plus x402 dry-run/caps/terms routes are prepared, but live upload/settlement are not enabled.",
-            "Wallet-provider protection is implemented locally, but it is not yet hosted and embedded in a production dapp/provider flow.",
+            "Wallet-provider protection is hosted and implemented, but it still needs a real dapp/provider integration proof before production claims.",
             "0G Private Computer has no server-side Router key or paid inference smoke in this runtime.",
             "Telegram live identity/webhook proof is not loaded in the current local process.",
             "The funded 0G storage node is near-current, but peer depth still blocks larger funding expansion.",
