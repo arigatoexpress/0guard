@@ -86,7 +86,8 @@ Rules:
 - Store derived features, source ids, source URLs, timestamps, and hashes.
 - Do not store private keys, mnemonics, raw Telegram chats, payment headers, or
   raw paid-feed payloads.
-- Keep each backfill run append-only and fingerprinted.
+- Keep each backfill run immutable and fingerprinted; latest aliases are for
+  operator convenience, not the source of audit truth.
 - Separate public-safe artifacts from operator-only local snapshots.
 - Put every paid or licensed source behind a rights envelope before it can affect
   a product route.
@@ -102,8 +103,8 @@ PYTHONPATH=src .venv/bin/python scripts/reputation_backfill_worker.py \
   --out data/backfill/reputation_features/phishdestroy/latest.json
 ```
 
-Implementation should continue with append-only JSONL, then graduate to DuckDB
-or SQLite when query volume justifies it.
+Implementation should continue with immutable JSONL run artifacts plus a latest
+alias, then graduate to DuckDB or SQLite when query volume justifies it.
 
 ## Production Gap And Model Roadmap
 

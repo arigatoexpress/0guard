@@ -1,6 +1,6 @@
 # RV 0G Storage Soak Operations
 
-Updated: May 17, 2026.
+Updated: May 19, 2026.
 
 This runbook connects the live RV Windows storage node to ZeroGuard without
 turning the workbench into a signer, wallet, Telegram sender, or node-control
@@ -59,24 +59,25 @@ curl 'http://127.0.0.1:8109/api/0g/storage-node/peer-diagnostics?snapshot=1'
 The current diagnostic posture is:
 
 - `zgs_node v1.2.0` is running.
-- Storage RPC is healthy on 0G mainnet with `connectedPeers=2`.
-- Sync is effectively current; the last refreshed gap was `1` block.
+- Storage RPC is healthy on 0G mainnet with `connectedPeers=0`.
+- Sync is effectively current; the last refreshed gap was `8` blocks.
 - Live shard readback reports `shardId=0`, `numShard=1`. This means the node is
   currently responsible for the full storage range, even though the config file
   still contains the initial `shard_position = "0/2"` hint. Per 0G's docs, that
   config value only applies before the DB stores a shard config.
 - Local TCP and UDP `1234` are listening inside WSL.
-- FRP reports both `0g-storage-mainnet-tcp` and
-  `0g-storage-mainnet-udp` proxy startup success.
+- The GCP relay publishes storage TCP/UDP `1234`, and the DA reverse tunnel on
+  `34000` is reachable again. On May 19, the remaining relay issue was a stale
+  GCP firewall source range for FRP control port `7000`; adding the current
+  home IP restored both public sockets.
 - The redacted config exposes mainnet boot/libp2p nodes, `auto_sync_enabled`,
   and `shard_position = "0/2"`.
 - Recent zgs logs repeatedly show `Finding peers ... num_new_peers=0`.
-- A bounded restart of `\0GStorageMainnetFunded` on May 17, 2026 relaunched the
-  node cleanly and confirmed the node reconnects to two peers and fetches
-  chunks, but it did not clear the peer-depth blocker.
+- No storage-node restart was performed during the May 19 relay fix.
 
-That means the remaining blocker is shallow peer discovery/availability, not a
-missing local bind, missing boot-node config, or closed TCP relay.
+That means the only remaining expansion blocker is shallow peer
+discovery/availability. Public relay and DA tunnel blockers are cleared; larger
+funding is still blocked until peer depth reaches the reviewed target.
 
 ## Expansion Blockers
 

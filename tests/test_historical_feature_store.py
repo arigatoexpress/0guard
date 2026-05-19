@@ -50,9 +50,19 @@ def test_historical_feature_store_jsonl_export(tmp_path):
     assert manifest["schema"] == "0guard.historical_feature_store_export.v1"
     assert manifest["featureCount"] >= 3
     assert manifest["fileHash"]
+    assert manifest["latestAliasPath"].endswith("seed.v1.jsonl")
+    assert manifest["immutableRunPath"].endswith(".jsonl")
+    assert "/runs/" in manifest["immutableRunPath"]
+    assert manifest["latestAliasUpdated"] is True
     assert manifest["safety"]["transactionSigningEnabled"] is False
 
     rows = [json.loads(line) for line in Path(out_path).read_text().splitlines()]
     assert len(rows) == manifest["featureCount"]
     assert rows[0]["featureType"] == "incident_detector_trace"
     assert rows[-1]["rights"]["rawPayloadResaleAllowed"] is False
+
+    run_path = tmp_path / Path(manifest["immutableRunPath"]).name
+    if not run_path.exists():
+        run_path = tmp_path / "runs" / Path(manifest["immutableRunPath"]).name
+    assert run_path.exists()
+    assert run_path.read_text() == out_path.read_text()

@@ -98,6 +98,7 @@ def build_snapshot(args: argparse.Namespace) -> dict[str, Any]:
 
 def read_primary(args: argparse.Namespace) -> dict[str, Any]:
     health = http_json(args.primary_health_url)
+    health_json = health.get("json") if isinstance(health.get("json"), dict) else {}
     hostname = ssh_text(args.primary_ssh, "hostname")
     ip_addr = ssh_json(args.primary_ssh, "ip -j addr")
     ip_link = ssh_json(args.primary_ssh, "ip -j link")
@@ -115,8 +116,8 @@ def read_primary(args: argparse.Namespace) -> dict[str, Any]:
         "wifiIpv4": first_ipv4(wlan),
         "ethernetIpv4": first_ipv4(eth),
         "reachable": hostname.get("returncode") == 0 or health.get("ok") is True,
-        "hostname": hostname.get("stdout", "").strip() or health.get("json", {}).get("hostname"),
-        "role": health.get("json", {}).get("role", "primary"),
+        "hostname": hostname.get("stdout", "").strip() or health_json.get("hostname"),
+        "role": health_json.get("role", "primary"),
         "status": "online" if health.get("ok") else "ssh_only" if hostname.get("returncode") == 0 else "unreachable",
         "edgeApiReady": health.get("ok") is True,
         "health": public_payload(health.get("json")),

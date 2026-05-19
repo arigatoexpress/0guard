@@ -34,8 +34,12 @@ touching `window.ethereum`.
 Local smoke:
 
 ```bash
-PYTHONPATH=src .venv/bin/python scripts/wallet_provider_external_dapp_smoke.py
+PYTHONPATH=src .venv/bin/python scripts/browser_smoke.py
 ```
+
+That smoke injects a mock EIP-1193 provider so CI can prove the wrapper blocks
+`review` and `deny` requests before forwarding. It is not a real wallet
+extension proof.
 
 Manual empty-wallet check:
 
@@ -48,6 +52,10 @@ Then open `http://127.0.0.1:8142` in a wallet-enabled browser, keep the API
 base as `https://guard0-miniapp-s77j6bxyra-uc.a.run.app`, and use a throwaway
 empty account. `Read chain` may forward; `Switch chain` and `Unlimited approval`
 should stop before a wallet prompt.
+
+Do not claim production wallet protection until this manual check has been run
+against an actual wallet extension window with an empty throwaway account and
+the denial evidence has been saved.
 
 ## Safety
 
