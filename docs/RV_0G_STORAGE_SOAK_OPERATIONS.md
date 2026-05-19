@@ -36,12 +36,47 @@ curl 'http://127.0.0.1:8109/api/0g/storage-node/status?snapshot=1'
 The browser button is **0G Node Ops -> Storage soak**. It reads the same route
 and shows:
 
-- `funded_soak_syncing` while the node is funded only with the small test
-  amount and still catching up;
+- `funded_soak_syncing` while sync-gap blockers remain;
+- `funded_soak_blocked` when the node is near-current but another expansion
+  blocker, such as peer depth, is still present;
 - `activeMinerBalanceOg` for the monitored miner public address;
 - `onlyPriorTestFundingObserved`;
 - `hundredOgTransferSent`;
 - DB size, sync gap, relay state, connected peers, and expansion blockers.
+- live shard config from `zgs_getShardConfig`, which is the actual storage
+  responsibility the node has adopted from its DB.
+
+## Peer Diagnostics
+
+When sync is current but peer depth is low, refresh the redacted peer diagnostic
+snapshot:
+
+```bash
+./scripts/rv_0g_peer_diagnostics.py --out content/rv_0g_peer_diagnostics.local.json
+curl 'http://127.0.0.1:8109/api/0g/storage-node/peer-diagnostics?snapshot=1'
+```
+
+The current diagnostic posture is:
+
+- `zgs_node v1.2.0` is running.
+- Storage RPC is healthy on 0G mainnet with `connectedPeers=2`.
+- Sync is effectively current; the last refreshed gap was `1` block.
+- Live shard readback reports `shardId=0`, `numShard=1`. This means the node is
+  currently responsible for the full storage range, even though the config file
+  still contains the initial `shard_position = "0/2"` hint. Per 0G's docs, that
+  config value only applies before the DB stores a shard config.
+- Local TCP and UDP `1234` are listening inside WSL.
+- FRP reports both `0g-storage-mainnet-tcp` and
+  `0g-storage-mainnet-udp` proxy startup success.
+- The redacted config exposes mainnet boot/libp2p nodes, `auto_sync_enabled`,
+  and `shard_position = "0/2"`.
+- Recent zgs logs repeatedly show `Finding peers ... num_new_peers=0`.
+- A bounded restart of `\0GStorageMainnetFunded` on May 17, 2026 relaunched the
+  node cleanly and confirmed the node reconnects to two peers and fetches
+  chunks, but it did not clear the peer-depth blocker.
+
+That means the remaining blocker is shallow peer discovery/availability, not a
+missing local bind, missing boot-node config, or closed TCP relay.
 
 ## Expansion Blockers
 
@@ -56,6 +91,21 @@ Do not send larger mainnet funds until these are clear:
 
 The DA relay blocker is tracked separately because it gates the future DA lane,
 not the storage node's current P2P relay on `1234`.
+
+## 25 0G Funding Review
+
+Do not top up the active miner while `connected_peers_below_target_8` remains.
+The reviewed recipient for future storage-node expansion is the active miner
+public address reported by the snapshot:
+
+```text
+0xf5c1c3eb88c262adb451c1ce3b1c391f7d968ecd
+```
+
+The current recommended action remains `continue_soak_no_additional_funding`.
+When peer depth is green, prepare a final transaction manifest with exact
+recipient, amount, source wallet, chain id `16661`, expected post-transfer
+balances, and rollback/stop criteria before signing from the wallet UI.
 
 ## Safety Boundary
 

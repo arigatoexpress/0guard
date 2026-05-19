@@ -99,7 +99,7 @@ opening live side effects.
   `ari-status`, and `ari-peer-check`;
 - TCP probes from `rvpi-a` to `rvpi-b` on `10.77.4.12`.
 
-It writes `content/rv_pi_mesh.local.json`, which is ignored by git. A partial
-cluster is still valuable: ZeroGuard can use `rvpi-a` for telemetry and evidence
-cache work now, while keeping `rvpi-b` blocked until identity and edge runtime
-are verified.
+It writes `content/rv_pi_mesh.local.json`, which is ignored by git. The current
+Ethernet snapshot verifies both Pis: `rvpi-a` is the primary telemetry sentinel,
+and `rvpi-b` is an identity-verified worker/standby evidence cache reachable at
+`10.77.4.12`.

@@ -928,9 +928,9 @@
           <li><strong>Threat case file:</strong> `/api/threat-case-file` is now the composed proof dossier for one risky agent request, with policy, signatures, reputation, alert quality, provenance, and 0G-ready receipt evidence.</li>
           <li><strong>0G proof ladder:</strong> `/api/0g/proof-ladder` returns a mainnet-aware Chain, Storage, DA, Compute, and Alignment verifier packet without live uploads, inference, signing, broadcasts, or node operation.</li>
           <li><strong>RV storage soak:</strong> `/api/0g/storage-node/status?snapshot=1` reads a local, git-ignored soak snapshot with process, relay, DB, sync-gap, and balance state, while keeping private keys and funding actions out of the app.</li>
-          <li><strong>Pi edge mesh:</strong> `/api/0g/pi-mesh?snapshot=1` reads the RV Pi Ethernet snapshot. `rvpi-a` can act as a read-only sentinel now; `rvpi-b` stays blocked until identity and edge runtime are verified.</li>
+          <li><strong>Pi edge mesh:</strong> `/api/0g/pi-mesh?snapshot=1` reads the RV Pi Ethernet snapshot. `rvpi-a` is the read-only sentinel, and `rvpi-b` is now identity-verified over Ethernet as a standby evidence-cache worker.</li>
           <li><strong>0G Compute readiness:</strong> `/api/0g/private-computer` and `/api/0g/hot-wallet-resources` prepare the 0G Router, 0GM-1.0, API-key, and hot-wallet path without paid inference or money movement.</li>
-          <li><strong>Production readiness:</strong> `/api/readyz` reports mainnet verifier config, public proof file status, detector coverage, reputation shadow-cache health, and the remaining Telegram persistence review item.</li>
+          <li><strong>Production readiness:</strong> `/api/readyz` reports mainnet verifier config, proof-file status, detector coverage, reputation backfill, Pi mesh health, storage soak blockers, Telegram identity, 0G Storage readback, 0G Private Computer smoke, x402 settlement, and the no-send/no-sign safety locks.</li>
           <li><strong>Open-source OSINT adapters:</strong> `/api/reputation/adapters` now exposes PhishDestroy, CryptoScamDB, Forta labelled datasets, GoPlus, Chainabuse, and Forta GraphQL as no-network normalization contracts.</li>
           <li><strong>Reputation shadow cache:</strong> `/api/reputation/shadow-cache` composes reviewed PhishDestroy, CryptoScamDB, and Forta-shaped evidence into a reusable derived intelligence snapshot without live fetches or raw source-payload resale.</li>
           <li><strong>Professional repo posture:</strong> Apache-2.0 license, `NOTICE`, source/asset policy, and tracked public-media registry are now explicit.</li>
@@ -1037,7 +1037,7 @@ $ <span class="cmd">0guard</span> evaluate --intent-json '{"action":"approve","m
 &nbsp;&nbsp;<span class="key">"decision"</span>: <span class="string">"deny"</span>,<br>
 &nbsp;&nbsp;<span class="key">"severity"</span>: <span class="string">"critical"</span>,<br>
 &nbsp;&nbsp;<span class="key">"zero_g"</span>: {<br>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"chain_anchor"</span>: {<span class="key">"status"</span>: <span class="string">"preflight"</span>, <span class="key">"chain_id"</span>: <span class="num">16602</span>},<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"chain_anchor"</span>: {<span class="key">"status"</span>: <span class="string">"preflight"</span>, <span class="key">"chain_id"</span>: <span class="num">16661</span>},<br>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"storage_receipt"</span>: {<span class="key">"stored"</span>: true, <span class="key">"root_hash"</span>: <span class="string">"43fd61...b8bb"</span>}<br>
 &nbsp;&nbsp;}<br>
 }<br>

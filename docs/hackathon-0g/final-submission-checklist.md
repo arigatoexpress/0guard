@@ -48,8 +48,8 @@ Submission proof artifact: `docs/hackathon-0g/hackquest-submission-proof.json`
 - Media archive: submitted MP4 retained for continuity; proof links and API
   readbacks are the canonical public evidence.
 - Production revision: `guard0-miniapp-112c7b7`
-- Source catalog: 30 tracked sources at `/api/osint/sources`
-- Reputation connector manifest: 17 no-network connector candidates at
+- Source catalog: 34 tracked sources at `/api/osint/sources`
+- Reputation connector manifest: 20 no-network connector candidates at
   `/api/reputation/connectors`
 
 ## Mainnet Proof Ready
@@ -202,10 +202,10 @@ Expected high-signal fields:
    project-image assets.
 6. Refreshed the public proof packet with Apache-2.0 licensing, source/asset
    policy, asset registry, and proof-first media archive links.
-7. Promoted production revision `guard0-miniapp-112c7b7` with 30
-   rights-aware OSINT source lanes and 17 no-network reputation connector
+7. Promoted production revision `guard0-miniapp-112c7b7` with 34
+   rights-aware OSINT source lanes and 20 no-network reputation connector
    candidates, including disabled-by-default ThreatFox, Chainalysis sanctions
-   oracle, and Google Cloud Web Risk lanes.
+   API/Oracle, TRM Wallet Screening/BLOCKINT, and Google Cloud Web Risk lanes.
 
 ## Manual Recovery Note
 

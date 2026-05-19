@@ -1,8 +1,8 @@
 {
   "title": "0guard post-submit source intelligence update",
   "tweets": [
-    "0guard post-submit update: the project is submitted for the 0G APAC Hackathon, and the live proof stack is deployed on Cloud Run.\n\nProduction now exposes 30 rights-aware source lanes and 17 no-network reputation connector candidates.",
-    "The new source lanes include disabled-by-default ThreatFox, Chainalysis sanctions oracle, and Google Cloud Web Risk candidates.\n\nImportant boundary: no raw feed resale, no hidden API keys, no live fetches until auth, terms, privacy, and retention are reviewed.",
+    "0guard post-submit update: the project is submitted for the 0G APAC Hackathon, and the live proof stack is deployed on Cloud Run.\n\nProduction now exposes 34 rights-aware source lanes and 20 no-network reputation connector candidates.",
+    "The newest lanes add Chainalysis Sanctions API/Oracle, TRM Wallet Screening/BLOCKINT, MITRE Lazarus context, ThreatFox, and Web Risk.\n\nBoundary: no raw feed resale, hidden API keys, or live fetches until auth, terms, privacy, and retention are reviewed.",
     "The core product is still simple: AI agents should not get to the wallet first.\n\n0guard checks intent, calldata, domain/reputation context, exploit signatures, and source provenance before any signer prompt.",
     "Live proof:\nhttps://arigatoexpress.github.io/0guard/hackathon-0g/\n\nMini App:\nhttps://guard0-miniapp-s77j6bxyra-uc.a.run.app/telegram\n\nRepo:\nhttps://github.com/arigatoexpress/0guard\n\n#0GHackathon #BuildOn0G"
   ]

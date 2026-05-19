@@ -21,10 +21,11 @@ reads back as submitted and complete.
 
 - Live app: https://guard0-miniapp-s77j6bxyra-uc.a.run.app
 - Production revision: `guard0-miniapp-112c7b7`
-- Source catalog: 30 rights-aware intelligence lanes
-- Reputation connector manifest: 17 no-network connector candidates
+- Source catalog: 34 rights-aware intelligence lanes
+- Reputation connector manifest: 20 no-network connector candidates
 - New disabled-by-default lanes: ThreatFox IOC API, Chainalysis sanctions
-  oracle, and Google Cloud Web Risk
+  API/Oracle, TRM Wallet Screening/BLOCKINT, MITRE Lazarus context, and Google
+  Cloud Web Risk
 
 ## Prepared Social Posts
 

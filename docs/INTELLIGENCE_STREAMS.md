@@ -8,6 +8,8 @@ incident dataset without pretending raw feeds are ours to resell.
 | Phase | Stream | Why | Integration | Rights posture |
 |---|---|---|---|---|
 | 1 | PhishDestroy + CryptoScamDB + Forta labels, then GoPlus / Chainabuse | Highest near-term value for domain, recipient, approval, dApp, and Telegram risk with open-source feeds first. | The live `/api/reputation/probe` contract now feeds `/api/native-preflight`, wallet alerts, and Telegram previews; `/api/reputation/adapters/normalize` converts reviewed upstream payloads into derived evidence. External live fetches stay disabled until keys/terms are reviewed. | Derived verdicts, links, hashes, source ids, and confidence only. |
+| 1 | OFAC + Chainalysis Sanctions API/Oracle + TRM Wallet Screening/BLOCKINT | Gives ZeroGuard a credible AML/sanctions lane for exact-address preflight, vendor-backed corroboration, and escalation workflows. | `/api/osint/sources` and `/api/reputation/connectors` now expose disabled-by-default Chainalysis API, Chainalysis Oracle, TRM Wallet Screening, and TRM BLOCKINT candidates. Live calls wait for credentials, terms, caching rules, and operator acceptance. | Sanctions context is not legal advice. TRM/Chainalysis raw payloads are not public outputs; use derived verdicts, redacted addresses, source links, hashes, and receipt metadata. |
+| 1 | MITRE ATT&CK Lazarus G0032 + DPRK tradecraft context | Helps explain adversary behavior such as job-lure phishing, infrastructure compromise, credential theft, wipers, and exfiltration without pretending ATT&CK is wallet attribution. | Catalog-only TTP context feeds detector hypotheses, training material, and case-file narratives; wallet blocking still requires direct wallet/domain/transaction/vendor evidence. | Technique IDs, aliases, source links, and defensive mappings only. Do not assert Lazarus attribution from TTP context alone. |
 | 1 | x402 derived defensive artifacts | Gives agents and wallets a clean paid-access path for ZeroGuard verdicts, threat packets, node snapshots, and backfilled incident features. | `/api/x402/data-products` exposes the product manifest now; settlement stays disabled until a testnet facilitator flow and spend limits are reviewed. | Payment unlocks derived outputs only; no raw upstream payload resale. |
 | 1 | Forta labels and attack alerts | Emerging exploit-stage intelligence before it becomes a hard blocker. | Digest-only queue using Forta alert/label metadata; promote to wallet alert only with direct detector/source evidence. | Respect public label attribution and any premium feed terms. |
 | 2 | Tenderly or BlockSec simulation | Adds state-change previews for approvals, swaps, and contract calls. | Optional `simulate_intent` adapter returning asset deltas and dangerous calls. | Do not persist/resell full traces unless vendor terms allow it. |
@@ -22,14 +24,37 @@ incident dataset without pretending raw feeds are ours to resell.
 1. Use PhishDestroy / CryptoScamDB / Forta labelled datasets first because they
    can improve phishing and attacker-label coverage without immediate paid
    credentials.
-2. GoPlus or Chainabuse only after free/keyed access materially improves alert
+2. Use the Chainalysis Sanctions API and Oracle as the first AML/sanctions
+   activation lane because the official API has a direct exact-address lookup
+   contract, an OpenAPI document, and a clear backend-only integration model.
+3. Keep TRM Wallet Screening and BLOCKINT as the strongest commercial
+   escalation lane. Outreach has been sent to TRM asking for the right
+   developer, sandbox, pricing, retention, and partner path before any live
+   integration claim.
+4. GoPlus or Chainabuse only after free/keyed access materially improves alert
    quality or the demo hits rate limits.
-3. x402 only after route schemas, spend limits, testnet facilitator proof, and
+5. x402 only after route schemas, spend limits, testnet facilitator proof, and
    MetaMask/1Shot permission boundaries are reviewed.
-4. Tenderly or BlockSec simulation once the reputation adapter is already used
+6. Tenderly or BlockSec simulation once the reputation adapter is already used
    by real product flows.
-5. Dune, Allium, or Bitquery only when native adapters cannot cover a chain or
+7. Dune, Allium, or Bitquery only when native adapters cannot cover a chain or
    historical feature quickly enough.
+
+## Outreach And Vendor Path
+
+On May 17, 2026, outreach was sent to TRM Labs and Chainalysis asking about
+developer access, sandbox credentials, OpenAPI/SDK material, attribution
+requirements, caching/retention limits, and the correct partner path for a
+defensive agent preflight product. The public product should describe these as
+`source-ready-live-proof-pending` until we have vendor approval and live
+readback evidence.
+
+The Chainalysis lane is useful immediately as a design target: the Sanctions
+Screening API is an API-key backend lookup for a specific address, and the
+public oracle remains a no-key on-chain signal. The TRM lane should be treated
+as commercial enrichment for broader risk exposure, entity attribution, wallet
+screening, and high-volume intelligence once TRM confirms what we are allowed
+to cache and display.
 
 ## Current API Proof
 
@@ -51,8 +76,9 @@ incident dataset without pretending raw feeds are ours to resell.
   redactions, confidence, and receipt metadata.
 - `/api/reputation/connectors` turns the source registry into an activation
   manifest for the subject being checked. It does not call external networks;
-  it tells an integrator which GoPlus, Chainabuse, Forta, TON, simulation, or
-  cross-chain connector applies and what rights boundary must be preserved.
+  it tells an integrator which open-source phishing, OFAC, Chainalysis, TRM,
+  GoPlus, Chainabuse, Forta, TON, simulation, or cross-chain connector applies
+  and what rights boundary must be preserved.
 - `/api/reputation/adapters` and `/api/reputation/adapters/normalize` are the
   first no-network adapter contracts for PhishDestroy, CryptoScamDB, Forta
   labelled datasets, GoPlus, Chainabuse, and Forta GraphQL. They accept

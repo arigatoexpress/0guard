@@ -33,16 +33,30 @@ can verify now from what remains before a production/mainnet launch.
   `contract_not_configured` honestly otherwise.
 - 0G Storage payload: Storage-ready receipts and deterministic root hashes are
   produced for matching threat intel. Evidence:
-  `zero_g.storage_receipt.root_hash`.
+  `zero_g.storage_receipt.root_hash` and `/api/0g/storage-upload/manifest`.
 - 0G node telemetry: read-only DA/storage/alignment/validator/operator routes
   expose balance, relay, peer, sync, yield-source, and readiness posture without
   funding or signing. Evidence: `/api/0g/da-node/status`,
   `/api/0g/storage-node/status`, `/api/0g/node-business`.
 - 0G Private Computer readiness: Router/model/API-key/hot-wallet resources are
-  manifest-ready and can read the Router model catalog without authentication.
+  manifest-ready, can read the Router model catalog without authentication,
+  and expose a no-inference prompt-scrub smoke contract.
   Evidence: `/api/0g/private-computer`, `/api/0g/private-computer?live=1`,
+  `/api/0g/private-computer/smoke-preview`,
   `/api/0g/hot-wallet-resources`, and
   `docs/0G_PRIVATE_COMPUTE_AND_HOT_WALLET_RUNBOOK.md`.
+- Production gap matrix: the repo now exposes a machine-readable real/local/
+  source-ready/mock classifier and an eval-first model-training roadmap.
+  Evidence: `/api/production/gaps`, `/api/model/training-roadmap`,
+  `/api/model/incident-eval-set`, `data/evals/incident_detector_eval.v1.jsonl`,
+  and `docs/PRODUCTION_GAP_MATRIX.md`.
+- First derived reputation backfill: PhishDestroy is promoted into a derived
+  artifact with hashes/counts/evidence only, no raw domains. Evidence:
+  `/api/reputation/backfill/status` and
+  `data/backfill/reputation_features/phishdestroy/latest.json`.
+- x402 dry-run: wallet-preflight product route returns HTTP-402 metadata and
+  accepts only a fixture payment header without facilitator calls or settlement.
+  Evidence: `/api/x402/dry-run/wallet-preflight`.
 - Telegram Mira preview: local opt-in and response preview exist without
   sending Telegram messages. Evidence: `/api/telegram/status` and
   `/api/telegram/mira-preview`.
@@ -53,14 +67,25 @@ can verify now from what remains before a production/mainnet launch.
   that wants `/api/0g/receipt` to return `verified` must set
   `ZGG_CHAIN_RPC=https://evmrpc.0g.ai`, `ZGG_CHAIN_ID=16661`, and
   `ZGG_RECEIPT_CONTRACT=0xBaC59b1571b7c7195915c5B36D8A719Ed7182abc`.
-- Live 0G Storage upload: current Storage receipts are deterministic and
-  Storage-ready but not uploaded by default. Next step: wire the 0G Storage
-  SDK/gateway upload behind explicit operator config and add readback by key or
-  root hash.
+- Live 0G Storage upload: current Storage receipts and bundle manifests are
+  deterministic and Storage-ready but not uploaded by default. Next step: wire
+  the 0G Storage SDK/gateway upload behind explicit operator config and add
+  gateway readback by key or root hash.
+- Historical feature store: the backfill plan exists, but production still
+  needs scheduled append-only JSONL runs and then DuckDB/SQLite query storage
+  for source-cited incidents, reputation features, node telemetry, and x402
+  usage metadata. The first incident eval and first reputation artifact now
+  exist; the next step is supervision and query storage.
 - 0G Compute scoring: current scoring is deterministic policy/signature logic,
   not live paid 0G Compute inference. Next step: deposit a small Router budget
-  through `pc.0g.ai`, create one server-side API key, and add a tiny
-  operator-confirmed inference smoke before using 0GM explanations in previews.
+  through `pc.0g.ai`, create one server-side API key, review the smoke-preview
+  contract, and run a tiny operator-confirmed inference smoke before using 0GM
+  explanations in previews.
+- 0G model data loop: 0GM/local inference should summarize and explain
+  deterministic verdict packets, not replace policy authority. Next step: build
+  the remaining eval harness around the new incident JSONL export, then extend
+  it with policy traces, node telemetry, and no-send peer drafts before claiming
+  training or fine-tuning.
 - Provenance completion: 28 of 28 April 2026 records now carry per-incident
   source URLs and reviewed derived source evidence. Detector coverage is 28 of
   28 incident-derived patterns after the `Quant` row was promoted from

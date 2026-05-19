@@ -6,10 +6,11 @@ service is now running a stronger source-intelligence layer.
 What changed:
 
 - Production revision: `guard0-miniapp-112c7b7`
-- Source catalog: 30 rights-aware intelligence lanes
-- Reputation connector manifest: 17 no-network connector candidates
+- Source catalog: 34 rights-aware intelligence lanes
+- Reputation connector manifest: 20 no-network connector candidates
 - New disabled-by-default lanes: ThreatFox IOC API, Chainalysis sanctions
-  oracle, and Google Cloud Web Risk
+  API/Oracle, TRM Wallet Screening/BLOCKINT, MITRE Lazarus context, and Google
+  Cloud Web Risk
 - Hard boundary preserved: no raw feed resale, no hidden API keys, no live
   fetches until credentials, commercial-use terms, privacy, and retention rules
   are reviewed
@@ -34,6 +35,6 @@ Repo:
 https://github.com/arigatoexpress/0guard
 
 0G anchor proof:
-https://chainscan.0g.ai/tx/64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed
+https://chainscan.0g.ai/tx/0x64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed
 
 #0GHackathon #BuildOn0G #Web3Security #AIagents #CryptoSecurity

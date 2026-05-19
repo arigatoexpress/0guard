@@ -153,6 +153,10 @@ def test_pi_mesh_plan_loads_live_snapshot_without_enabling_sends(tmp_path):
     plan = build_pi_mesh_plan(status_file=str(snapshot_path))
 
     assert plan["mode"] == "rv_pi_mesh_snapshot_file"
+    assert plan["clusterReady"] is False
+    assert "rvpi_b_identity_unverified" in plan["blockers"]
+    assert plan["nodes"][1]["ethernetIpv4"] == "10.77.4.12"
+    assert plan["snapshot"]["status"] == "loaded"
     assert plan["fileStatus"]["status"] == "loaded"
     assert plan["observedNodes"][0]["eth0"] == "carrier_ready"
     assert plan["observedNodes"][1]["ethernetIpv4"] == "10.77.4.12"

@@ -65,14 +65,21 @@ def test_health(client):
     assert data["x402_data_products"]["schema"] == "0guard.x402_data_products.v1"
     assert data["x402_data_products"]["safety"]["x402SettlementEnabled"] is False
     assert data["historical_backfill_plan"]["schema"] == "0guard.historical_backfill_plan.v1"
+    assert data["production_gaps"]["schema"] == "0guard.production_gap_matrix.v1"
+    assert data["production_gaps"]["productionReady"] is False
+    assert data["production_gaps"]["safety"]["moneyMovementEnabled"] is False
+    assert data["model_training_roadmap"]["schema"] == "0guard.model_training_roadmap.v1"
+    assert data["model_training_roadmap"]["safety"]["trainingRunStarted"] is False
+    assert data["incident_eval_set"]["schema"] == "0guard.incident_detector_eval_set.v1"
+    assert data["incident_eval_set"]["caseCount"] == 3
     assert data["0g_hot_wallet_resources"]["schema"] == "0guard.0g_hot_wallet_resources.v1"
     assert data["0g_hot_wallet_resources"]["safety"]["moneyMovementEnabled"] is False
     assert data["peer_protection"]["schema"] == "0guard.peer_protection_plan.v1"
     assert data["peer_protection"]["safety"]["externalMessagesEnabled"] is False
     assert data["pi_mesh"]["schema"] == "0guard.pi_mesh_plan.v1"
-    assert data["0g_chain_id"] == 16602
-    assert data["0g_chain_rpc"] == "https://evmrpc-testnet.0g.ai"
-    assert data["0g_receipt_contract"] == "0x0000000000000000000000000000000000000000"
+    assert data["0g_chain_id"] == 16661
+    assert data["0g_chain_rpc"] == "https://evmrpc.0g.ai"
+    assert data["0g_receipt_contract"] == "0xBaC59b1571b7c7195915c5B36D8A719Ed7182abc"
 
 
 def test_healthz_aliases(client):
@@ -88,6 +95,18 @@ def test_healthz_aliases(client):
         assert data["money_movement_enabled"] is False
         assert data["safety_flags"]["telegram_sends_enabled"] is False
         assert data["safety_flags"]["money_movement_enabled"] is False
+
+
+def test_deployment_readiness_route_is_read_only(client):
+    r = client.get("/api/deployment/readiness")
+    assert r.status_code == 200
+    data = r.get_json()
+    assert data["schema"] == "0guard.deployment_readiness.v1"
+    assert data["safety"]["readOnly"] is True
+    assert data["safety"]["networkCalls"] is False
+    assert data["safety"]["transactionSigningEnabled"] is False
+    assert data["safety"]["moneyMovementEnabled"] is False
+    assert any(gate["id"] == "clean_revision_for_app_deploy" for gate in data["promotionGates"])
 
 
 def test_module_entrypoint_honors_container_host_env(monkeypatch):
@@ -121,10 +140,13 @@ def test_frontend_contract_is_browser_smoke_ready_and_non_mutating(client):
     assert "/api/0g/status" in data["apiRoutes"]
     assert "/api/0g/da-node/status" in data["apiRoutes"]
     assert "/api/0g/storage-node/status" in data["apiRoutes"]
+    assert "/api/0g/storage-node/peer-diagnostics" in data["apiRoutes"]
+    assert "/api/0g/storage-upload/manifest" in data["apiRoutes"]
     assert "/api/0g/alignment-node/status" in data["apiRoutes"]
     assert "/api/0g/validator-capacity" in data["apiRoutes"]
     assert "/api/0g/node-business" in data["apiRoutes"]
     assert "/api/0g/private-computer" in data["apiRoutes"]
+    assert "/api/0g/private-computer/smoke-preview" in data["apiRoutes"]
     assert "/api/local-inference/status" in data["apiRoutes"]
     assert "/api/telegram/local-inference-preview" in data["apiRoutes"]
     assert "/api/0g/hot-wallet-resources" in data["apiRoutes"]
@@ -145,8 +167,14 @@ def test_frontend_contract_is_browser_smoke_ready_and_non_mutating(client):
     assert "/api/intelligence/evolving" in data["apiRoutes"]
     assert "/api/intelligence/data-streams" in data["apiRoutes"]
     assert "/api/x402/data-products" in data["apiRoutes"]
+    assert "/api/x402/dry-run/wallet-preflight" in data["apiRoutes"]
     assert "/api/intelligence/detector-candidates" in data["apiRoutes"]
     assert "/api/product/brief" in data["apiRoutes"]
+    assert "/api/product/strategy-review" in data["apiRoutes"]
+    assert "/api/deployment/readiness" in data["apiRoutes"]
+    assert "/api/production/gaps" in data["apiRoutes"]
+    assert "/api/model/training-roadmap" in data["apiRoutes"]
+    assert "/api/model/incident-eval-set" in data["apiRoutes"]
     assert "/api/readyz" in data["apiRoutes"]
     assert "/api/healthz" in data["apiRoutes"]
     assert "/api/roadmap" in data["apiRoutes"]
@@ -166,6 +194,7 @@ def test_frontend_contract_is_browser_smoke_ready_and_non_mutating(client):
     assert "/api/reputation/probe" in data["apiRoutes"]
     assert "/api/reputation/connectors" in data["apiRoutes"]
     assert "/api/reputation/connectors/live" in data["apiRoutes"]
+    assert "/api/reputation/backfill/status" in data["apiRoutes"]
     assert "/api/reputation/adapters" in data["apiRoutes"]
     assert "/api/reputation/adapters/normalize" in data["apiRoutes"]
     assert "/api/reputation/shadow-cache" in data["apiRoutes"]
@@ -213,6 +242,10 @@ def test_frontend_contract_is_browser_smoke_ready_and_non_mutating(client):
     assert "#load-intelligence-stream-plan" in data["requiredSelectors"]
     assert "#load-product-brief" in data["requiredSelectors"]
     assert "#load-production-readiness" in data["requiredSelectors"]
+    assert "#load-deployment-readiness" in data["requiredSelectors"]
+    assert "#load-production-gaps" in data["requiredSelectors"]
+    assert "#load-model-training-roadmap" in data["requiredSelectors"]
+    assert "#load-incident-eval-set" in data["requiredSelectors"]
     assert "#load-ecosystem-roadmap" in data["requiredSelectors"]
     assert "#load-frontier-experiments" in data["requiredSelectors"]
     assert "#load-submission-packet" in data["requiredSelectors"]
@@ -223,6 +256,7 @@ def test_frontend_contract_is_browser_smoke_ready_and_non_mutating(client):
     assert "#load-virtuals-facilitator" in data["requiredSelectors"]
     assert "#load-ika-integration" in data["requiredSelectors"]
     assert "#run-reputation-probe" in data["requiredSelectors"]
+    assert "#load-reputation-backfill-status" in data["requiredSelectors"]
     assert "#load-reputation-adapters" in data["requiredSelectors"]
     assert "#load-reputation-shadow-cache" in data["requiredSelectors"]
     assert "#run-native-preflight" in data["requiredSelectors"]
@@ -233,11 +267,13 @@ def test_frontend_contract_is_browser_smoke_ready_and_non_mutating(client):
     assert "#cross-chain-output" in data["requiredSelectors"]
     assert "#load-da-node-status" in data["requiredSelectors"]
     assert "#load-storage-node-status" in data["requiredSelectors"]
+    assert "#load-storage-upload-manifest" in data["requiredSelectors"]
     assert "#run-telegram-da-node-preview" in data["requiredSelectors"]
     assert "#load-node-business" in data["requiredSelectors"]
     assert "#load-alignment-node-status" in data["requiredSelectors"]
     assert "#load-validator-capacity" in data["requiredSelectors"]
     assert "#load-private-computer" in data["requiredSelectors"]
+    assert "#load-private-compute-smoke-preview" in data["requiredSelectors"]
     assert "#load-local-inference" in data["requiredSelectors"]
     assert "#run-telegram-local-inference-preview" in data["requiredSelectors"]
     assert "#load-hot-wallet-resources" in data["requiredSelectors"]
@@ -247,6 +283,7 @@ def test_frontend_contract_is_browser_smoke_ready_and_non_mutating(client):
     assert "#run-telegram-node-business-preview" in data["requiredSelectors"]
     assert "#load-historical-backfill-plan" in data["requiredSelectors"]
     assert "#load-x402-data-products" in data["requiredSelectors"]
+    assert "#load-x402-dry-run" in data["requiredSelectors"]
     assert "#da-node-output" in data["requiredSelectors"]
     assert "#telegram-register-output" in data["requiredSelectors"]
     assert "#mira-output" in data["requiredSelectors"]
@@ -286,6 +323,10 @@ def test_frontend_uses_packaged_template_and_static_assets():
     assert "loadHotWalletResources" in (package_root / "static" / "app.js").read_text()
     assert "loadLocalInference" in (package_root / "static" / "app.js").read_text()
     assert "loadX402DataProducts" in (package_root / "static" / "app.js").read_text()
+    assert "loadDeploymentReadiness" in (package_root / "static" / "app.js").read_text()
+    assert "loadProductionGaps" in (package_root / "static" / "app.js").read_text()
+    assert "loadModelTrainingRoadmap" in (package_root / "static" / "app.js").read_text()
+    assert "loadIncidentEvalSet" in (package_root / "static" / "app.js").read_text()
     assert "runPeerOutreachPreview" in (package_root / "static" / "app.js").read_text()
     assert "miniappRunPreview" in (package_root / "static" / "telegram-miniapp.js").read_text()
     assert "miniapp-evidence-panel" in (
@@ -338,12 +379,32 @@ def test_external_action_contracts_keep_live_paths_out_of_workbench(client):
 
 
 def test_peer_protection_routes_are_no_send_and_no_broadcast(client):
+    storage_manifest = client.get("/api/0g/storage-upload/manifest")
+    assert storage_manifest.status_code == 200
+    storage_manifest_body = storage_manifest.get_json()
+    assert storage_manifest_body["schema"] == "0guard.0g_storage_upload_manifest.v1"
+    assert storage_manifest_body["uploadPlan"]["liveUploadPerformed"] is False
+    assert storage_manifest_body["readbackVerifier"]["liveStorageGatewayReadback"] is False
+    assert storage_manifest_body["safety"]["moneyMovementEnabled"] is False
+
     private_computer = client.get("/api/0g/private-computer")
     assert private_computer.status_code == 200
     private_body = private_computer.get_json()
     assert private_body["schema"] == "0guard.0g_private_computer_integration.v1"
     assert private_body["api"]["openAiCompatible"] is True
     assert private_body["safety"]["transactionBroadcastingEnabled"] is False
+
+    private_smoke = client.post(
+        "/api/0g/private-computer/smoke-preview",
+        json={"prompt": "Summarize this deterministic ZeroGuard review packet."},
+    )
+    assert private_smoke.status_code == 200
+    private_smoke_body = private_smoke.get_json()
+    assert private_smoke_body["schema"] == "0guard.0g_private_compute_smoke_preview.v1"
+    assert private_smoke_body["sampleRequest"]["inferenceExecuted"] is False
+    assert private_smoke_body["router"]["apiKeyReturned"] is False
+    assert private_smoke_body["safety"]["networkCalls"] is False
+    assert private_smoke_body["safety"]["transactionSigningEnabled"] is False
 
     hot_wallets = client.get("/api/0g/hot-wallet-resources")
     assert hot_wallets.status_code == 200
@@ -402,11 +463,66 @@ def test_local_inference_x402_and_backfill_routes_are_no_side_effect(client):
     assert x402_body["safety"]["x402SettlementEnabled"] is False
     assert all(item["rawPayloadResaleAllowed"] is False for item in x402_body["products"])
 
+    x402_dry_run = client.get("/api/x402/dry-run/wallet-preflight")
+    assert x402_dry_run.status_code == 402
+    x402_dry_run_body = x402_dry_run.get_json()
+    assert x402_dry_run_body["schema"] == "0guard.x402_wallet_preflight_dry_run.v1"
+    assert x402_dry_run_body["paymentReadback"]["facilitatorCalled"] is False
+    assert x402_dry_run_body["safety"]["x402SettlementEnabled"] is False
+    assert x402_dry_run_body["rightsPolicy"]["rawPayloadResaleAllowed"] is False
+
+    x402_fixture = client.post(
+        "/api/x402/dry-run/wallet-preflight",
+        headers={"X-PAYMENT": "fixture-paid-zeroguard-wallet-preflight-v1"},
+        json={"target": "0x02228b0afcdbEdf8180D96Fc181Da3AF5DD1d1ab"},
+    )
+    assert x402_fixture.status_code == 200
+    x402_fixture_body = x402_fixture.get_json()
+    assert x402_fixture_body["status"] == "payment_fixture_accepted_no_settlement"
+    assert x402_fixture_body["paymentReadback"]["settlementAttempted"] is False
+    assert x402_fixture_body["productResponse"]["rawPayloadResaleAllowed"] is False
+
     backfill = client.get("/api/data/backfill-plan")
     assert backfill.status_code == 200
     backfill_body = backfill.get_json()
     assert backfill_body["schema"] == "0guard.historical_backfill_plan.v1"
     assert backfill_body["safety"]["rawPayloadsReturned"] is False
+
+    gaps = client.get("/api/production/gaps")
+    assert gaps.status_code == 200
+    gaps_body = gaps.get_json()
+    assert gaps_body["schema"] == "0guard.production_gap_matrix.v1"
+    assert gaps_body["productionReady"] is False
+    assert gaps_body["classificationSummary"]["counts"]["mock_fixture_only"] >= 1
+    assert any(item["id"] == "model.0g_private_computer" for item in gaps_body["gaps"])
+    assert gaps_body["safety"]["x402SettlementEnabled"] is False
+    assert gaps_body["safety"]["paidInferenceEnabled"] is False
+
+    strategy = client.get("/api/product/strategy-review")
+    assert strategy.status_code == 200
+    strategy_body = strategy.get_json()
+    assert strategy_body["schema"] == "0guard.strategy_review.v1"
+    assert strategy_body["safety"]["transactionSigningEnabled"] is False
+    assert strategy_body["nextBuildSequence"][0]["id"] == "production_contract_freeze"
+
+    model = client.get("/api/model/training-roadmap")
+    assert model.status_code == 200
+    model_body = model.get_json()
+    assert model_body["schema"] == "0guard.model_training_roadmap.v1"
+    assert model_body["authorityBoundary"].startswith("Models may summarize")
+    assert any(item["id"] == "incident_detector_eval_set" for item in model_body["datasets"])
+    assert model_body["safety"]["trainingRunStarted"] is False
+
+    eval_set = client.get("/api/model/incident-eval-set?limit=2")
+    assert eval_set.status_code == 200
+    eval_body = eval_set.get_json()
+    assert eval_body["schema"] == "0guard.incident_detector_eval_set.v1"
+    assert eval_body["caseCount"] == 2
+    assert eval_body["rows"][0]["rights"]["rawPayloadResaleAllowed"] is False
+    assert eval_body["safety"]["trainingRunStarted"] is False
+
+    bad_limit = client.get("/api/model/incident-eval-set?limit=0")
+    assert bad_limit.status_code == 400
 
 
 def test_telegram_routes_do_not_import_live_send_helpers():
@@ -668,6 +784,14 @@ def test_cross_chain_integration_routes_are_read_only(client):
     assert live_connector_body["mode"] == "live_fetch_disabled"
     assert live_connector_body["safety"]["networkCalls"] is False
     assert live_connector_body["rightsPolicy"]["rawPayloadsReturned"] is False
+
+    backfill_status = client.get("/api/reputation/backfill/status")
+    assert backfill_status.status_code == 200
+    backfill_body = backfill_status.get_json()
+    assert backfill_body["schema"] == "0guard.reputation_backfill_status.v1"
+    assert backfill_body["safety"]["networkCalls"] is False
+    assert backfill_body["rightsPolicy"]["rawPayloadsReturned"] is False
+    assert backfill_body["rawPayloadsReturned"] is False
 
     adapters = client.get("/api/reputation/adapters")
     assert adapters.status_code == 200
@@ -1059,6 +1183,38 @@ def test_0g_storage_node_status_and_telegram_preview_are_no_send(monkeypatch, cl
     assert preview["safety"]["moneyMovementEnabled"] is False
 
 
+def test_0g_storage_peer_diagnostics_route_is_read_only(monkeypatch, client):
+    monkeypatch.setattr(
+        app_module,
+        "build_storage_peer_diagnostics",
+        lambda status_file=None: {
+            "schema": "0guard.rv_0g_peer_diagnostics.v1",
+            "status": "loaded",
+            "summary": {
+                "connectedPeers": 2,
+                "peerDepthReady": False,
+                "blockedBy": ["connected_peers_below_target_8"],
+            },
+            "safety": {
+                "readOnly": True,
+                "privateKeysRead": False,
+                "privateKeysReturned": False,
+                "moneyMovementEnabled": False,
+            },
+        },
+    )
+
+    response = client.get("/api/0g/storage-node/peer-diagnostics?snapshot=1")
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["schema"] == "0guard.rv_0g_peer_diagnostics.v1"
+    assert data["summary"]["connectedPeers"] == 2
+    assert data["summary"]["peerDepthReady"] is False
+    assert data["safety"]["privateKeysRead"] is False
+    assert data["safety"]["moneyMovementEnabled"] is False
+
+
 def test_0g_node_business_routes_are_read_only(monkeypatch, client):
     monkeypatch.setattr(
         app_module,
@@ -1118,7 +1274,8 @@ def test_0g_node_business_routes_are_read_only(monkeypatch, client):
     assert preview_body["safety"]["moneyMovementEnabled"] is False
 
 
-def test_0g_receipt_verifier_is_read_only_without_contract(client):
+def test_0g_receipt_verifier_is_read_only_without_contract(monkeypatch, client):
+    monkeypatch.setenv("ZGG_RECEIPT_CONTRACT", "0x0000000000000000000000000000000000000000")
     receipt_hash = "0x" + "a" * 64
     r = client.get(f"/api/0g/receipt?receipt_hash={receipt_hash}")
     assert r.status_code == 200
@@ -1129,6 +1286,10 @@ def test_0g_receipt_verifier_is_read_only_without_contract(client):
     assert data["safety"]["privateKeyRequired"] is False
     assert data["safety"]["signingEnabled"] is False
     assert data["safety"]["broadcastingEnabled"] is False
+
+    legacy_alias = client.get(f"/api/0g/receipt?receipt={receipt_hash}")
+    assert legacy_alias.status_code == 200
+    assert legacy_alias.get_json()["schema"] == "0guard.0g_receipt_verifier.v1"
 
     bad = client.get("/api/0g/receipt?receipt_hash=not-a-hash")
     assert bad.status_code == 200

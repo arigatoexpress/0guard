@@ -152,7 +152,7 @@ hashes that can be verified without exposing raw upstream data.
 - A prepared screenshot still exists at
   `docs/hackathon-0g/assets/0guard-workbench-provenance.png`.
 - Per-incident source evidence is now promoted for 28 of 28 records.
-- Production now exposes 30 source lanes and 17 no-network connector
+- Production now exposes 34 source lanes and 20 no-network connector
   candidates. The newest disabled-by-default lanes are ThreatFox, Chainalysis
   sanctions oracle, and Google Cloud Web Risk.
 - The detector map covers 28 of 28 incident-derived patterns after promoting

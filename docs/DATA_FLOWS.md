@@ -127,11 +127,13 @@ provenance. Each source records:
 Default outputs are derived metadata, links, hashes, readiness, and defensive
 analysis. Raw upstream payloads are not exposed by API routes.
 
-The May 16 catalog expansion added disabled-by-default activation candidates
-for ThreatFox recent IOCs, the Chainalysis sanctions oracle, and Google Cloud
-Web Risk. These are tracked as production-grade lanes only after auth,
-commercial-use, privacy, and retention checks are approved; the public product
-still exposes derived signals and 0G-ready receipts, not upstream feed dumps.
+The May 16-17 catalog expansion added disabled-by-default activation
+candidates for ThreatFox recent IOCs, the Chainalysis sanctions oracle and
+Sanctions API, TRM Wallet Screening, TRM BLOCKINT, and Google Cloud Web Risk,
+plus a catalog-only MITRE ATT&CK Lazarus Group context lane. These are tracked
+as production-grade lanes only after auth, commercial-use, privacy, and
+retention checks are approved; the public product still exposes derived
+signals and 0G-ready receipts, not upstream feed dumps.
 
 The provenance matrix uses `data/incident_provenance_cache.json` for a reviewed
 derived-evidence cache, so the judge demo remains useful without network access.

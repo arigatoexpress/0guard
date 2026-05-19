@@ -34,7 +34,7 @@ Repo:
 https://github.com/arigatoexpress/0guard
 
 0G proof:
-https://chainscan.0g.ai/tx/64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed
+https://chainscan.0g.ai/tx/0x64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed
 
 Autonomous finance needs more than smart agents. It needs simple pre-wallet
 protection, technical proof, and provenance.

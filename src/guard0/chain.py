@@ -16,8 +16,9 @@ from typing import Any
 
 from web3 import Web3
 
-DEFAULT_ZGG_CHAIN_RPC = "https://evmrpc-testnet.0g.ai"
-DEFAULT_ZGG_CHAIN_ID = 16602
+DEFAULT_ZGG_CHAIN_RPC = "https://evmrpc.0g.ai"
+DEFAULT_ZGG_CHAIN_ID = 16661
+DEFAULT_ZGG_RECEIPT_CONTRACT = "0xBaC59b1571b7c7195915c5B36D8A719Ed7182abc"
 ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 POLICY_RECEIPT_ARTIFACT = REPO_ROOT / "contracts" / "PolicyReceiptAnchor.json"
@@ -28,7 +29,7 @@ def get_0g_config() -> dict[str, Any]:
     return {
         "rpc": os.getenv("ZGG_CHAIN_RPC", DEFAULT_ZGG_CHAIN_RPC),
         "chain_id": int(os.getenv("ZGG_CHAIN_ID", str(DEFAULT_ZGG_CHAIN_ID))),
-        "receipt_contract": os.getenv("ZGG_RECEIPT_CONTRACT", ZERO_ADDRESS),
+        "receipt_contract": os.getenv("ZGG_RECEIPT_CONTRACT", DEFAULT_ZGG_RECEIPT_CONTRACT),
     }
 
 

@@ -100,6 +100,36 @@ REPUTATION_CONNECTOR_CANDIDATES = (
         ),
     },
     {
+        "sourceId": "chainalysis_sanctions_api",
+        "priority": 3,
+        "stage": "backend_sanctions_api_precheck",
+        "surfaces": ("evm_address", "contract"),
+        "useCases": (
+            "backend exact-address sanctions screening with higher-volume API limits",
+            "derived sanctions category and source-link evidence for operator review",
+        ),
+    },
+    {
+        "sourceId": "trm_wallet_screening",
+        "priority": 3,
+        "stage": "commercial_wallet_risk_candidate",
+        "surfaces": ("evm_address", "contract", "evm_transaction"),
+        "useCases": (
+            "pre-transaction wallet risk and attribution review",
+            "sanctions, scam, fraud, and indirect-exposure corroboration when vendor access is approved",
+        ),
+    },
+    {
+        "sourceId": "trm_blockint_api",
+        "priority": 4,
+        "stage": "commercial_blockchain_intelligence_candidate",
+        "surfaces": ("evm_address", "contract", "chain_activity"),
+        "useCases": (
+            "high-volume blockchain-intelligence enrichment",
+            "entity, balance, activity-window, exposure, and transaction-history derived features",
+        ),
+    },
+    {
         "sourceId": "urlhaus",
         "priority": 3,
         "stage": "malware_infrastructure_corroboration",
@@ -600,6 +630,7 @@ def _connector_row(
         "retrievalMode": retrieval_mode,
         "credentialRequired": retrieval_mode in ("api_key_required", "auth_required")
         or "paid" in retrieval_mode
+        or "commercial" in retrieval_mode
         or adapter == "auth_required",
         "enabledByDefault": enabled_by_default,
         "appliesToSubject": _connector_applies(spec["surfaces"], subject),

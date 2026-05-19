@@ -45,7 +45,8 @@ def test_hackquest_proof_page_exposes_current_evidence_baseline():
     assert "EIP-7702" in html
     assert "/api/readyz" in html
     assert "/api/reputation/shadow-cache" in html
-    assert "Telegram opt-in persistence" in html
+    assert "reports hard gates" in html
+    assert "storage-node peer depth" in html
     assert "Professional repo posture" in html
     assert "Media archive" in html
     assert "assets/README.md" in html

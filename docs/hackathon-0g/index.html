@@ -328,13 +328,19 @@
           <div class="card">
             <h3>Open-source-first intelligence</h3>
             <p>
-              The source registry now tracks 30 rights-aware lanes, and the connector manifest exposes 17 no-network activation candidates, including disabled-by-default ThreatFox, Chainalysis sanctions oracle, and Google Web Risk lanes. No raw upstream feed is mirrored from public routes.
+              The source registry now tracks 34 rights-aware lanes, and the connector manifest exposes 20 no-network activation candidates, including disabled-by-default ThreatFox, Chainalysis sanctions API/Oracle, TRM Wallet Screening/BLOCKINT, and Google Web Risk lanes. No raw upstream feed is mirrored from public routes.
             </p>
           </div>
           <div class="card">
             <h3>Production readiness</h3>
             <p>
-              The live service now exposes <code>/api/readyz</code>. It verifies the mainnet receipt contract config, public proof file, detector coverage, shadow cache, and blocked external actions, while honestly marking Telegram opt-in persistence as the remaining production review item.
+              The service exposes <code>/api/readyz</code> as the promotion gate. It verifies the mainnet receipt contract, proof file, detector coverage, reputation backfill, Pi mesh, storage-node soak, and safety locks, then reports hard gates for live Telegram identity, 0G Storage readback, paid 0G Private Computer smoke, x402 settlement, and storage-node peer depth before any production claim.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Production gap matrix</h3>
+            <p>
+              <code>/api/production/gaps</code>, <code>/api/model/training-roadmap</code>, <code>/api/model/incident-eval-set</code>, <code>/api/reputation/backfill/status</code>, <code>/api/0g/storage-upload/manifest</code>, <code>/api/x402/dry-run/wallet-preflight</code>, and <code>/api/0g/private-computer/smoke-preview</code> classify what is real, local-only, source-ready, or fixture-only, then expose the first deterministic eval/backfill cases, Storage bundle manifest, x402 dry-run, and 0G Private Computer prompt-scrub contract. This keeps Storage uploads, x402 settlement, paid inference, Telegram sends, and node funding claims separated until proof exists.
             </p>
           </div>
           <div class="card">
@@ -417,7 +423,7 @@
           <div class="card">
             <h3>Current product map</h3>
             <p>
-              The live API now exposes <code>/api/product/brief</code> for a plain-English system map, <code>/api/readyz</code> for production readiness, <code>/api/threat-case-file</code> for a composed proof dossier, <code>/api/reputation/shadow-cache</code> for derived reputation snapshots, and <code>/api/experiments/frontier</code> for safe next-integration previews. These routes preserve the same no-sign, no-send, no-upload, no-money-movement, no-raw-payload boundary.
+              The live API now exposes <code>/api/product/brief</code> for a plain-English system map, <code>/api/readyz</code> for production readiness, <code>/api/production/gaps</code> for real-vs-local-vs-mock claims, <code>/api/model/training-roadmap</code> and <code>/api/model/incident-eval-set</code> for the eval-first model plan, <code>/api/threat-case-file</code> for a composed proof dossier, <code>/api/reputation/shadow-cache</code> for derived reputation snapshots, and <code>/api/experiments/frontier</code> for safe next-integration previews. These routes preserve the same no-sign, no-send, no-upload, no-money-movement, no-raw-payload boundary.
             </p>
           </div>
         </div>
@@ -433,7 +439,7 @@
       </section>
 
       <footer>
-        Built for the 0G APAC Hackathon. Latest media refresh: May 15, 2026. Latest product/professionalization refresh: May 16, 2026.
+        Built for the 0G APAC Hackathon. Latest media refresh: May 15, 2026. Latest product/professionalization and gap-matrix refresh: May 17, 2026.
       </footer>
     </main>
   </body>

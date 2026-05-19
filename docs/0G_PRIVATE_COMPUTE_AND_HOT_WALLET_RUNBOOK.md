@@ -13,6 +13,7 @@ or broadcast transactions.
 | --- | --- | --- |
 | 0G Compute Router manifest | Prepared | `GET /api/0g/private-computer` |
 | Live model catalog readback | Read-only | `GET /api/0g/private-computer?live=1` |
+| No-inference smoke contract | Prepared | `GET /api/0g/private-computer/smoke-preview` |
 | Hot-wallet resource plan | Prepared | `GET /api/0g/hot-wallet-resources` |
 | 0GM-1.0 use case | Explanation and draft review only | Deterministic ZeroGuard policy remains authority |
 | Router funding | Not executed | Requires wallet UI and final confirmation |
@@ -30,8 +31,11 @@ requests, automatic provider discovery, billing, and failover.
 4. Store it server-side as `ZG_0G_ROUTER_API_KEY` or `ZG_0G_PC_API_KEY`.
 5. Call ZeroGuard through our backend only; never ship the Router key to a
    browser or Mini App.
-6. Test with `GET /api/0g/private-computer?live=1`, then a tiny controlled
-   inference request after a final spend confirmation.
+6. Test with `GET /api/0g/private-computer?live=1`.
+7. Review `GET /api/0g/private-computer/smoke-preview`; it should show the
+   prompt scrubber, request shape, and blockers without executing inference.
+8. Only then run a tiny controlled server-side inference request after a final
+   spend confirmation.
 
 ## Funding Manifest Template
 
@@ -78,6 +82,8 @@ prepare or broadcast a deposit transaction.
 - Never let a frontend call the 0G Router key directly.
 - Never make 0GM output the policy authority. It can explain, summarize, and
   draft; deterministic ZeroGuard checks decide.
+- Never send prompts that contain private keys, mnemonics, API keys, JWTs,
+  payment headers, raw private chats, or raw paid-feed payloads.
 - Never combine storage miner funding, Router deposit, staking, or delegation
   in one approval. Each gets its own exact manifest.
 - Revoke the API key immediately if it appears in logs, screenshots, browser

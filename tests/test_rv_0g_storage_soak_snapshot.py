@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 from pathlib import Path
 
 
@@ -64,3 +65,29 @@ def test_schtasks_parser_and_redaction_are_public_safe():
     assert parsed["Status"] == "Running"
     assert "0xabc" not in command
     assert "<redacted>" in command
+
+
+def test_read_remote_shard_config_is_public_safe(monkeypatch):
+    class Args:
+        host = "example"
+        wsl_distro = "Ubuntu-24.04"
+        storage_rpc = "http://127.0.0.1:5678"
+
+    seen: list[str] = []
+
+    def fake_wsl(args, command):
+        seen.append(command)
+        return {
+            "returncode": 0,
+            "stdout": json.dumps(
+                {"jsonrpc": "2.0", "result": {"shardId": 0, "numShard": 1}, "id": 1}
+            ),
+            "stderr": "",
+        }
+
+    monkeypatch.setattr(snapshot, "wsl", fake_wsl)
+
+    result = snapshot.read_remote_shard_config(Args())
+
+    assert result == {"shardId": 0, "numShard": 1}
+    assert "zgs_getShardConfig" in seen[0]
