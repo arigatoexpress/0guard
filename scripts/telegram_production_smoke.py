@@ -75,10 +75,26 @@ def main(argv: list[str] | None = None) -> int:
 
     token = "" if args.skip_telegram_api else _load_secret(args.bot_token_env, args.bot_token_secret, args.gcloud_project)
     webhook_secret = "" if args.skip_telegram_api else _load_secret("", args.webhook_secret, args.gcloud_project)
-    base_url = _select_base_url(args.base_url.rstrip("/"))
+    requested_base_url = args.base_url.rstrip("/")
+    candidates = _base_url_candidates(requested_base_url)
+    try:
+        base_url = _select_base_url(requested_base_url)
+    except requests.RequestException as exc:
+        payload: dict[str, Any] = {
+            "baseUrl": requested_base_url,
+            "baseUrlSelection": {"ok": False, "tried": candidates, "error": str(exc)},
+            "tokenPrinted": False,
+            "checks": [],
+            "ok": False,
+        }
+        if args.format == "json":
+            print(json.dumps(payload, indent=2, sort_keys=True))
+        else:
+            print(_markdown(payload))
+        return 1
 
     checks: list[Check] = []
-    payload: dict[str, Any] = {"baseUrl": base_url, "tokenPrinted": False}
+    payload: dict[str, Any] = {"baseUrl": base_url, "baseUrlSelection": {"ok": True, "tried": candidates}, "tokenPrinted": False}
 
     health_path, health = _load_health(base_url)
     safety_flags = health.get("safety_flags") or {}
@@ -213,12 +229,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _select_base_url(requested: str) -> str:
-    candidates: list[str] = []
-    for url in (requested, DEFAULT_BASE_URL, *FALLBACK_BASE_URLS):
-        normalized = url.rstrip("/")
-        if normalized and normalized not in candidates:
-            candidates.append(normalized)
-
+    candidates = _base_url_candidates(requested)
     last_error: Exception | None = None
     for candidate in candidates:
         try:
@@ -233,6 +244,15 @@ def _select_base_url(requested: str) -> str:
     if last_error is not None:
         raise last_error
     return requested
+
+
+def _base_url_candidates(requested: str) -> list[str]:
+    candidates: list[str] = []
+    for url in (requested, DEFAULT_BASE_URL, *FALLBACK_BASE_URLS):
+        normalized = url.rstrip("/")
+        if normalized and normalized not in candidates:
+            candidates.append(normalized)
+    return candidates
 
 
 def _has_required_api_surface(base_url: str) -> bool:
