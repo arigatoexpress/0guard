@@ -28,8 +28,9 @@ no outbound Telegram messages from the workbench.
 | 2 | [0G mainnet anchor tx](https://chainscan.0g.ai/tx/0x64ff260ccd02aa69fc18d5727eb4530d8774003bc7df63ec7d5cda036fc438ed) | A real 0G mainnet transaction anchoring a critical `deny` receipt. |
 | 3 | [Mainnet proof JSON](https://arigatoexpress.github.io/0guard/hackathon-0g/mainnet-proof.json) | Contract, deploy tx, anchor tx, receipt hash, and JSON-RPC readback evidence. |
 | 4 | [Hosted Telegram Mini App preview](https://guard0-miniapp-s77j6bxyra-uc.a.run.app/telegram) | Mobile wallet-alert UX and Mira explanation preview with sends disabled. |
-| 5 | [Hosted readiness API](https://guard0-miniapp-s77j6bxyra-uc.a.run.app/api/readyz) | Operational posture, mainnet verifier config, detector coverage, safety flags, and explicit production hard gates. |
-| 6 | Run `pytest -q` locally | Regression proof for policy, data, public docs, app routes, and integration contracts. |
+| 5 | [Hosted wallet-provider guard demo](https://guard0-miniapp-s77j6bxyra-uc.a.run.app/demo/wallet-provider-guard) | EIP-1193-style dapp wrapper proving read-only requests forward and risky requests stop before provider access. |
+| 6 | [Hosted readiness API](https://guard0-miniapp-s77j6bxyra-uc.a.run.app/api/readyz) | Operational posture, mainnet verifier config, detector coverage, safety flags, and explicit production hard gates. |
+| 7 | Run `pytest -q` locally | Regression proof for policy, data, public docs, app routes, and integration contracts. |
 
 ## Mainnet Proof
 
@@ -53,6 +54,7 @@ format accepted by 0G Chain Scan.
 | Capability | Status | Proof route or file |
 | --- | --- | --- |
 | Intent firewall | Live | `POST /api/evaluate`, `POST /api/native-preflight` |
+| Wallet provider guard | Live API and hosted demo, no custody | `POST /api/wallet/provider-guard`, `/demo/wallet-provider-guard` |
 | Threat case file | Live preview, no side effects | `POST /api/threat-case-file` |
 | Incident intelligence | Live | `GET /api/data/summary`, `GET /api/data/provenance`, `GET /api/data/signature-map` |
 | Detector coverage | Live | 28 of 28 incident-derived seeds covered; `coverageRatio: 1.0` |

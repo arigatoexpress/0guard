@@ -30,6 +30,8 @@ Submission proof artifact: `docs/hackathon-0g/hackquest-submission-proof.json`
 - Repository: https://github.com/arigatoexpress/0guard
 - Public demo/proof packet: https://arigatoexpress.github.io/0guard/hackathon-0g/
 - Telegram Mini App: https://guard0-miniapp-s77j6bxyra-uc.a.run.app/telegram
+- Wallet Provider Guard demo: https://guard0-miniapp-s77j6bxyra-uc.a.run.app/demo/wallet-provider-guard
+- Wallet Provider Guard API: https://guard0-miniapp-s77j6bxyra-uc.a.run.app/api/wallet/provider-guard
 - Telegram bot: https://t.me/Raris0guardBot
 - Project images:
   https://arigatoexpress.github.io/0guard/hackathon-0g/assets/0guard-workbench-provenance.png
@@ -47,10 +49,12 @@ Submission proof artifact: `docs/hackathon-0g/hackquest-submission-proof.json`
 - Public asset registry: `docs/hackathon-0g/assets/README.md`
 - Media archive: submitted MP4 retained for continuity; proof links and API
   readbacks are the canonical public evidence.
-- Production revision: `guard0-miniapp-112c7b7`
+- Production revision: `guard0-miniapp-00054-gej`
 - Source catalog: 34 tracked sources at `/api/osint/sources`
 - Reputation connector manifest: 20 no-network connector candidates at
   `/api/reputation/connectors`
+- Wallet Provider Guard: hosted route and demo prove EIP-1193 requests are
+  checked before provider forwarding; no custody, signing, or broadcasting.
 
 ## Mainnet Proof Ready
 
