@@ -851,6 +851,11 @@ def telegram_miniapp():
     return render_template("telegram_mini_app.html")
 
 
+@app.route("/demo/wallet-provider-guard")
+def wallet_provider_guard_demo():
+    return render_template("wallet_provider_demo.html")
+
+
 @app.route("/favicon.ico")
 def favicon():
     return Response(status=204)

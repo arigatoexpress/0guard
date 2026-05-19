@@ -316,6 +316,9 @@ def test_frontend_uses_packaged_template_and_static_assets():
     assert (package_root / "templates" / "telegram_mini_app.html").read_text().startswith(
         "<!doctype html>"
     )
+    assert (package_root / "templates" / "wallet_provider_demo.html").read_text().startswith(
+        "<!doctype html>"
+    )
     assert "run-evaluate" in (package_root / "static" / "app.js").read_text()
     assert "loadProductBrief" in (package_root / "static" / "app.js").read_text()
     assert "runThreatCaseFile" in (package_root / "static" / "app.js").read_text()
@@ -332,10 +335,29 @@ def test_frontend_uses_packaged_template_and_static_assets():
     assert "loadIncidentEvalSet" in (package_root / "static" / "app.js").read_text()
     assert "runPeerOutreachPreview" in (package_root / "static" / "app.js").read_text()
     assert "miniappRunPreview" in (package_root / "static" / "telegram-miniapp.js").read_text()
+    assert "create0guardProvider" in (
+        package_root / "static" / "wallet-provider-guard-client.js"
+    ).read_text()
+    assert "providerCalls.push" in (
+        package_root / "static" / "wallet-provider-demo.js"
+    ).read_text()
     assert "miniapp-evidence-panel" in (
         package_root / "templates" / "telegram_mini_app.html"
     ).read_text()
     assert ".shell" in (package_root / "static" / "styles.css").read_text()
+
+
+def test_wallet_provider_demo_shell_is_packaged_and_non_custodial(client):
+    response = client.get("/demo/wallet-provider-guard")
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Wallet Provider Guard" in html
+    assert 'id="demo-read-chain"' in html
+    assert 'id="demo-switch-chain"' in html
+    assert 'id="demo-unlimited-approval"' in html
+    assert 'id="provider-demo-call-count"' in html
+    assert 'src="/static/wallet-provider-demo.js"' in html
+    assert 'href="/"' in html
 
 
 def test_telegram_miniapp_shell_contract_and_static_assets(client):
