@@ -1,4 +1,18 @@
-from scripts.osint_steward_checklist import ProbeResult, _overall_ok
+from importlib.util import module_from_spec, spec_from_file_location
+from pathlib import Path
+import sys
+
+
+_SCRIPT_PATH = Path(__file__).resolve().parents[1] / "scripts" / "osint_steward_checklist.py"
+_SPEC = spec_from_file_location("osint_steward_checklist", _SCRIPT_PATH)
+assert _SPEC is not None
+assert _SPEC.loader is not None
+_MODULE = module_from_spec(_SPEC)
+sys.modules[_SPEC.name] = _MODULE
+_SPEC.loader.exec_module(_MODULE)
+
+ProbeResult = _MODULE.ProbeResult
+_overall_ok = _MODULE._overall_ok
 
 
 def _probe(path: str = "/api/readyz", status_code: int | None = 200) -> ProbeResult:
