@@ -95,34 +95,55 @@ class ProbeResult:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="0guard OSINT steward checklist probes")
-    parser.add_argument("--base-url", default=DEFAULT_BASE_URL)
+    parser.add_argument(
+        "--base-url",
+        default=None,
+        help=(
+            "Explicit Cloud Run base URL to probe. If omitted, the script prefers the "
+            "Sapphire apex /api/0guard/progress base_url when available, otherwise "
+            f"falls back to {DEFAULT_BASE_URL}."
+        ),
+    )
     parser.add_argument("--timeout", type=float, default=20.0)
     parser.add_argument("--format", choices=("markdown", "json"), default="markdown")
     args = parser.parse_args(argv)
 
-    base_url = _select_base_url(args.base_url.rstrip("/"), timeout=args.timeout)
+    requested = (args.base_url or "").rstrip("/") or None
+    sapphire_active_base_url = _discover_active_base_url_from_sapphire(timeout=args.timeout)
+    active_requested = requested or sapphire_active_base_url or DEFAULT_BASE_URL
+
+    base_url = _select_base_url(active_requested.rstrip("/"), timeout=args.timeout)
     probes = list(_probe_paths(base_url, CHECKLIST_PATHS, timeout=args.timeout))
+    traffic_probes: list[ProbeResult] | None = None
+    traffic_base_url = _select_base_url(DEFAULT_BASE_URL, timeout=args.timeout)
+    if traffic_base_url.rstrip("/") != base_url.rstrip("/"):
+        traffic_probes = list(_probe_paths(traffic_base_url, CHECKLIST_PATHS, timeout=args.timeout))
     sapphire = _probe_sapphire(timeout=args.timeout)
     public = _probe_public(timeout=args.timeout)
     silo = _probe_silo(timeout=args.timeout)
 
     payload: dict[str, Any] = {
-        "schema": "0guard.osint_steward_checklist.v1",
+        "schema": "0guard.osint_steward_checklist.v2",
         "generatedAt": _now(),
         "baseUrl": base_url,
-        "requestedBaseUrl": args.base_url.rstrip("/"),
+        "requestedBaseUrl": requested,
+        "sapphireActiveBaseUrl": sapphire_active_base_url,
+        "trafficBaseUrl": traffic_base_url,
         "probes": [probe.__dict__ for probe in probes],
+        "trafficProbes": [probe.__dict__ for probe in traffic_probes] if traffic_probes else None,
         "sapphire": sapphire,
         "public": public,
         "siloBoundary": silo,
         "notes": [
             "This is a read-only probe script; 405 on POST-only endpoints is expected.",
             "Use --base-url to force a candidate/no-traffic Cloud Run revision.",
+            "When Sapphire exposes a base_url, the script treats it as the active surface and reports traffic drift separately.",
         ],
     }
 
     ok = _overall_ok(probes, sapphire=sapphire, public=public, silo=silo)
     payload["ok"] = ok
+    payload["traffic_ok"] = _overall_ok(traffic_probes) if traffic_probes else True
 
     if args.format == "json":
         print(json.dumps(payload, indent=2, sort_keys=True))
@@ -187,13 +208,40 @@ def _probe_sapphire(*, timeout: float) -> dict[str, Any]:
                 "active_domain_count": live_streams.get("active_domain_count"),
                 "detector_candidate_count": live_streams.get("detector_candidate_count"),
                 "live_event_count": live_streams.get("live_event_count"),
-                "raw_payloads_returned": data.get("raw_payloads_returned"),
+                "raw_payloads_returned": live_streams.get("raw_payloads_returned"),
             }
         progress.append({**entry, "parsed": parsed})
     return {
         "health": _probe_url(SAPPHIRE_HEALTH_URL, timeout=timeout),
         "progress": progress,
     }
+
+
+def _discover_active_base_url_from_sapphire(*, timeout: float) -> str | None:
+    """Best-effort read-only discovery of the active base URL from Sapphire.
+
+    If the Sapphire progress API is unavailable, returns None and the script
+    falls back to DEFAULT_BASE_URL.
+    """
+
+    for url in SAPPHIRE_PROGRESS_URLS:
+        try:
+            resp = requests.get(url, timeout=timeout, headers={"User-Agent": "0guard-osint-steward/1.0"})
+        except requests.RequestException:
+            continue
+        if resp.status_code != 200:
+            continue
+        if "application/json" not in resp.headers.get("content-type", ""):
+            continue
+        try:
+            data = resp.json()
+        except ValueError:
+            continue
+
+        value = data.get("base_url") or data.get("baseUrl")
+        if isinstance(value, str) and value.strip():
+            return value.strip().rstrip("/")
+    return None
 
 
 def _probe_url(url: str, *, timeout: float) -> dict[str, Any]:
@@ -285,6 +333,8 @@ def _markdown(payload: dict[str, Any]) -> str:
     lines.append("")
     lines.append(f"- Generated: {payload.get('generatedAt')}")
     lines.append(f"- Base URL: {payload.get('baseUrl')}")
+    if payload.get("trafficBaseUrl"):
+        lines.append(f"- Traffic Base URL: {payload.get('trafficBaseUrl')}")
     lines.append(f"- Overall: {'ok' if payload.get('ok') else 'needs attention'}")
     lines.append("")
 
@@ -294,6 +344,20 @@ def _markdown(payload: dict[str, Any]) -> str:
         ms = probe.get("elapsed_ms")
         lines.append(f"- `{probe.get('path')}`: {status} ({ms}ms)")
     lines.append("")
+
+    traffic_probes = payload.get("trafficProbes") or []
+    if traffic_probes:
+        lines.append("## Traffic Drift (Diagnostic)")
+        lines.append(
+            f"- Overall: {'ok' if payload.get('traffic_ok') else 'needs attention'}"
+        )
+        for probe in traffic_probes:
+            status = probe.get("status_code")
+            if status in (200, 204, 405):
+                continue
+            ms = probe.get("elapsed_ms")
+            lines.append(f"- `{probe.get('path')}`: {status} ({ms}ms)")
+        lines.append("")
 
     lines.append("## Sapphire Readback (Read-only)")
     sapphire = payload.get("sapphire") or {}
