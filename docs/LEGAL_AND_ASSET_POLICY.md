@@ -1,6 +1,6 @@
 # Legal, Source, and Asset Policy
 
-Updated: May 16, 2026.
+Updated: May 19, 2026.
 
 This is the working rights posture for 0guard. It is product guidance, not
 legal advice.
@@ -30,6 +30,22 @@ are in `NOTICE`.
 
 The public demo pages and API surfaces should show evidence lineage and safety
 status without copying full third-party records.
+
+For CISA KEV, NVD CVE, MITRE ATT&CK, OFAC SLS, Chainalysis, TRM, URLhaus,
+ThreatFox, Google Web Risk, and similar sources:
+
+- treat official public feeds as defensive context, not as material to mirror
+  wholesale;
+- expose CVE ids, technique ids, source links, hashes, derived categories,
+  confidence bands, and redacted exact-address screening results;
+- do not expose exploit payloads, proof-of-concept instructions, full article
+  bodies, raw sanctions rows, full wallet lists, vendor investigation payloads,
+  or paid-feed exports;
+- do not present sanctions signals as legal advice or compliance
+  certification;
+- do not assert Lazarus, DPRK, or malware attribution from MITRE/TTP context
+  without corroborating wallet, domain, transaction, host, package, or vendor
+  evidence.
 
 ## Generated Media Boundary
 

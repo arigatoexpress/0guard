@@ -53,6 +53,10 @@ loose demo copy.
     receipts into one review packet.
 14. Rank and preview frontier experiments for 0G Storage/Compute, reputation,
     EVM simulation, TON, and Mira without enabling live side effects.
+15. Compose a Web2/Web3 cyber-threat repository from CISA KEV, NVD CVE, MITRE
+    ATT&CK context, OFAC exact-address screening, and the historical crypto
+    exploit corpus while returning only derived evidence, hashes, links, and
+    safety caveats.
 
 ## API Readbacks
 
@@ -67,6 +71,7 @@ loose demo copy.
 | `/api/osint/readiness` | Catalog posture; `?live=1` performs public availability checks. |
 | `/api/osint/signals` | Normalized incident/research leads; `?live=1` fetches live public metadata. |
 | `/api/intelligence/evolving` | Detector loop, emerging gaps, live-source status, and 0G suite map. |
+| `/api/intelligence/cyber-threats` | Web2/Web3 repository: CISA KEV, NVD CVE, MITRE ATT&CK context, OFAC exact-address screening, historical exploit coverage, and detector candidates. |
 | `/api/reputation/adapters` | No-network normalization contract for PhishDestroy, CryptoScamDB, Forta labelled datasets, GoPlus, Chainabuse, and Forta GraphQL payload shapes. |
 | `/api/reputation/adapters/normalize` | Converts caller-provided upstream payloads into derived evidence and hashes. |
 | `/api/0g/proof-ladder` | Builds a Chain, Storage, DA, Compute, and Alignment verifier packet without live uploads, inference, signing, or broadcasts. |
@@ -89,6 +94,7 @@ curl -s http://127.0.0.1:8109/api/data/signature-map | python3 -m json.tool
 curl -s http://127.0.0.1:8109/api/osint/sources | python3 -m json.tool
 curl -s 'http://127.0.0.1:8109/api/osint/signals?live=1&limit=10' | python3 -m json.tool
 curl -s http://127.0.0.1:8109/api/intelligence/evolving | python3 -m json.tool
+curl -s 'http://127.0.0.1:8109/api/intelligence/cyber-threats?cves=CVE-2024-3094&limit=5' | python3 -m json.tool
 curl -s -X POST http://127.0.0.1:8109/api/wallet/alert-preview \
   -H "Content-Type: application/json" \
   -d '{"address":"0x885b0892D241Cb5033C9995e09cA521d54f936b5","intent":{"action":"read_balance","mode":"simulation","method":"eth_getBalance"}}' \
@@ -127,13 +133,14 @@ provenance. Each source records:
 Default outputs are derived metadata, links, hashes, readiness, and defensive
 analysis. Raw upstream payloads are not exposed by API routes.
 
-The May 16-17 catalog expansion added disabled-by-default activation
-candidates for ThreatFox recent IOCs, the Chainalysis sanctions oracle and
-Sanctions API, TRM Wallet Screening, TRM BLOCKINT, and Google Cloud Web Risk,
-plus a catalog-only MITRE ATT&CK Lazarus Group context lane. These are tracked
-as production-grade lanes only after auth, commercial-use, privacy, and
-retention checks are approved; the public product still exposes derived
-signals and 0G-ready receipts, not upstream feed dumps.
+The May 16-19 catalog expansion added disabled-by-default activation candidates
+for CISA KEV, NVD CVE, OFAC SLS, ThreatFox recent IOCs, the Chainalysis
+sanctions oracle and Sanctions API, TRM Wallet Screening, TRM BLOCKINT, and
+Google Cloud Web Risk, plus catalog-only MITRE ATT&CK Lazarus and Shai-Hulud
+context lanes. These are tracked as production-grade lanes only after auth,
+commercial-use, privacy, freshness, and retention checks are approved; the
+public product still exposes derived signals and 0G-ready receipts, not
+upstream feed dumps.
 
 The provenance matrix uses `data/incident_provenance_cache.json` for a reviewed
 derived-evidence cache, so the judge demo remains useful without network access.

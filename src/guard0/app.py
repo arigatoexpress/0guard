@@ -29,6 +29,7 @@ from guard0.crosschain import (
     cross_chain_readiness,
     virtuals_facilitator_manifest,
 )
+from guard0.cyber_threats import build_cyber_threat_repository
 from guard0.da_node import (
     DEFAULT_STORAGE_STATUS_PATH,
     build_da_node_status,
@@ -211,6 +212,7 @@ FRONTEND_REQUIRED_SELECTORS = (
     "#load-phishdestroy-worker",
     "#load-reputation-backfill-status",
     "#load-evolving-intel",
+    "#load-cyber-threat-repository",
     "#load-intelligence-events",
     "#load-detector-candidates",
     "#load-product-brief",
@@ -901,6 +903,7 @@ def api_frontend_contract():
                 "Data Flow",
                 "Backfill plan",
                 "Feature store",
+                "Cyber threat repository",
                 "x402 products",
                 "Telegram Mira Opt-In",
                 "Mira Telegram Preview",
@@ -945,6 +948,7 @@ def api_frontend_contract():
                 "/api/osint/readiness",
                 "/api/osint/signals",
                 "/api/intelligence/evolving",
+                "/api/intelligence/cyber-threats",
                 "/api/intelligence/data-streams",
                 "/api/x402/data-products",
                 "/api/x402/dry-run/wallet-preflight",
@@ -1036,6 +1040,7 @@ def api_frontend_contract():
                 "load-osint-readiness",
                 "load-osint-signals",
                 "load-evolving-intel",
+                "load-cyber-threat-repository",
                 "load-intelligence-stream-plan",
                 "load-intelligence-events",
                 "load-product-brief",
@@ -1214,6 +1219,46 @@ def api_evolving_threat_intelligence():
 @app.route("/api/intelligence/data-streams", methods=["GET"])
 def api_intelligence_data_streams():
     return jsonify(intelligence_stream_plan())
+
+
+@app.route("/api/intelligence/cyber-threats", methods=["GET", "POST"])
+def api_intelligence_cyber_threats():
+    body = request.get_json(silent=True) or {} if request.method == "POST" else {}
+    live = _truthy_value(body.get("live")) if request.method == "POST" else _truthy_query_arg("live")
+    limit = _request_value(body, "limit", request.args.get("limit") or 5)
+    cves = (
+        body.get("cveIds")
+        or body.get("cve_ids")
+        or body.get("cves")
+        or request.args.get("cveIds")
+        or request.args.get("cve_ids")
+        or request.args.get("cves")
+        or ""
+    )
+    address = (
+        body.get("address")
+        or body.get("target")
+        or request.args.get("address")
+        or request.args.get("target")
+        or ""
+    )
+    include_ofac = (
+        _truthy_value(body.get("includeOfac") or body.get("include_ofac"))
+        if request.method == "POST"
+        else _truthy_query_arg("include_ofac") or _truthy_query_arg("includeOfac")
+    )
+    try:
+        return jsonify(
+            build_cyber_threat_repository(
+                live=live,
+                limit=int(limit),
+                address=str(address),
+                cve_ids=cves,
+                include_ofac=include_ofac,
+            )
+        )
+    except (TypeError, ValueError) as exc:
+        return jsonify({"error": str(exc)}), 400
 
 
 @app.route("/api/x402/data-products", methods=["GET"])
@@ -1491,8 +1536,25 @@ def api_reputation_connectors_live():
         or request.args.get("domain")
         or ""
     )
+    address = (
+        body.get("address")
+        or body.get("target")
+        or request.args.get("address")
+        or request.args.get("target")
+        or ""
+    )
+    cves = (
+        body.get("cveIds")
+        or body.get("cve_ids")
+        or body.get("cves")
+        or request.args.get("cveIds")
+        or request.args.get("cve_ids")
+        or request.args.get("cves")
+        or ""
+    )
     live = _truthy_value(body.get("live")) if request.method == "POST" else _truthy_query_arg("live")
     limit = _request_value(body, "limit", request.args.get("limit") or 5)
+    days = _request_value(body, "days", request.args.get("days") or 7)
     try:
         return jsonify(
             reputation_connector_snapshot(
@@ -1500,6 +1562,9 @@ def api_reputation_connectors_live():
                 live=live,
                 limit=int(limit),
                 subject_url=str(subject_url),
+                address=str(address),
+                cve_ids=cves,
+                days=int(days),
             )
         )
     except (TypeError, ValueError) as exc:

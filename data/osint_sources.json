@@ -157,6 +157,20 @@
       "caveats": "Not specific to DeFi or 0G; keep separate from transaction-level policy decisions."
     },
     {
+      "id": "nvd_cve",
+      "name": "NVD CVE API",
+      "owner": "National Vulnerability Database",
+      "url": "https://services.nvd.nist.gov/rest/json/cves/2.0",
+      "homepage": "https://nvd.nist.gov/developers/vulnerabilities",
+      "retrieval_mode": "public_json_api",
+      "adapter": "http_head",
+      "enabled_by_default": false,
+      "freshness_ttl_seconds": 21600,
+      "license_or_rights": "U.S. government public vulnerability data. Use CVE ids, severity bands, timestamps, hashes, and links as defensive context.",
+      "output_policy": "Use as Web2 dependency and extension attack-surface context; do not expose proof-of-concept payloads or raw descriptions in public wallet verdicts.",
+      "caveats": "CVE context is not wallet compromise evidence unless matched to a real dependency, host, browser, extension, or dapp exposure."
+    },
+    {
       "id": "mitre_attack_lazarus_g0032",
       "name": "MITRE ATT&CK Lazarus Group G0032",
       "owner": "MITRE ATT&CK",
@@ -171,6 +185,20 @@
       "caveats": "TTP context is not a blockchain-address verdict and must be corroborated by wallet, domain, transaction, or vendor evidence before user-facing blocking."
     },
     {
+      "id": "mitre_attack_shai_hulud_s9008",
+      "name": "MITRE ATT&CK Shai-Hulud S9008",
+      "owner": "MITRE ATT&CK",
+      "url": "https://attack.mitre.org/software/S9008/",
+      "homepage": "https://attack.mitre.org/",
+      "retrieval_mode": "public_manual_review",
+      "adapter": "catalog_only",
+      "enabled_by_default": true,
+      "freshness_ttl_seconds": 86400,
+      "license_or_rights": "Public ATT&CK software knowledge-base material. Use identifiers, links, and defensive mappings only.",
+      "output_policy": "Use as software supply-chain and credential-harvesting context for dapp, extension, CI/CD, and developer-wallet hardening; do not infer attribution by itself.",
+      "caveats": "Malware/TTP context must be paired with direct dependency, host, package, wallet, or transaction evidence before a user-facing block."
+    },
+    {
       "id": "ofac_sanctions",
       "name": "OFAC Sanctions List Service",
       "owner": "U.S. Treasury OFAC",
@@ -182,7 +210,7 @@
       "freshness_ttl_seconds": 86400,
       "license_or_rights": "U.S. government public sanctions data. Screen defensively; avoid private-person dossiering.",
       "output_policy": "Use as an optional compliance enrichment source for sanctioned-entity links.",
-      "caveats": "Do not present sanctions context as legal advice."
+      "caveats": "Not legal advice; do not present sanctions context as compliance certification."
     },
     {
       "id": "chainalysis_sanctions_oracle",

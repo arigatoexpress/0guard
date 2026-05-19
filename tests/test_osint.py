@@ -69,6 +69,10 @@ def test_source_registry_exposes_rights_metadata_without_raw_payloads():
     assert "trm_wallet_screening" in source_ids
     assert "trm_blockint_api" in source_ids
     assert "mitre_attack_lazarus_g0032" in source_ids
+    assert "mitre_attack_shai_hulud_s9008" in source_ids
+    assert "cisa_kev" in source_ids
+    assert "nvd_cve" in source_ids
+    assert "ofac_sanctions" in source_ids
     assert "google_web_risk" in source_ids
 
     by_id = {source["id"]: source for source in public["sources"]}
@@ -78,7 +82,13 @@ def test_source_registry_exposes_rights_metadata_without_raw_payloads():
     assert by_id["trm_wallet_screening"]["enabledByDefault"] is False
     assert by_id["trm_blockint_api"]["enabledByDefault"] is False
     assert by_id["mitre_attack_lazarus_g0032"]["enabledByDefault"] is True
+    assert by_id["mitre_attack_shai_hulud_s9008"]["enabledByDefault"] is True
+    assert by_id["cisa_kev"]["enabledByDefault"] is False
+    assert by_id["nvd_cve"]["enabledByDefault"] is False
+    assert by_id["ofac_sanctions"]["enabledByDefault"] is False
     assert by_id["google_web_risk"]["enabledByDefault"] is False
+    assert "not legal advice" in by_id["ofac_sanctions"]["caveats"].lower()
+    assert "not wallet compromise evidence" in by_id["nvd_cve"]["caveats"].lower()
     assert "not legal advice" in by_id["chainalysis_sanctions_api"]["caveats"].lower()
     assert "do not claim live trm" in by_id["trm_wallet_screening"]["caveats"].lower()
     assert "never expose" in by_id["google_web_risk"]["outputPolicy"].lower()

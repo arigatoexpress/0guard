@@ -43,6 +43,51 @@ def test_reputation_adapter_normalize_accepts_source_alias_for_source_id():
     assert result["rawPayloadReturned"] is False
 
 
+def test_reputation_adapter_accepts_cisa_and_ofac_source_aliases():
+    cisa = normalize_reputation_adapter_payload(
+        {
+            "sourceId": "cisa_kev",
+            "payload": {
+                "kev_items": [
+                    {
+                        "cveID": "CVE-2024-3094",
+                        "severity": "high",
+                        "knownExploited": True,
+                    }
+                ]
+            },
+        }
+    )
+    assert cisa["sourceId"] == "software_advisory_cve"
+    assert cisa["inputSourceId"] == "cisa_kev"
+    assert cisa["derivedEvidence"][0]["categories"] == [
+        "software_supply_chain",
+        "high",
+        "known_exploited",
+    ]
+
+    ofac = normalize_reputation_adapter_payload(
+        {
+            "sourceId": "ofac_sanctions",
+            "subject": {"address": "0x885b0892D241Cb5033C9995e09cA521d54f936b5"},
+            "payload": {
+                "matches": [
+                    {
+                        "matched": True,
+                        "address": "0x885b0892D241Cb5033C9995e09cA521d54f936b5",
+                        "program": "SDGT",
+                    }
+                ]
+            },
+        }
+    )
+    assert ofac["sourceId"] == "ofac_sanctions_sls"
+    assert ofac["inputSourceId"] == "ofac_sanctions"
+    assert "not_legal_advice" in ofac["derivedEvidence"][0]["categories"]
+    assert ofac["subject"]["addressRedacted"] == "0x885b...f936b5"
+    assert ofac["rawPayloadReturned"] is False
+
+
 def test_phishdestroy_payload_normalizes_active_domain_without_raw_url_echo():
     result = normalize_reputation_adapter_payload(
         {
