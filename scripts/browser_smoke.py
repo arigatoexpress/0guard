@@ -196,6 +196,7 @@ def exercise_workbench(page: Page) -> None:
     expect(page.locator("body")).to_contain_text("Wallet Provider Guard")
     expect(page.locator("body")).to_contain_text("Local Inference")
     expect(page.locator("body")).to_contain_text("Backfill plan")
+    expect(page.locator("body")).to_contain_text("Feature store")
     expect(page.locator("body")).to_contain_text("x402 products")
 
     page.locator("#load-deny-sample").click()
@@ -252,6 +253,14 @@ def exercise_workbench(page: Page) -> None:
         "0guard.historical_backfill_plan.v1"
     )
     expect(page.locator("#data-flow-output")).to_contain_text('"rawPayloadsReturned": false')
+    page.locator("#load-historical-feature-store").click()
+    expect(page.locator("#data-flow-output")).to_contain_text(
+        "0guard.historical_feature_store.v1"
+    )
+    expect(page.locator("#data-flow-output")).to_contain_text(
+        '"featureType": "incident_detector_trace"'
+    )
+    expect(page.locator("#data-flow-output")).to_contain_text('"rawPayloadResaleAllowed": false')
 
     page.locator("#load-osint-readiness").click()
     expect(page.locator("#osint-output")).to_contain_text("0guard.osint_readiness.v1")
@@ -428,6 +437,7 @@ def exercise_workbench(page: Page) -> None:
     assert "#load-local-inference" in frontend_body["requiredSelectors"]
     assert "#run-telegram-local-inference-preview" in frontend_body["requiredSelectors"]
     assert "#load-historical-backfill-plan" in frontend_body["requiredSelectors"]
+    assert "#load-historical-feature-store" in frontend_body["requiredSelectors"]
     assert "#load-x402-data-products" in frontend_body["requiredSelectors"]
     assert "#load-live-provenance" in frontend_body["requiredSelectors"]
     assert "#load-product-brief" in frontend_body["requiredSelectors"]

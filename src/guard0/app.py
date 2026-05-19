@@ -68,6 +68,7 @@ from guard0.hackathon_integrations import (
     next_hackathon_plan,
 )
 from guard0.incident_data import detection_coverage, filter_incidents, incident_summary
+from guard0.historical_feature_store import build_historical_feature_store
 from guard0.ika import evaluate_ika_signing_request, ika_integration_manifest
 from guard0.intelligence_events import intelligence_events_snapshot
 from guard0.live_detector_candidates import live_detector_candidates
@@ -203,6 +204,7 @@ FRONTEND_REQUIRED_SELECTORS = (
     "#load-detection-coverage",
     "#load-signature-map",
     "#load-historical-backfill-plan",
+    "#load-historical-feature-store",
     "#load-osint-sources",
     "#load-osint-readiness",
     "#load-osint-signals",
@@ -897,6 +899,7 @@ def api_frontend_contract():
                 "Pi Mesh",
                 "Data Flow",
                 "Backfill plan",
+                "Feature store",
                 "x402 products",
                 "Telegram Mira Opt-In",
                 "Mira Telegram Preview",
@@ -936,6 +939,7 @@ def api_frontend_contract():
                 "/api/data/detection-coverage",
                 "/api/data/signature-map",
                 "/api/data/backfill-plan",
+                "/api/data/historical-feature-store",
                 "/api/osint/sources",
                 "/api/osint/readiness",
                 "/api/osint/signals",
@@ -1025,6 +1029,7 @@ def api_frontend_contract():
                 "load-detection-coverage",
                 "load-signature-map",
                 "load-historical-backfill-plan",
+                "load-historical-feature-store",
                 "load-osint-sources",
                 "load-osint-readiness",
                 "load-osint-signals",
@@ -1147,6 +1152,23 @@ def api_data_signature_map():
 @app.route("/api/data/backfill-plan", methods=["GET"])
 def api_data_backfill_plan():
     return jsonify(build_historical_backfill_plan())
+
+
+@app.route("/api/data/historical-feature-store", methods=["GET"])
+def api_data_historical_feature_store():
+    limit = request.args.get("limit")
+    try:
+        limit_value = int(limit) if limit is not None else None
+    except ValueError:
+        return jsonify({"error": "limit must be an integer"}), 400
+    if limit_value is not None and (limit_value < 1 or limit_value > 200):
+        return jsonify({"error": "limit must be between 1 and 200"}), 400
+    return jsonify(
+        build_historical_feature_store(
+            limit=limit_value,
+            include_reputation=not _truthy_query_arg("no_reputation"),
+        )
+    )
 
 
 @app.route("/api/osint/sources", methods=["GET"])
@@ -2169,6 +2191,7 @@ def api_health():
             "local_inference_mesh": build_local_inference_mesh(live=False),
             "x402_data_products": build_x402_data_products(),
             "historical_backfill_plan": build_historical_backfill_plan(),
+            "historical_feature_store": build_historical_feature_store(limit=3),
             "production_gaps": build_production_gap_matrix(),
             "model_training_roadmap": build_model_training_roadmap(),
             "incident_eval_set": build_incident_detector_eval_set(limit=3),

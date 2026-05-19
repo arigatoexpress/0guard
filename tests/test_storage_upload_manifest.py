@@ -24,6 +24,16 @@ def test_storage_upload_manifest_hashes_public_safe_bundle(tmp_path):
     assert manifest["safety"]["transactionSigningEnabled"] is False
 
 
+def test_default_storage_manifest_includes_historical_feature_store_seed():
+    manifest = build_storage_upload_manifest()
+
+    by_path = {item["path"]: item for item in manifest["bundle"]["files"]}
+    feature_store = by_path["data/backfill/historical_feature_store/seed.v1.jsonl"]
+    assert feature_store["exists"] is True
+    assert feature_store["rightsClass"] == "public_source_derived_historical_features"
+    assert feature_store["rawPayloadResaleAllowed"] is False
+
+
 def test_storage_upload_manifest_local_readback_detects_missing_file(tmp_path):
     existing = tmp_path / "existing.json"
     missing = tmp_path / "missing.json"

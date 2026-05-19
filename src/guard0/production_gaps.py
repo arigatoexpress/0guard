@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from guard0.da_node import DEFAULT_STORAGE_STATUS_PATH, build_storage_node_status
+from guard0.historical_feature_store import build_historical_feature_store
 from guard0.incident_data import detection_coverage, incident_summary
 from guard0.local_inference import (
     build_historical_backfill_plan,
@@ -50,6 +51,7 @@ def build_production_gap_matrix() -> dict[str, Any]:
     private_computer = build_0g_private_computer_integration(live=False)
     local_inference = build_local_inference_mesh(live=False)
     backfill = build_historical_backfill_plan()
+    historical_feature_store = build_historical_feature_store()
     x402 = build_x402_data_products()
     x402_dry_run = build_x402_wallet_preflight_dry_run()
     private_compute_smoke = build_private_compute_smoke_preview()
@@ -153,21 +155,30 @@ def build_production_gap_matrix() -> dict[str, Any]:
                 "currentPlan": backfill.get("schema"),
                 "nearTermStorage": (backfill.get("storage") or {}).get("nearTerm"),
                 "scalePath": (backfill.get("storage") or {}).get("scalePath"),
+                "featureStoreSchema": historical_feature_store.get("schema"),
+                "featureCount": historical_feature_store.get("featureCount"),
+                "featureCountsByType": historical_feature_store.get("featureCountsByType"),
+                "featureStoreReceiptHash": (
+                    historical_feature_store.get("featureStoreReceipt") or {}
+                ).get("hash"),
+                "defaultJsonlPath": (
+                    historical_feature_store.get("storage") or {}
+                ).get("defaultJsonlPath"),
             },
             "The product becomes valuable when it can answer what changed over time, not just what is true now.",
-            "The route is a plan; the feature store is not yet populated beyond current curated/local artifacts.",
-            "Build append-only JSONL runs first, then DuckDB or SQLite tables with run ids, source manifests, hashes, and rights envelopes.",
+            "A seed feature-store API and JSONL export now compose current curated/local artifacts; the wider historical backfill and query index are still pending.",
+            "Expand the append-only JSONL seed into DuckDB or SQLite tables with run ids, source manifests, hashes, and rights envelopes.",
             "ZeroGuard data pipeline",
             1,
-            ["backfill_runner", "feature_schema_freeze"],
-            "Implement a backfill CLI that writes a tiny reviewed run for incident and reputation features.",
+            _historical_feature_store_blockers(historical_feature_store),
+            "Schedule the seed feature-store export and expand the incident/reputation backfill beyond the April 2026 slice.",
             "Do not backfill private chats, private keys, payment headers, or raw paid feeds.",
             [
                 "Backfill runs are reproducible from manifests.",
                 "Queries can filter by time window, source id, chain, entity, attack vector, and detector id.",
                 "Each output row has a rights class and raw-resale flag.",
             ],
-            ["/api/data/backfill-plan"],
+            ["/api/data/backfill-plan", "/api/data/historical-feature-store"],
         ),
         _gap(
             "onchain.mainnet_anchor",
@@ -524,7 +535,7 @@ def build_production_gap_matrix() -> dict[str, Any]:
         "mode": "local_snapshot_and_manifest_no_side_effects",
         "productionReady": False,
         "whyNotProductionReadyYet": [
-            "Historical feature store is not populated beyond the current curated/local artifacts.",
+            "Historical feature store has a seed API/export from current curated/local artifacts, but not the wider scheduled 2020-present backfill and query index.",
             "0G Storage bundle/readback and x402 dry-run routes are prepared, but live upload/settlement are not enabled.",
             "Wallet-provider protection is implemented locally, but it is not yet hosted and embedded in a production dapp/provider flow.",
             "0G Private Computer has no server-side Router key or paid inference smoke in this runtime.",
@@ -534,6 +545,7 @@ def build_production_gap_matrix() -> dict[str, Any]:
         "whatIsRealNow": [
             "Validated 28-incident April 2026 corpus with 28/28 detector coverage.",
             "First incident eval JSONL and first open reputation backfill artifact when present locally.",
+            "Seed historical feature-store rows for incident detector traces and reputation-feed summary evidence.",
             "EIP-1193 wallet-provider guard route, workbench control, and TypeScript wrapper that block deny/review requests before a wallet prompt.",
             "Public 0G mainnet receipt anchor and read-only verifier path.",
             "Local RV 0G storage-node soak snapshot with small test funding only.",
@@ -545,7 +557,7 @@ def build_production_gap_matrix() -> dict[str, Any]:
         "safeBuildOrder": [
             "Freeze the production gap matrix route and docs so every claim is inspectable.",
             "Deploy and embed the EIP-1193 provider guard in a demo dapp before claiming live wallet protection.",
-            "Create the first append-only historical feature run from the existing incident corpus.",
+            "Schedule and expand the append-only historical feature store beyond the current seed run.",
             _reputation_backfill_build_order(reputation_backfill),
             "Configure Router funding/key only after reviewing the disabled 0G Private Computer smoke contract.",
             "Promote the dry-run x402 route to testnet facilitator review without enabling mainnet settlement.",
@@ -847,6 +859,13 @@ def _reputation_backfill_blockers(status: dict[str, Any]) -> list[str]:
     blockers = ["schedule_supervisor", "credentialed_sources", "vendor_terms"]
     if status.get("status") != "ready":
         return ["first_open_feed_backfill_run", *blockers]
+    return blockers
+
+
+def _historical_feature_store_blockers(store: dict[str, Any]) -> list[str]:
+    blockers = ["scheduled_backfill_runner", "query_index", "24_month_incident_backfill"]
+    if int(store.get("featureCount") or 0) <= 0:
+        return ["feature_schema_freeze", *blockers]
     return blockers
 
 

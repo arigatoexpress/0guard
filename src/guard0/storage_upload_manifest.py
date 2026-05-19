@@ -18,6 +18,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_STORAGE_BUNDLE_PATHS = (
     REPO_ROOT / "data" / "evals" / "incident_detector_eval.v1.jsonl",
     REPO_ROOT / "data" / "backfill" / "reputation_features" / "phishdestroy" / "latest.json",
+    REPO_ROOT / "data" / "backfill" / "historical_feature_store" / "seed.v1.jsonl",
     REPO_ROOT / "docs" / "hackathon-0g" / "mainnet-proof.json",
 )
 
@@ -154,6 +155,8 @@ def _rights_class(path: Path) -> str:
         return "public_source_derived_eval"
     if rel.startswith("data/backfill/reputation_features/"):
         return "public_source_derived_reputation_features"
+    if rel.startswith("data/backfill/historical_feature_store/"):
+        return "public_source_derived_historical_features"
     if rel.startswith("docs/hackathon-0g/mainnet-proof"):
         return "public_mainnet_proof"
     return "operator_review_required"

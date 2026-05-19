@@ -419,6 +419,11 @@ async function loadHistoricalBackfillPlan(){
   const j = await r.json();
   writeJson('data-flow-output', j);
 }
+async function loadHistoricalFeatureStore(){
+  const r = await fetch('/api/data/historical-feature-store?limit=10');
+  const j = await r.json();
+  writeJson('data-flow-output', j);
+}
 async function loadOsintSources(){
   const r = await fetch('/api/osint/sources');
   const j = await r.json();
@@ -819,6 +824,7 @@ document.getElementById('load-live-provenance').addEventListener('click', loadLi
 document.getElementById('load-detection-coverage').addEventListener('click', loadDetectionCoverage);
 document.getElementById('load-signature-map').addEventListener('click', loadSignatureMap);
 document.getElementById('load-historical-backfill-plan').addEventListener('click', loadHistoricalBackfillPlan);
+document.getElementById('load-historical-feature-store').addEventListener('click', loadHistoricalFeatureStore);
 document.getElementById('run-threat-case-file').addEventListener('click', runThreatCaseFile);
 document.getElementById('load-osint-sources').addEventListener('click', loadOsintSources);
 document.getElementById('load-osint-readiness').addEventListener('click', loadOsintReadiness);

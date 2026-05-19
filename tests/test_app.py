@@ -65,6 +65,8 @@ def test_health(client):
     assert data["x402_data_products"]["schema"] == "0guard.x402_data_products.v1"
     assert data["x402_data_products"]["safety"]["x402SettlementEnabled"] is False
     assert data["historical_backfill_plan"]["schema"] == "0guard.historical_backfill_plan.v1"
+    assert data["historical_feature_store"]["schema"] == "0guard.historical_feature_store.v1"
+    assert data["historical_feature_store"]["safety"]["rawPayloadsReturned"] is False
     assert data["production_gaps"]["schema"] == "0guard.production_gap_matrix.v1"
     assert data["production_gaps"]["productionReady"] is False
     assert data["production_gaps"]["safety"]["moneyMovementEnabled"] is False
@@ -161,6 +163,7 @@ def test_frontend_contract_is_browser_smoke_ready_and_non_mutating(client):
     assert "/api/data/detection-coverage" in data["apiRoutes"]
     assert "/api/data/signature-map" in data["apiRoutes"]
     assert "/api/data/backfill-plan" in data["apiRoutes"]
+    assert "/api/data/historical-feature-store" in data["apiRoutes"]
     assert "/api/osint/sources" in data["apiRoutes"]
     assert "/api/osint/readiness" in data["apiRoutes"]
     assert "/api/osint/signals" in data["apiRoutes"]
@@ -283,6 +286,7 @@ def test_frontend_contract_is_browser_smoke_ready_and_non_mutating(client):
     assert "#load-pi-mesh" in data["requiredSelectors"]
     assert "#run-telegram-node-business-preview" in data["requiredSelectors"]
     assert "#load-historical-backfill-plan" in data["requiredSelectors"]
+    assert "#load-historical-feature-store" in data["requiredSelectors"]
     assert "#load-x402-data-products" in data["requiredSelectors"]
     assert "#load-x402-dry-run" in data["requiredSelectors"]
     assert "#da-node-output" in data["requiredSelectors"]
@@ -512,6 +516,18 @@ def test_local_inference_x402_and_backfill_routes_are_no_side_effect(client):
     backfill_body = backfill.get_json()
     assert backfill_body["schema"] == "0guard.historical_backfill_plan.v1"
     assert backfill_body["safety"]["rawPayloadsReturned"] is False
+
+    feature_store = client.get("/api/data/historical-feature-store?limit=2")
+    assert feature_store.status_code == 200
+    feature_store_body = feature_store.get_json()
+    assert feature_store_body["schema"] == "0guard.historical_feature_store.v1"
+    assert feature_store_body["featureCountsByType"]["incident_detector_trace"] == 2
+    assert feature_store_body["featureStoreReceipt"]["liveUploadPerformed"] is False
+    assert feature_store_body["rightsPolicy"]["rawPayloadResaleAllowed"] is False
+    assert feature_store_body["safety"]["rawPayloadsReturned"] is False
+
+    bad_feature_store_limit = client.get("/api/data/historical-feature-store?limit=0")
+    assert bad_feature_store_limit.status_code == 400
 
     gaps = client.get("/api/production/gaps")
     assert gaps.status_code == 200
