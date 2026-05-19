@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>0guard Wallet Provider Demo</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body class="provider-demo-body">
+  <main class="provider-demo-shell">
+    <header class="provider-demo-top">
+      <div class="brand-lockup">
+        <img src="{{ url_for('static', filename='0guard-logo.png') }}" alt="" aria-hidden="true">
+        <div>
+          <div class="brand">0guard</div>
+          <p class="mini">EIP-1193 provider gate</p>
+        </div>
+      </div>
+      <a class="button-link secondary" href="/">Workbench</a>
+    </header>
+
+    <section class="provider-demo-hero">
+      <div>
+        <span class="eyebrow">Provider wrapper</span>
+        <h1>Wallet Provider Guard</h1>
+        <p class="muted">A dapp request reaches 0guard before it reaches the wallet provider.</p>
+      </div>
+      <span class="pill review" id="provider-demo-decision">waiting</span>
+    </section>
+
+    <section class="provider-demo-grid" aria-label="Wallet provider guard demo">
+      <div class="card control-card">
+        <h2>Requests</h2>
+        <div class="actions provider-demo-actions">
+          <button id="demo-read-chain" type="button" data-provider-scenario="read">Read chain</button>
+          <button id="demo-switch-chain" class="secondary" type="button" data-provider-scenario="switch">Switch chain</button>
+          <button id="demo-unlimited-approval" class="secondary" type="button" data-provider-scenario="approval">Unlimited approval</button>
+        </div>
+        <p class="mini">The fake provider records only requests that 0guard allows.</p>
+      </div>
+
+      <div class="card evidence-card">
+        <h2>Forwarding State</h2>
+        <div class="provider-demo-metrics">
+          <div class="metric">
+            <span>Provider calls</span>
+            <strong id="provider-demo-call-count">0</strong>
+          </div>
+          <div class="metric">
+            <span>Action</span>
+            <strong id="provider-demo-action">none</strong>
+          </div>
+          <div class="metric">
+            <span>Forwarded</span>
+            <strong id="provider-demo-forwarded">no</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="provider-demo-grid" aria-label="Provider guard output">
+      <div class="card evidence-card">
+        <h2>Guard Result</h2>
+        <pre id="provider-demo-output">Awaiting request.</pre>
+      </div>
+      <div class="card raw-card">
+        <h2>Provider Call Log</h2>
+        <pre id="provider-demo-log">[]</pre>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="{{ url_for('static', filename='wallet-provider-demo.js') }}"></script>
+</body>
+</html>

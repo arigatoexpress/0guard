@@ -83,6 +83,7 @@ def run_browser_smoke() -> None:
         page.on("pageerror", lambda exc: console_errors.append(str(exc)))
         try:
             exercise_workbench(page)
+            exercise_wallet_provider_demo(page)
             mobile_page = browser.new_page(
                 viewport={"width": 390, "height": 844},
                 is_mobile=True,
@@ -688,6 +689,38 @@ def exercise_workbench(page: Page) -> None:
     assert provider_guard_body["decision"] == "deny"
     assert provider_guard_body["enforcement"]["providerCallAllowed"] is False
     assert provider_guard_body["safety"]["providerForwardingPerformedBy0guard"] is False
+
+
+def exercise_wallet_provider_demo(page: Page) -> None:
+    page.goto(f"{BASE_URL}/demo/wallet-provider-guard")
+
+    expect(page).to_have_title("0guard Wallet Provider Demo")
+    expect(page.locator("body")).to_contain_text("Wallet Provider Guard")
+    expect(page.locator("#provider-demo-call-count")).to_contain_text("0")
+
+    page.locator("#demo-read-chain").click()
+    expect(page.locator("#provider-demo-decision")).to_contain_text("allow")
+    expect(page.locator("#provider-demo-forwarded")).to_contain_text("yes")
+    expect(page.locator("#provider-demo-call-count")).to_contain_text("1")
+    expect(page.locator("#provider-demo-output")).to_contain_text('"forwardedToProvider": true')
+    expect(page.locator("#provider-demo-log")).to_contain_text("eth_chainId")
+
+    page.locator("#demo-switch-chain").click()
+    expect(page.locator("#provider-demo-decision")).to_contain_text("review")
+    expect(page.locator("#provider-demo-forwarded")).to_contain_text("no")
+    expect(page.locator("#provider-demo-call-count")).to_contain_text("1")
+    expect(page.locator("#provider-demo-output")).to_contain_text(
+        "show_review_before_wallet_prompt"
+    )
+
+    page.locator("#demo-unlimited-approval").click()
+    expect(page.locator("#provider-demo-decision")).to_contain_text("deny")
+    expect(page.locator("#provider-demo-forwarded")).to_contain_text("no")
+    expect(page.locator("#provider-demo-call-count")).to_contain_text("1")
+    expect(page.locator("#provider-demo-output")).to_contain_text(
+        "block_before_wallet_prompt"
+    )
+    expect(page.locator("#provider-demo-log")).not_to_contain_text("eth_sendTransaction")
 
 
 def exercise_workbench_mobile(page: Page) -> None:
