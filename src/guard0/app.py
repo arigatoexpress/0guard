@@ -136,6 +136,7 @@ from guard0.storage_peer_diagnostics import (
     build_storage_peer_diagnostics,
 )
 from guard0.wallet_alerts import build_wallet_alert_preview, wallet_alert_quality_policy
+from guard0.wallet_provider_guard import build_wallet_provider_guard
 from guard0.x402_guard import build_x402_wallet_preflight_dry_run
 
 app = Flask(__name__)
@@ -255,6 +256,7 @@ FRONTEND_REQUIRED_SELECTORS = (
     "#wallet-address-input",
     "#run-wallet-alert-preview",
     "#run-telegram-wallet-alert-preview",
+    "#run-wallet-provider-guard",
     "#wallet-alert-output",
     "#telegram-user-label",
     "#create-telegram-registration",
@@ -882,6 +884,7 @@ def api_frontend_contract():
                 "Telegram Mira Opt-In",
                 "Mira Telegram Preview",
                 "Wallet Alert Preview",
+                "Wallet Provider Guard",
                 "Telegram Mini App",
                 "TON Risk Passport",
                 "External Action Contract",
@@ -937,6 +940,7 @@ def api_frontend_contract():
                 "/api/experiments/run",
                 "/api/threat-case-file",
                 "/api/wallet/alert-preview",
+                "/api/wallet/provider-guard",
                 "/api/healthz",
                 "/api/ton/status",
                 "/api/ton/risk-rules",
@@ -1042,6 +1046,7 @@ def api_frontend_contract():
                 "run-external-guardrail-check",
                 "run-wallet-alert-preview",
                 "run-telegram-wallet-alert-preview",
+                "run-wallet-provider-guard",
                 "load-da-node-status",
                 "load-storage-node-status",
                 "load-storage-peer-diagnostics",
@@ -1487,6 +1492,15 @@ def api_native_preflight():
     body = request.get_json(silent=True) or {}
     try:
         return jsonify(build_native_preflight(body))
+    except (TypeError, ValueError) as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
+@app.route("/api/wallet/provider-guard", methods=["POST"])
+def api_wallet_provider_guard():
+    body = request.get_json(silent=True) or {}
+    try:
+        return jsonify(build_wallet_provider_guard(body))
     except (TypeError, ValueError) as exc:
         return jsonify({"error": str(exc)}), 400
 

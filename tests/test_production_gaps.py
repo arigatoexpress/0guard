@@ -33,6 +33,11 @@ def test_production_gap_matrix_classifies_real_local_pending_and_mock_lanes():
     assert "/api/0g/storage-upload/manifest" in by_id["onchain.0g_storage_upload_readback"]["routes"]
     assert by_id["onchain.x402_settlement"]["currentEvidence"]["dryRunHttpStatus"] == 402
     assert "/api/x402/dry-run/wallet-preflight" in by_id["onchain.x402_settlement"]["routes"]
+    assert by_id["wallet.provider_guard"]["currentStatus"] == "source_ready_live_pending"
+    assert by_id["wallet.provider_guard"]["currentEvidence"]["demoDecision"] == "deny"
+    assert by_id["wallet.provider_guard"]["currentEvidence"]["providerCallAllowed"] is False
+    assert by_id["wallet.provider_guard"]["currentEvidence"]["rawParamsReturned"] is False
+    assert "/api/wallet/provider-guard" in by_id["wallet.provider_guard"]["routes"]
     assert by_id["node.0g_storage_soak"]["unsafeToDoNow"].startswith(
         "Do not send the large 0G transfer"
     )

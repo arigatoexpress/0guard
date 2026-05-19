@@ -20,6 +20,7 @@ def test_developer_kit_manifest_is_actionable_and_non_mutating():
     assert "reputation-shadow-cache" in manifest["quickstart"]["cliReputationShadowCacheProbe"]
     assert "proof-ladder" in manifest["quickstart"]["cliProofLadderProbe"]
     assert any(route["path"] == "/api/native-preflight" for route in manifest["routes"])
+    assert any(route["path"] == "/api/wallet/provider-guard" for route in manifest["routes"])
     assert any(route["path"] == "/api/readyz" for route in manifest["routes"])
     assert any(route["path"] == "/api/threat-case-file" for route in manifest["routes"])
     assert any(route["path"] == "/api/experiments/frontier" for route in manifest["routes"])
@@ -38,6 +39,7 @@ def test_developer_kit_manifest_is_actionable_and_non_mutating():
     }
     assert manifest["examplePayloads"]["readOnlyEvmStatus"]["expectedDecision"] == "allow"
     assert manifest["examplePayloads"]["blockIkaSweep"]["expectedDecision"] == "deny"
+    assert manifest["examplePayloads"]["blockProviderApproval"]["expectedDecision"] == "deny"
     assert manifest["safety"]["transactionSigningEnabled"] is False
     assert manifest["safety"]["paymentSettlementEnabled"] is False
     assert manifest["safety"]["telegramSendsEnabled"] is False
@@ -66,3 +68,24 @@ def test_native_preflight_examples_are_present_and_do_not_execute_live_paths():
     ]
     for term in banned_live_terms:
         assert term not in combined
+
+
+def test_wallet_provider_guard_example_is_present_and_blocks_before_prompt():
+    ts_example = REPO_ROOT / "examples" / "wallet_provider_guard" / "providerGuard.ts"
+    readme = REPO_ROOT / "examples" / "wallet_provider_guard" / "README.md"
+    docs = REPO_ROOT / "docs" / "WALLET_PROVIDER_GUARD.md"
+
+    assert ts_example.exists()
+    assert readme.exists()
+    assert docs.exists()
+
+    combined = "\n".join(
+        path.read_text(encoding="utf-8") for path in [ts_example, readme, docs]
+    )
+    assert "/api/wallet/provider-guard" in combined
+    assert "WalletGuardBlockedError" in combined
+    assert "provider.request<T>(request)" in combined
+    assert "review" in combined
+    assert "deny" in combined
+    assert "private_key" not in combined
+    assert "seed phrase" not in combined.lower()
