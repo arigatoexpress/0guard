@@ -64,6 +64,8 @@ def test_health(client):
     assert data["local_inference_mesh"]["safety"]["promptExecutionEnabled"] is False
     assert data["x402_data_products"]["schema"] == "0guard.x402_data_products.v1"
     assert data["x402_data_products"]["safety"]["x402SettlementEnabled"] is False
+    assert data["x402_settlement_policy"]["schema"] == "0guard.x402_settlement_policy.v1"
+    assert data["x402_settlement_policy"]["safety"]["x402SettlementEnabled"] is False
     assert data["historical_backfill_plan"]["schema"] == "0guard.historical_backfill_plan.v1"
     assert data["historical_feature_store"]["schema"] == "0guard.historical_feature_store.v1"
     assert data["historical_feature_store"]["safety"]["rawPayloadsReturned"] is False
@@ -171,6 +173,7 @@ def test_frontend_contract_is_browser_smoke_ready_and_non_mutating(client):
     assert "/api/intelligence/data-streams" in data["apiRoutes"]
     assert "/api/x402/data-products" in data["apiRoutes"]
     assert "/api/x402/dry-run/wallet-preflight" in data["apiRoutes"]
+    assert "/api/x402/settlement-policy" in data["apiRoutes"]
     assert "/api/intelligence/detector-candidates" in data["apiRoutes"]
     assert "/api/product/brief" in data["apiRoutes"]
     assert "/api/product/strategy-review" in data["apiRoutes"]
@@ -289,6 +292,7 @@ def test_frontend_contract_is_browser_smoke_ready_and_non_mutating(client):
     assert "#load-historical-feature-store" in data["requiredSelectors"]
     assert "#load-x402-data-products" in data["requiredSelectors"]
     assert "#load-x402-dry-run" in data["requiredSelectors"]
+    assert "#load-x402-settlement-policy" in data["requiredSelectors"]
     assert "#da-node-output" in data["requiredSelectors"]
     assert "#telegram-register-output" in data["requiredSelectors"]
     assert "#mira-output" in data["requiredSelectors"]
@@ -510,6 +514,14 @@ def test_local_inference_x402_and_backfill_routes_are_no_side_effect(client):
     assert x402_fixture_body["status"] == "payment_fixture_accepted_no_settlement"
     assert x402_fixture_body["paymentReadback"]["settlementAttempted"] is False
     assert x402_fixture_body["productResponse"]["rawPayloadResaleAllowed"] is False
+
+    x402_policy = client.get("/api/x402/settlement-policy")
+    assert x402_policy.status_code == 200
+    x402_policy_body = x402_policy.get_json()
+    assert x402_policy_body["schema"] == "0guard.x402_settlement_policy.v1"
+    assert x402_policy_body["spendCaps"]["perRequestMaxDisplay"] == "0.01 USDC"
+    assert x402_policy_body["terms"]["rawPayloadResaleAllowed"] is False
+    assert x402_policy_body["safety"]["x402SettlementEnabled"] is False
 
     backfill = client.get("/api/data/backfill-plan")
     assert backfill.status_code == 200
