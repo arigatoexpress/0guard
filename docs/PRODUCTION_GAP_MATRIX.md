@@ -46,23 +46,29 @@ deferred, and orders the next production gates.
   and `data/backfill/reputation_features/phishdestroy/latest.json`.
 - 0G Storage upload manifest: `/api/0g/storage-upload/manifest` hashes the
   public-safe bundle and verifies local hash readback without uploading.
+- Historical feature store exports: the latest JSONL alias remains available
+  for manifesting, while each writer run also creates an immutable `runs/*.jsonl`
+  artifact with a receipt hash.
 - x402 dry-run route: `/api/x402/dry-run/wallet-preflight` returns stable
   HTTP-402 metadata and accepts only a fixture header with settlement disabled.
 - 0G Private Computer smoke contract: `/api/0g/private-computer/smoke-preview`
   scrubs prompts and refuses paid inference unless server-side gates are set.
-- RV 0G storage node soak: real local snapshot, process running, only the small
-  0.25 0G test funding observed, and no 100 0G transfer sent.
-- Pi mesh: rvpi-a and rvpi-b are represented as a real edge snapshot with
-  cluster-ready posture.
+- RV 0G storage node soak: real local snapshot, process running, public storage
+  and DA relay sockets restored, only the small 0.25 0G test funding observed,
+  and no 100 0G transfer sent.
+- Pi mesh: rvpi-a and rvpi-b are represented as a real edge snapshot, but the
+  current LAN readback may be offline and must not be treated as production
+  cluster proof.
 
 ## Not Production Yet
 
 The hard gates are deliberately explicit:
 
 - Historical feature store: not yet populated beyond the current curated/local
-  artifacts.
+  artifacts and immutable seed exports.
 - Live reputation ingestion: the first open-feed derived artifact exists, but
-  a supervisor schedule and credentialed vendor lanes are not live.
+  readiness now requires it to be fresh within TTL and supervised before it is
+  green.
 - 0G Storage upload/readback: bundle manifest and local hash readback exist,
   but no live 0G Storage upload or gateway proof exists.
 - x402 paid routes: product manifest and dry-run HTTP-402 route exist, but no
@@ -72,8 +78,8 @@ The hard gates are deliberately explicit:
   inference smoke.
 - Telegram: preview and opt-in routes exist, but live identity/webhook proof
   depends on server-side env and sends remain disabled.
-- Storage node expansion: the funded soak still needs peer/sync blockers to
-  clear before larger funding or production claims.
+- Storage node expansion: the funded soak still needs peer depth to clear before
+  larger funding or production claims.
 
 ## Real Data Plan
 

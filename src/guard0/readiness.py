@@ -152,13 +152,14 @@ def production_readiness() -> dict[str, Any]:
         ),
         _check(
             "reputation_backfill_artifact",
-            "ok" if reputation_backfill.get("status") == "ready" else "review",
+            "ok" if _reputation_backfill_ready(reputation_backfill) else "review",
             "At least one rights-cleared reputation worker output should be fresh and derived-only.",
             {
                 "status": reputation_backfill.get("status"),
                 "latestRunExists": reputation_backfill.get("latestRunExists"),
                 "latestAgeSeconds": reputation_backfill.get("latestAgeSeconds"),
                 "ttlSeconds": reputation_backfill.get("ttlSeconds"),
+                "freshWithinTtl": _fresh_within_ttl(reputation_backfill),
                 "derivedEvidenceCount": reputation_backfill.get("derivedEvidenceCount"),
                 "parsedDomainCount": reputation_backfill.get("parsedDomainCount"),
                 "rawPayloadsReturned": reputation_backfill.get("rawPayloadsReturned"),
@@ -424,6 +425,22 @@ def _storage_upload_live_readback_complete(payload: dict[str, Any]) -> bool:
         and safety.get("liveStorageGatewayReadback") is True
         and (payload.get("readbackVerifier") or {}).get("allMatched") is True
     )
+
+
+def _reputation_backfill_ready(payload: dict[str, Any]) -> bool:
+    return (
+        payload.get("status") == "ready"
+        and _fresh_within_ttl(payload) is True
+        and ((payload.get("scheduleManifest") or {}).get("supervisorInstalled") is True)
+    )
+
+
+def _fresh_within_ttl(payload: dict[str, Any]) -> bool:
+    age = payload.get("latestAgeSeconds")
+    ttl = payload.get("ttlSeconds")
+    if not isinstance(age, int) or not isinstance(ttl, int):
+        return False
+    return age <= ttl
 
 
 def _private_compute_smoke_complete(payload: dict[str, Any]) -> bool:

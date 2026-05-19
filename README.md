@@ -54,22 +54,22 @@ format accepted by 0G Chain Scan.
 | Capability | Status | Proof route or file |
 | --- | --- | --- |
 | Intent firewall | Live | `POST /api/evaluate`, `POST /api/native-preflight` |
-| Wallet provider guard | Live API and hosted demo, no custody | `POST /api/wallet/provider-guard`, `/demo/wallet-provider-guard` |
+| Wallet provider guard | Live API and hosted demo, no custody; real extension proof still pending | `POST /api/wallet/provider-guard`, `/demo/wallet-provider-guard`, `examples/wallet_provider_guard/` |
 | Threat case file | Live preview, no side effects | `POST /api/threat-case-file` |
 | Incident intelligence | Live | `GET /api/data/summary`, `GET /api/data/provenance`, `GET /api/data/signature-map` |
 | Detector coverage | Live | 28 of 28 incident-derived seeds covered; `coverageRatio: 1.0` |
 | 0G Chain receipt anchor | Live on mainnet | `docs/hackathon-0g/mainnet-proof.json` |
 | 0G Storage receipts | Storage-ready bundle manifest and local hash readback, not auto-uploaded | `zero_g.storage_receipt.root_hash`, `/api/0g/storage-upload/manifest` |
 | 0G node telemetry | Live read-only routes, no funding action | `/api/0g/da-node/status`, `/api/0g/storage-node/status`, `/api/0g/node-business` |
-| RV funded storage soak | Local snapshot collector, funding expansion blocked | `scripts/rv_0g_storage_soak_snapshot.py`, `/api/0g/storage-node/status?snapshot=1` |
-| RV storage peer diagnostics | Redacted collector shows peer issue is shallow discovery, not local TCP/UDP bind failure | `scripts/rv_0g_peer_diagnostics.py`, `/api/0g/storage-node/peer-diagnostics?snapshot=1` |
+| RV funded storage soak | Local snapshot collector; storage and DA relays are restored, funding expansion still blocked by peer depth | `scripts/rv_0g_storage_soak_snapshot.py`, `/api/0g/storage-node/status?snapshot=1` |
+| RV storage peer diagnostics | Redacted collector shows `connectedPeers=0` despite live TCP/UDP relay and near-current sync | `scripts/rv_0g_peer_diagnostics.py`, `/api/0g/storage-node/peer-diagnostics?snapshot=1` |
 | 0G Private Computer | Adapter-ready manifest plus no-inference smoke contract and prompt scrubber | `/api/0g/private-computer`, `/api/0g/private-computer/smoke-preview` |
 | Local Windows/Pi inference mesh | Read-only live status, no prompt execution | `/api/local-inference/status?live=1`, `/api/telegram/local-inference-preview` |
 | Production gap matrix | Live claim classifier for real/local/source-ready/mock lanes | `/api/production/gaps`, `/api/model/training-roadmap` |
 | Strategic review | Critical product spine, build order, and what to defer | `/api/product/strategy-review`, `docs/STRATEGIC_REVIEW.md` |
-| Peer protection and Pi mesh | Live no-send/no-broadcast previews plus RV Pi Ethernet snapshot ingest | `scripts/rv_pi_mesh_snapshot.py`, `/api/0g/pi-mesh?snapshot=1`, `/api/0g/peer-protection`, `/api/peer/outreach-preview` |
+| Peer protection and Pi mesh | Live no-send/no-broadcast previews plus RV Pi Ethernet snapshot ingest; current LAN readback may be offline | `scripts/rv_pi_mesh_snapshot.py`, `/api/0g/pi-mesh?snapshot=1`, `/api/0g/peer-protection`, `/api/peer/outreach-preview` |
 | x402 data products | Rights-cleared product manifest plus HTTP-402 dry-run, no settlement | `/api/x402/data-products`, `/api/x402/dry-run/wallet-preflight` |
-| Historical backfill | Durable data plan plus first eval/backfill artifacts | `/api/data/backfill-plan`, `/api/model/incident-eval-set`, `/api/reputation/backfill/status` |
+| Historical backfill | Durable data plan, immutable JSONL run exports, and first eval/backfill artifacts | `/api/data/backfill-plan`, `/api/model/incident-eval-set`, `/api/reputation/backfill/status` |
 | 0G Compute | Router/direct setup path documented, not claimed live | Stated in `docs/hackathon-0g/mainnet-gap-register.md` |
 | Reputation layer | Live derived normalizer, shadow cache, and first PhishDestroy derived backfill artifact | `/api/reputation/*` routes, `data/backfill/reputation_features/phishdestroy/latest.json` |
 | Telegram Mini App | Live preview, no outbound sends | `/telegram`, `/api/telegram/miniapp/preview` |

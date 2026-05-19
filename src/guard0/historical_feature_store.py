@@ -64,7 +64,7 @@ def build_historical_feature_store(
         "sourceRuns": source_runs,
         "storage": {
             "defaultJsonlPath": _relative_repo_path(DEFAULT_HISTORICAL_FEATURE_STORE_PATH),
-            "format": "append_only_jsonl_seed",
+            "format": "immutable_run_jsonl_with_latest_alias",
             "scalePath": "DuckDB or SQLite query index after wider 2020-present backfill",
             "zeroGStoragePath": "public-safe derived bundle after live upload/readback proof",
         },
@@ -110,16 +110,26 @@ def write_historical_feature_store_jsonl(
     )
     rows = payload["featureRows"]
     target.parent.mkdir(parents=True, exist_ok=True)
-    with target.open("w", encoding="utf-8") as handle:
+    run_path = _immutable_run_path(target, payload)
+    run_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with run_path.open("x", encoding="utf-8") as handle:
         for row in rows:
             handle.write(json.dumps(row, sort_keys=True, separators=(",", ":"), ensure_ascii=True))
             handle.write("\n")
 
-    file_hash = _hash_bytes(target.read_bytes())
+    target_tmp = target.with_suffix(f"{target.suffix}.tmp")
+    target_tmp.write_text(run_path.read_text(encoding="utf-8"), encoding="utf-8")
+    target_tmp.replace(target)
+
+    file_hash = _hash_bytes(run_path.read_bytes())
     return {
         "schema": HISTORICAL_FEATURE_EXPORT_SCHEMA,
         "generatedAt": _now(),
         "path": _relative_repo_path(target),
+        "latestAliasPath": _relative_repo_path(target),
+        "immutableRunPath": _relative_repo_path(run_path),
+        "latestAliasUpdated": True,
         "featureCount": len(rows),
         "featureCountsByType": payload["featureCountsByType"],
         "featureStoreReceipt": payload["featureStoreReceipt"],
@@ -301,6 +311,21 @@ def _feature_store_hash(*, rows: list[dict[str, Any]], source_runs: list[dict[st
             "rowHashes": [row.get("rowHash") for row in rows],
         }
     )
+
+
+def _immutable_run_path(target: Path, payload: dict[str, Any]) -> Path:
+    timestamp = str(payload.get("generatedAt") or _now()).replace("-", "").replace(":", "")
+    timestamp = timestamp.replace("+0000", "Z").replace("+00:00", "Z")
+    timestamp = "".join(char for char in timestamp if char.isalnum() or char in {"T", "Z"})
+    receipt_hash = ((payload.get("featureStoreReceipt") or {}).get("hash") or "nohash")[:12]
+    base = target.parent / "runs" / f"{timestamp}-{receipt_hash}.jsonl"
+    if not base.exists():
+        return base
+    for index in range(1, 100):
+        candidate = target.parent / "runs" / f"{timestamp}-{receipt_hash}-{index}.jsonl"
+        if not candidate.exists():
+            return candidate
+    raise FileExistsError(f"could not allocate immutable feature-store run path for {target}")
 
 
 def _loss_bucket(value: Any) -> str:

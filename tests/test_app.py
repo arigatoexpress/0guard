@@ -1738,7 +1738,7 @@ def test_wallet_provider_guard_route_blocks_sensitive_provider_requests(client):
         "/api/wallet/provider-guard",
         headers={"Origin": "https://arigatoexpress.github.io"},
         json={
-            "origin": "https://claim-drop.evil.example",
+            "origin": "https://arigatoexpress.github.io",
             "method": "eth_sendTransaction",
             "params": [
                 {
@@ -1764,6 +1764,26 @@ def test_wallet_provider_guard_route_blocks_sensitive_provider_requests(client):
     assert payload["enforcement"]["providerCallAllowed"] is False
     assert payload["preflight"]["schema"] == "0guard.native_preflight.v1"
     assert payload["safety"]["providerForwardingPerformedBy0guard"] is False
+
+    mismatch = client.post(
+        "/api/wallet/provider-guard",
+        headers={"Origin": "https://arigatoexpress.github.io"},
+        json={
+            "origin": "https://claim-drop.evil.example",
+            "method": "eth_chainId",
+            "params": [],
+        },
+    )
+    assert mismatch.status_code == 400
+    assert "origin mismatch" in mismatch.get_json()["error"]
+
+    blocked_origin = client.post(
+        "/api/wallet/provider-guard",
+        headers={"Origin": "https://evil.example"},
+        json={"origin": "https://evil.example", "method": "eth_chainId", "params": []},
+    )
+    assert blocked_origin.status_code == 400
+    assert "not allowlisted" in blocked_origin.get_json()["error"]
 
     read_only = client.post(
         "/api/wallet/provider-guard",

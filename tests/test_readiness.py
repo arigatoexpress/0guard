@@ -25,6 +25,8 @@ def test_production_readiness_is_honest_and_non_mutating(monkeypatch):
     assert checks["mainnet_proof_file"]["status"] == "ok"
     assert checks["detector_coverage"]["status"] == "ok"
     assert checks["reputation_shadow_cache"]["status"] == "ok"
+    assert checks["reputation_backfill_artifact"]["status"] == "ok"
+    assert checks["reputation_backfill_artifact"]["detail"]["freshWithinTtl"] is True
     assert checks["telegram_state_store"]["status"] == "ok"
     assert checks["storage_node_funded_soak"]["status"] == "review"
     assert checks["telegram_live_identity"]["status"] == "review"
@@ -54,6 +56,36 @@ def test_production_readiness_detects_mainnet_runtime_env(monkeypatch):
     assert checks["mainnet_verifier_profile"]["status"] == "ok"
     assert checks["mainnet_verifier_profile"]["detail"]["receiptContractConfigured"] is True
     assert result["readiness"] == "production_review"
+
+
+def test_production_readiness_marks_stale_or_unsupervised_backfill_review(monkeypatch):
+    payloads = _green_gate_payloads()
+    payloads["reputation_backfill"]["latestAgeSeconds"] = 21601
+
+    monkeypatch.setattr(readiness_module, "_production_gate_payloads", lambda: payloads)
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "configured-in-env")
+    monkeypatch.setenv("TELEGRAM_WEBHOOK_SECRET_TOKEN", "configured-in-env")
+    monkeypatch.setenv("ZGG_CHAIN_RPC", "https://evmrpc.0g.ai")
+    monkeypatch.setenv("ZGG_CHAIN_ID", "16661")
+    monkeypatch.setenv("ZGG_RECEIPT_CONTRACT", "0xBaC59b1571b7c7195915c5B36D8A719Ed7182abc")
+
+    result = production_readiness()
+    checks = {check["id"]: check for check in result["checks"]}
+
+    assert result["readiness"] == "production_review"
+    assert checks["reputation_backfill_artifact"]["status"] == "review"
+    assert checks["reputation_backfill_artifact"]["detail"]["freshWithinTtl"] is False
+    assert "reputation_backfill_artifact" in result["hardGates"]
+
+    payloads["reputation_backfill"]["latestAgeSeconds"] = 30
+    payloads["reputation_backfill"]["scheduleManifest"]["supervisorInstalled"] = False
+
+    result = production_readiness()
+    checks = {check["id"]: check for check in result["checks"]}
+
+    assert checks["reputation_backfill_artifact"]["status"] == "review"
+    assert checks["reputation_backfill_artifact"]["detail"]["freshWithinTtl"] is True
+    assert checks["reputation_backfill_artifact"]["detail"]["supervisorInstalled"] is False
 
 
 def test_production_readiness_detects_file_backed_telegram_store(monkeypatch, tmp_path):

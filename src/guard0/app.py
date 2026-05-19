@@ -1563,6 +1563,24 @@ def _wallet_provider_allowed_origin(origin: str | None) -> str | None:
     return None
 
 
+def _wallet_provider_guard_body(body: dict[str, object]) -> dict[str, object]:
+    """Use the browser Origin header as authority when it is present."""
+
+    header_origin = (request.headers.get("Origin") or "").strip().rstrip("/")
+    if not header_origin:
+        return body
+
+    allowed_origin = _wallet_provider_allowed_origin(header_origin)
+    if not allowed_origin:
+        raise ValueError("wallet provider origin is not allowlisted")
+
+    reported_origin = str(body.get("origin") or "").strip().rstrip("/")
+    if reported_origin and reported_origin != allowed_origin:
+        raise ValueError("wallet provider origin mismatch")
+
+    return {**body, "origin": allowed_origin}
+
+
 def _wallet_provider_cors(response: Response, *, status_code: int = 200) -> Response:
     response.status_code = status_code
     allowed_origin = _wallet_provider_allowed_origin(request.headers.get("Origin"))
@@ -1581,7 +1599,9 @@ def api_wallet_provider_guard():
         return _wallet_provider_cors(jsonify({}), status_code=204)
     body = request.get_json(silent=True) or {}
     try:
-        return _wallet_provider_cors(jsonify(build_wallet_provider_guard(body)))
+        return _wallet_provider_cors(
+            jsonify(build_wallet_provider_guard(_wallet_provider_guard_body(body)))
+        )
     except (TypeError, ValueError) as exc:
         return _wallet_provider_cors(jsonify({"error": str(exc)}), status_code=400)
 
