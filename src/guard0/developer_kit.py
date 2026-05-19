@@ -189,6 +189,12 @@ def developer_kit_manifest() -> dict[str, Any]:
                 "runtime": "EIP-1193 browser wallet provider",
                 "purpose": "Proxy wrapper that blocks deny/review wallet-provider requests before the wallet popup.",
             },
+            {
+                "language": "javascript",
+                "path": "examples/wallet_provider_guard/external_dapp/",
+                "runtime": "static browser dapp with injected window.ethereum",
+                "purpose": "External-origin smoke page that proves only allow verdicts reach window.ethereum.request.",
+            },
         ],
         "adapterRecipes": _adapter_recipes(),
         "examplePayloads": _example_payloads(),

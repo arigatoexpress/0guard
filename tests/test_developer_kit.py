@@ -74,17 +74,22 @@ def test_wallet_provider_guard_example_is_present_and_blocks_before_prompt():
     ts_example = REPO_ROOT / "examples" / "wallet_provider_guard" / "providerGuard.ts"
     readme = REPO_ROOT / "examples" / "wallet_provider_guard" / "README.md"
     docs = REPO_ROOT / "docs" / "WALLET_PROVIDER_GUARD.md"
+    external_dapp = REPO_ROOT / "examples" / "wallet_provider_guard" / "external_dapp"
 
     assert ts_example.exists()
     assert readme.exists()
     assert docs.exists()
+    assert (external_dapp / "index.html").exists()
+    assert (external_dapp / "app.js").exists()
 
     combined = "\n".join(
-        path.read_text(encoding="utf-8") for path in [ts_example, readme, docs]
+        path.read_text(encoding="utf-8")
+        for path in [ts_example, readme, docs, external_dapp / "index.html", external_dapp / "app.js"]
     )
     assert "/api/wallet/provider-guard" in combined
     assert "WalletGuardBlockedError" in combined
     assert "provider.request<T>(request)" in combined
+    assert "window.ethereum" in combined
     assert "review" in combined
     assert "deny" in combined
     assert "private_key" not in combined

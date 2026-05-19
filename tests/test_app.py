@@ -1693,8 +1693,22 @@ def test_wallet_alert_preview_denies_negative_amount_intents(client):
 
 
 def test_wallet_provider_guard_route_blocks_sensitive_provider_requests(client):
+    preflight = client.open(
+        "/api/wallet/provider-guard",
+        method="OPTIONS",
+        headers={
+            "Origin": "http://127.0.0.1:8142",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+    assert preflight.status_code == 204
+    assert preflight.headers["Access-Control-Allow-Origin"] == "http://127.0.0.1:8142"
+    assert preflight.headers["Access-Control-Allow-Methods"] == "POST, OPTIONS"
+
     response = client.post(
         "/api/wallet/provider-guard",
+        headers={"Origin": "https://arigatoexpress.github.io"},
         json={
             "origin": "https://claim-drop.evil.example",
             "method": "eth_sendTransaction",
@@ -1714,6 +1728,7 @@ def test_wallet_provider_guard_route_blocks_sensitive_provider_requests(client):
     )
 
     assert response.status_code == 200
+    assert response.headers["Access-Control-Allow-Origin"] == "https://arigatoexpress.github.io"
     payload = response.get_json()
     assert payload["schema"] == "0guard.wallet_provider_guard.v1"
     assert payload["decision"] == "deny"
@@ -1731,6 +1746,14 @@ def test_wallet_provider_guard_route_blocks_sensitive_provider_requests(client):
 
     bad = client.post("/api/wallet/provider-guard", json={"params": []})
     assert bad.status_code == 400
+
+    disallowed = client.open(
+        "/api/wallet/provider-guard",
+        method="OPTIONS",
+        headers={"Origin": "https://evil.example", "Access-Control-Request-Method": "POST"},
+    )
+    assert disallowed.status_code == 204
+    assert "Access-Control-Allow-Origin" not in disallowed.headers
 
 
 def test_telegram_registration_and_mira_preview_are_local_and_redacted(monkeypatch, client):

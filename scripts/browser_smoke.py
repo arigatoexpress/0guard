@@ -17,11 +17,15 @@ import urllib.error
 import urllib.request
 from collections.abc import Iterator
 from contextlib import contextmanager
+from pathlib import Path
 
 from playwright.sync_api import Page, expect, sync_playwright
 
 PORT = int(os.environ.get("ZEROGUARD_BROWSER_SMOKE_PORT", "8139"))
 BASE_URL = f"http://127.0.0.1:{PORT}"
+EXTERNAL_DAPP_PORT = int(os.environ.get("ZEROGUARD_EXTERNAL_DAPP_PORT", "8142"))
+EXTERNAL_DAPP_URL = f"http://127.0.0.1:{EXTERNAL_DAPP_PORT}"
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def main() -> int:
@@ -69,6 +73,52 @@ def wait_for_health(process: subprocess.Popen[str]) -> None:
     raise TimeoutError(f"Timed out waiting for {BASE_URL}/api/health: {last_error}")
 
 
+@contextmanager
+def run_external_dapp_server() -> Iterator[None]:
+    process = subprocess.Popen(
+        [
+            sys.executable,
+            "-m",
+            "http.server",
+            str(EXTERNAL_DAPP_PORT),
+            "--bind",
+            "127.0.0.1",
+            "--directory",
+            str(REPO_ROOT / "examples" / "wallet_provider_guard" / "external_dapp"),
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    try:
+        wait_for_external_dapp(process)
+        yield
+    finally:
+        process.terminate()
+        try:
+            process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait(timeout=5)
+
+
+def wait_for_external_dapp(process: subprocess.Popen[str]) -> None:
+    deadline = time.monotonic() + 20
+    last_error = "server did not start"
+    while time.monotonic() < deadline:
+        if process.poll() is not None:
+            output = process.stdout.read() if process.stdout else ""
+            raise RuntimeError(f"external dapp server exited early: {output}")
+        try:
+            with urllib.request.urlopen(f"{EXTERNAL_DAPP_URL}/", timeout=1) as response:
+                if response.status == 200:
+                    return
+        except (urllib.error.URLError, TimeoutError) as exc:
+            last_error = str(exc)
+        time.sleep(0.2)
+    raise TimeoutError(f"Timed out waiting for {EXTERNAL_DAPP_URL}: {last_error}")
+
+
 def run_browser_smoke() -> None:
     console_errors: list[str] = []
 
@@ -84,6 +134,8 @@ def run_browser_smoke() -> None:
         try:
             exercise_workbench(page)
             exercise_wallet_provider_demo(page)
+            with run_external_dapp_server():
+                exercise_external_wallet_provider_dapp(page)
             mobile_page = browser.new_page(
                 viewport={"width": 390, "height": 844},
                 is_mobile=True,
@@ -721,6 +773,56 @@ def exercise_wallet_provider_demo(page: Page) -> None:
         "block_before_wallet_prompt"
     )
     expect(page.locator("#provider-demo-log")).not_to_contain_text("eth_sendTransaction")
+
+
+def exercise_external_wallet_provider_dapp(page: Page) -> None:
+    page.add_init_script(
+        """
+        window.ethereum = {
+          async request(request) {
+            window.__externalProviderCalls = window.__externalProviderCalls || [];
+            window.__externalProviderCalls.push({
+              method: request.method,
+              params: request.params || []
+            });
+            if (request.method === 'eth_chainId') {
+              return '0x1';
+            }
+            return { forwarded: true, method: request.method };
+          }
+        };
+        """
+    )
+    page.goto(EXTERNAL_DAPP_URL)
+
+    expect(page).to_have_title("0guard External Wallet Demo")
+    expect(page.locator("body")).to_contain_text("0guard before")
+    page.locator("#guard-base-url").fill(BASE_URL)
+
+    page.locator("#run-read-chain").click()
+    expect(page.locator("#decision-pill")).to_contain_text("allow")
+    expect(page.locator("#result-output")).to_contain_text('"forwardedToProvider": true')
+    expect(page.locator("#result-output")).to_contain_text('"providerCallCount": 1')
+    expect(page.locator("#provider-log")).to_contain_text("eth_chainId")
+
+    page.locator("#run-switch-chain").click()
+    expect(page.locator("#decision-pill")).to_contain_text("review")
+    expect(page.locator("#result-output")).to_contain_text(
+        '"forwardedToProvider": false'
+    )
+    expect(page.locator("#result-output")).to_contain_text('"providerCallCount": 1')
+    expect(page.locator("#result-output")).to_contain_text(
+        "show_review_before_wallet_prompt"
+    )
+
+    page.locator("#run-unlimited-approval").click()
+    expect(page.locator("#decision-pill")).to_contain_text("deny")
+    expect(page.locator("#result-output")).to_contain_text(
+        '"forwardedToProvider": false'
+    )
+    expect(page.locator("#result-output")).to_contain_text('"providerCallCount": 1')
+    expect(page.locator("#result-output")).to_contain_text("block_before_wallet_prompt")
+    expect(page.locator("#provider-log")).not_to_contain_text("eth_sendTransaction")
 
 
 def exercise_workbench_mobile(page: Page) -> None:
