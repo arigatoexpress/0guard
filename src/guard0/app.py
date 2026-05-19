@@ -139,7 +139,7 @@ from guard0.storage_peer_diagnostics import (
 )
 from guard0.wallet_alerts import build_wallet_alert_preview, wallet_alert_quality_policy
 from guard0.wallet_provider_guard import build_wallet_provider_guard
-from guard0.x402_guard import build_x402_wallet_preflight_dry_run
+from guard0.x402_guard import build_x402_settlement_policy, build_x402_wallet_preflight_dry_run
 
 app = Flask(__name__)
 
@@ -225,6 +225,7 @@ FRONTEND_REQUIRED_SELECTORS = (
     "#load-threat-passport",
     "#load-x402-data-products",
     "#load-x402-dry-run",
+    "#load-x402-settlement-policy",
     "#load-cross-chain-catalog",
     "#load-cross-chain-readiness",
     "#load-arbitrum-integration",
@@ -947,6 +948,7 @@ def api_frontend_contract():
                 "/api/intelligence/data-streams",
                 "/api/x402/data-products",
                 "/api/x402/dry-run/wallet-preflight",
+                "/api/x402/settlement-policy",
                 "/api/intelligence/events",
                 "/api/intelligence/detector-candidates",
                 "/api/product/brief",
@@ -1050,6 +1052,7 @@ def api_frontend_contract():
                 "load-threat-passport",
                 "load-x402-data-products",
                 "load-x402-dry-run",
+                "load-x402-settlement-policy",
                 "load-cross-chain-catalog",
                 "load-cross-chain-readiness",
                 "load-arbitrum-integration",
@@ -1226,6 +1229,11 @@ def api_x402_dry_run_wallet_preflight():
         body=body,
     )
     return jsonify(payload), int(payload["httpStatus"])
+
+
+@app.route("/api/x402/settlement-policy", methods=["GET"])
+def api_x402_settlement_policy():
+    return jsonify(build_x402_settlement_policy())
 
 
 @app.route("/api/intelligence/events", methods=["GET"])
@@ -2190,6 +2198,7 @@ def api_health():
             "0g_private_computer": build_0g_private_computer_integration(),
             "local_inference_mesh": build_local_inference_mesh(live=False),
             "x402_data_products": build_x402_data_products(),
+            "x402_settlement_policy": build_x402_settlement_policy(),
             "historical_backfill_plan": build_historical_backfill_plan(),
             "historical_feature_store": build_historical_feature_store(limit=3),
             "production_gaps": build_production_gap_matrix(),

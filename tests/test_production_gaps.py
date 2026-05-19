@@ -36,7 +36,11 @@ def test_production_gap_matrix_classifies_real_local_pending_and_mock_lanes():
     assert by_id["onchain.0g_storage_upload_readback"]["currentEvidence"]["bundleFileCount"] >= 1
     assert "/api/0g/storage-upload/manifest" in by_id["onchain.0g_storage_upload_readback"]["routes"]
     assert by_id["onchain.x402_settlement"]["currentEvidence"]["dryRunHttpStatus"] == 402
+    assert by_id["onchain.x402_settlement"]["currentEvidence"]["spendCapsConfigured"] is True
+    assert by_id["onchain.x402_settlement"]["currentEvidence"]["termsConfigured"] is True
+    assert "pay_to_address" in by_id["onchain.x402_settlement"]["blockedBy"]
     assert "/api/x402/dry-run/wallet-preflight" in by_id["onchain.x402_settlement"]["routes"]
+    assert "/api/x402/settlement-policy" in by_id["onchain.x402_settlement"]["routes"]
     assert by_id["wallet.provider_guard"]["currentStatus"] == "source_ready_live_pending"
     assert by_id["wallet.provider_guard"]["currentEvidence"]["demoDecision"] == "deny"
     assert by_id["wallet.provider_guard"]["currentEvidence"]["providerCallAllowed"] is False

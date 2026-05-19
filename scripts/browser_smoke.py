@@ -273,6 +273,9 @@ def exercise_workbench(page: Page) -> None:
     page.locator("#load-x402-data-products").click()
     expect(page.locator("#osint-output")).to_contain_text("0guard.x402_data_products.v1")
     expect(page.locator("#osint-output")).to_contain_text('"x402SettlementEnabled": false')
+    page.locator("#load-x402-settlement-policy").click()
+    expect(page.locator("#osint-output")).to_contain_text("0guard.x402_settlement_policy.v1")
+    expect(page.locator("#osint-output")).to_contain_text('"perRequestMaxDisplay": "0.01 USDC"')
     page.locator("#load-product-brief").click()
     expect(page.locator("#osint-output")).to_contain_text("0guard.product_brief.v1")
     page.locator("#load-production-readiness").click()
@@ -411,6 +414,7 @@ def exercise_workbench(page: Page) -> None:
     assert "/api/telegram/local-inference-preview" in frontend_body["apiRoutes"]
     assert "/api/data/backfill-plan" in frontend_body["apiRoutes"]
     assert "/api/x402/data-products" in frontend_body["apiRoutes"]
+    assert "/api/x402/settlement-policy" in frontend_body["apiRoutes"]
     assert "/api/product/brief" in frontend_body["apiRoutes"]
     assert "/api/readyz" in frontend_body["apiRoutes"]
     assert "/api/wallet/alert-preview" in frontend_body["apiRoutes"]
@@ -439,6 +443,7 @@ def exercise_workbench(page: Page) -> None:
     assert "#load-historical-backfill-plan" in frontend_body["requiredSelectors"]
     assert "#load-historical-feature-store" in frontend_body["requiredSelectors"]
     assert "#load-x402-data-products" in frontend_body["requiredSelectors"]
+    assert "#load-x402-settlement-policy" in frontend_body["requiredSelectors"]
     assert "#load-live-provenance" in frontend_body["requiredSelectors"]
     assert "#load-product-brief" in frontend_body["requiredSelectors"]
     assert "#load-production-readiness" in frontend_body["requiredSelectors"]
@@ -540,6 +545,13 @@ def exercise_workbench(page: Page) -> None:
     x402_body = x402_products.json()
     assert x402_body["schema"] == "0guard.x402_data_products.v1"
     assert x402_body["safety"]["x402SettlementEnabled"] is False
+
+    x402_policy = page.request.get(f"{BASE_URL}/api/x402/settlement-policy")
+    assert x402_policy.ok
+    x402_policy_body = x402_policy.json()
+    assert x402_policy_body["schema"] == "0guard.x402_settlement_policy.v1"
+    assert x402_policy_body["spendCaps"]["perRequestMaxDisplay"] == "0.01 USDC"
+    assert x402_policy_body["safety"]["x402SettlementEnabled"] is False
 
     frontier = page.request.get(f"{BASE_URL}/api/experiments/frontier")
     assert frontier.ok

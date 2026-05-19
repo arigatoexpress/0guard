@@ -28,7 +28,7 @@ from guard0.reputation_backfill import (
 from guard0.storage_upload_manifest import build_storage_upload_manifest
 from guard0.training_data import DEFAULT_INCIDENT_EVAL_PATH
 from guard0.wallet_provider_guard import build_wallet_provider_guard
-from guard0.x402_guard import build_x402_wallet_preflight_dry_run
+from guard0.x402_guard import build_x402_settlement_policy, build_x402_wallet_preflight_dry_run
 
 PRODUCTION_GAP_MATRIX_SCHEMA = "0guard.production_gap_matrix.v1"
 MODEL_TRAINING_ROADMAP_SCHEMA = "0guard.model_training_roadmap.v1"
@@ -54,6 +54,7 @@ def build_production_gap_matrix() -> dict[str, Any]:
     historical_feature_store = build_historical_feature_store()
     x402 = build_x402_data_products()
     x402_dry_run = build_x402_wallet_preflight_dry_run()
+    x402_policy = build_x402_settlement_policy()
     private_compute_smoke = build_private_compute_smoke_preview()
     storage_upload_manifest = build_storage_upload_manifest()
     wallet_provider_guard = build_wallet_provider_guard(
@@ -244,23 +245,33 @@ def build_production_gap_matrix() -> dict[str, Any]:
                 "dryRunSchema": x402_dry_run.get("schema"),
                 "dryRunStatus": x402_dry_run.get("status"),
                 "dryRunHttpStatus": x402_dry_run.get("httpStatus"),
+                "settlementPolicySchema": x402_policy.get("schema"),
+                "spendCapsConfigured": bool(x402_policy.get("spendCaps")),
+                "termsConfigured": bool(x402_policy.get("terms")),
+                "payToConfigured": (
+                    x402_policy.get("paymentRequirement") or {}
+                ).get("payToConfigured"),
                 "settlementEnabled": (x402_dry_run.get("safety") or {}).get(
                     "x402SettlementEnabled"
                 ),
             },
             "x402 turns ZeroGuard from a demo into a machine-payable defensive intelligence API.",
-            "The product manifest and dry-run HTTP-402 route are real, but facilitator credentials and settlement remain disabled.",
+            "The product manifest, dry-run HTTP-402 route, caps, and terms are real, but pay-to/facilitator readback and settlement remain disabled.",
             "Start with dry-run 402 metadata, add testnet facilitator coverage, then enable one low-cost derived route with caps.",
             "ZeroGuard payment/API lane",
             2,
-            ["testnet_facilitator", "spend_limits", "terms_and_refunds"],
-            "Wire the dry-run route to a testnet facilitator only after spend limits, pay-to address, and refund wording are fixed.",
+            _x402_settlement_blockers(x402_policy),
+            "Wire the dry-run route to the Base Sepolia x402.org facilitator only after the pay-to address is reviewed.",
             "Do not enable mainnet payment settlement before route schemas, refund policy, and rate limits are fixed.",
             [
                 "Protected route has contract tests for unpaid, paid-fixture, and malformed payment states.",
                 "Paid response contains only derived analysis, source ids, hashes, and receipt metadata.",
             ],
-            ["/api/x402/data-products", "/api/x402/dry-run/wallet-preflight"],
+            [
+                "/api/x402/data-products",
+                "/api/x402/dry-run/wallet-preflight",
+                "/api/x402/settlement-policy",
+            ],
         ),
         _gap(
             "wallet.provider_guard",
@@ -536,7 +547,7 @@ def build_production_gap_matrix() -> dict[str, Any]:
         "productionReady": False,
         "whyNotProductionReadyYet": [
             "Historical feature store has a seed API/export from current curated/local artifacts, but not the wider scheduled 2020-present backfill and query index.",
-            "0G Storage bundle/readback and x402 dry-run routes are prepared, but live upload/settlement are not enabled.",
+            "0G Storage bundle/readback plus x402 dry-run/caps/terms routes are prepared, but live upload/settlement are not enabled.",
             "Wallet-provider protection is implemented locally, but it is not yet hosted and embedded in a production dapp/provider flow.",
             "0G Private Computer has no server-side Router key or paid inference smoke in this runtime.",
             "Telegram live identity/webhook proof is not loaded in the current local process.",
@@ -560,7 +571,7 @@ def build_production_gap_matrix() -> dict[str, Any]:
             "Schedule and expand the append-only historical feature store beyond the current seed run.",
             _reputation_backfill_build_order(reputation_backfill),
             "Configure Router funding/key only after reviewing the disabled 0G Private Computer smoke contract.",
-            "Promote the dry-run x402 route to testnet facilitator review without enabling mainnet settlement.",
+            "Promote the dry-run x402 route to testnet facilitator readback after pay-to review without enabling mainnet settlement.",
             "Wait for storage-node peer/sync blockers to clear before any larger 0G funding.",
         ],
         "gaps": gaps,
@@ -866,6 +877,14 @@ def _historical_feature_store_blockers(store: dict[str, Any]) -> list[str]:
     blockers = ["scheduled_backfill_runner", "query_index", "24_month_incident_backfill"]
     if int(store.get("featureCount") or 0) <= 0:
         return ["feature_schema_freeze", *blockers]
+    return blockers
+
+
+def _x402_settlement_blockers(policy: dict[str, Any]) -> list[str]:
+    blockers = ["testnet_facilitator_readback", "settlement_receipt_storage"]
+    payment = policy.get("paymentRequirement") if isinstance(policy.get("paymentRequirement"), dict) else {}
+    if not payment.get("payToConfigured"):
+        blockers.insert(0, "pay_to_address")
     return blockers
 
 

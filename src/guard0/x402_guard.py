@@ -10,11 +10,18 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from datetime import datetime, timezone
 from typing import Any
 
 X402_WALLET_PREFLIGHT_DRY_RUN_SCHEMA = "0guard.x402_wallet_preflight_dry_run.v1"
+X402_SETTLEMENT_POLICY_SCHEMA = "0guard.x402_settlement_policy.v1"
 X402_FIXTURE_PAYMENT_HEADER = "fixture-paid-zeroguard-wallet-preflight-v1"
+X402_DOC_URL = "https://docs.cdp.coinbase.com/x402/welcome"
+X402_NETWORK_SUPPORT_URL = "https://docs.cdp.coinbase.com/x402/network-support"
+X402_ORG_URL = "https://www.x402.org/"
+X402_TESTNET_FACILITATOR_URL = "https://x402.org/facilitator"
+CDP_X402_FACILITATOR_URL = "https://api.cdp.coinbase.com/platform/v2/x402"
 
 
 def build_x402_wallet_preflight_dry_run(
@@ -56,6 +63,7 @@ def build_x402_wallet_preflight_dry_run(
             "responseSchema": "0guard.wallet_preflight_verdict.v1",
         },
         "paymentRequirement": _payment_requirement(),
+        "settlementPolicyRoute": "/api/x402/settlement-policy",
         "paymentReadback": {
             "paymentHeaderPresent": bool(header),
             "paymentHeaderAccepted": accepted,
@@ -99,6 +107,8 @@ def build_x402_wallet_preflight_dry_run(
 
 
 def _payment_requirement() -> dict[str, Any]:
+    policy = build_x402_settlement_policy()
+    pay_to = (policy.get("paymentRequirement") or {}).get("payTo")
     return {
         "x402Version": 1,
         "network": "base-sepolia",
@@ -108,13 +118,94 @@ def _payment_requirement() -> dict[str, Any]:
         "maxAmountRequired": "10000",
         "decimals": 6,
         "displayPrice": "0.01 USDC",
-        "payTo": "operator_pay_to_required_before_live_settlement",
-        "payToConfigured": False,
+        "payTo": pay_to or "operator_pay_to_required_before_live_settlement",
+        "payToConfigured": bool(pay_to),
         "resource": "https://zeroguard.local/x402/v1/wallet-preflight",
         "description": "ZeroGuard wallet preflight verdict packet",
         "mimeType": "application/json",
         "settlementMode": "dry_run_fixture_only",
         "facilitator": "not_configured",
+        "capsRoute": "/api/x402/settlement-policy",
+    }
+
+
+def build_x402_settlement_policy() -> dict[str, Any]:
+    """Return the operator caps and terms for a future x402 settlement path."""
+
+    pay_to = _public_pay_to_address()
+    settlement_env_enabled = _truthy_env("ZG_X402_ENABLE_SETTLEMENT")
+    testnet_only = not _truthy_env("ZG_X402_ALLOW_MAINNET")
+    caps = _spend_caps()
+    terms = _terms()
+    blockers = []
+    if not pay_to:
+        blockers.append("pay_to_address_missing")
+    if not settlement_env_enabled:
+        blockers.append("settlement_env_gate_disabled")
+    if testnet_only:
+        blockers.append("mainnet_settlement_disabled")
+    return {
+        "schema": X402_SETTLEMENT_POLICY_SCHEMA,
+        "generatedAt": _now(),
+        "mode": "settlement_policy_no_facilitator_call",
+        "status": "ready_for_testnet_review" if pay_to else "blocked_before_settlement",
+        "blockers": blockers,
+        "paymentRequirement": {
+            "route": "/x402/v1/wallet-preflight",
+            "apiRoute": "/api/x402/dry-run/wallet-preflight",
+            "network": "base-sepolia",
+            "networkCaip2": "eip155:84532",
+            "asset": "USDC",
+            "decimals": 6,
+            "maxAmountRequired": "10000",
+            "displayPrice": "0.01 USDC",
+            "payTo": pay_to,
+            "payToConfigured": bool(pay_to),
+            "settlementMode": "testnet_first_when_enabled",
+            "scheme": "exact",
+        },
+        "spendCaps": caps,
+        "terms": terms,
+        "facilitators": [
+            {
+                "id": "x402_org_testnet",
+                "endpoint": X402_TESTNET_FACILITATOR_URL,
+                "network": "base-sepolia",
+                "networkCaip2": "eip155:84532",
+                "apiKeyRequired": False,
+                "preferredFirstProof": True,
+                "mainnet": False,
+            },
+            {
+                "id": "cdp_mainnet",
+                "endpoint": CDP_X402_FACILITATOR_URL,
+                "networks": ["eip155:8453", "eip155:137", "eip155:42161"],
+                "apiKeyRequired": True,
+                "preferredFirstProof": False,
+                "mainnet": True,
+            },
+        ],
+        "acceptanceCriteria": [
+            "Unpaid request returns HTTP 402 with this route's caps and terms referenced.",
+            "Malformed payment headers are hashed but never echoed or stored.",
+            "First real facilitator proof is Base Sepolia only and capped at 0.01 USDC per call.",
+            "Paid response remains derived analysis only: verdict, source ids, hashes, and receipt metadata.",
+            "Settlement receipt readback is stored without raw payment headers or signatures.",
+        ],
+        "requiredBeforeSettlement": [
+            "Set a reviewed server-side pay-to address.",
+            "Run one Base Sepolia facilitator proof with a throwaway buyer wallet.",
+            "Pin response schema, refund wording, and rate limits in tests.",
+            "Keep mainnet disabled until testnet receipt readback is committed.",
+        ],
+        "sources": [X402_DOC_URL, X402_NETWORK_SUPPORT_URL, X402_ORG_URL],
+        "safety": {
+            **_safety(),
+            "settlementPolicyOnly": True,
+            "settlementEnvGateEnabled": settlement_env_enabled,
+            "mainnetSettlementAllowedByEnv": not testnet_only,
+            "payToConfigured": bool(pay_to),
+        },
     }
 
 
@@ -165,6 +256,60 @@ def _safety() -> dict[str, bool]:
         "telegramSendsEnabled": False,
         "socialPostingEnabled": False,
     }
+
+
+def _spend_caps() -> dict[str, Any]:
+    return {
+        "currency": "USDC",
+        "perRequestMaxAtomic": "10000",
+        "perRequestMaxDisplay": "0.01 USDC",
+        "perWalletDailyMaxAtomic": "250000",
+        "perWalletDailyMaxDisplay": "0.25 USDC",
+        "serviceDailyMaxAtomic": "5000000",
+        "serviceDailyMaxDisplay": "5.00 USDC",
+        "maxRefundWindowHours": 24,
+        "rateLimit": "10 paid requests per wallet per hour before manual review",
+        "mainnetStartCap": "disabled_until_testnet_receipt_readback",
+    }
+
+
+def _terms() -> dict[str, Any]:
+    return {
+        "version": "zeroguard-x402-terms-2026-05-19",
+        "plainEnglish": (
+            "Payment buys one derived ZeroGuard defensive packet. It does not buy raw upstream "
+            "feeds, legal advice, custody, transaction approval, or permission to bypass source terms."
+        ),
+        "refundPolicy": (
+            "Refund or credit if the service returns a malformed packet, server error, duplicate "
+            "charge, or unavailable route within the 24 hour review window."
+        ),
+        "noAdvice": "Outputs are defensive risk signals, not legal, sanctions, investment, or custody advice.",
+        "dataRetention": "Store route id, schema id, receipt hash, amount, source ids, and response hash only.",
+        "neverStore": [
+            "raw payment headers",
+            "payment signatures",
+            "private keys",
+            "mnemonics",
+            "raw paid-feed payloads",
+            "private customer chats",
+        ],
+        "rawPayloadResaleAllowed": False,
+    }
+
+
+def _public_pay_to_address() -> str:
+    value = os.getenv("ZG_X402_PAY_TO_ADDRESS", "").strip()
+    if len(value) == 42 and value.startswith("0x"):
+        hex_part = value[2:]
+        if all(char in "0123456789abcdefABCDEF" for char in hex_part):
+            return value
+    return ""
+
+
+def _truthy_env(name: str) -> bool:
+    value = os.getenv(name, "")
+    return str(value).strip().lower() in {"1", "true", "yes", "on"}
 
 
 def _hash_text(value: str) -> str:

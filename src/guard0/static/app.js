@@ -469,6 +469,11 @@ async function loadX402DryRun(){
   const j = await r.json();
   writeJson('osint-output', j);
 }
+async function loadX402SettlementPolicy(){
+  const r = await fetch('/api/x402/settlement-policy');
+  const j = await r.json();
+  writeJson('osint-output', j);
+}
 async function loadIntelligenceEvents(){
   const r = await fetch('/api/intelligence/events?live=1&limit=10');
   const j = await r.json();
@@ -835,6 +840,7 @@ document.getElementById('load-evolving-intel').addEventListener('click', loadEvo
 document.getElementById('load-intelligence-stream-plan').addEventListener('click', loadIntelligenceStreamPlan);
 document.getElementById('load-x402-data-products').addEventListener('click', loadX402DataProducts);
 document.getElementById('load-x402-dry-run').addEventListener('click', loadX402DryRun);
+document.getElementById('load-x402-settlement-policy').addEventListener('click', loadX402SettlementPolicy);
 document.getElementById('load-intelligence-events').addEventListener('click', loadIntelligenceEvents);
 document.getElementById('load-detector-candidates').addEventListener('click', loadDetectorCandidates);
 document.getElementById('load-product-brief').addEventListener('click', loadProductBrief);
