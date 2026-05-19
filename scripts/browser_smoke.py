@@ -140,6 +140,7 @@ def exercise_workbench(page: Page) -> None:
         '"telegramSendsEnabled": false'
     )
     expect(page.locator("body")).to_contain_text("Wallet Alert Preview")
+    expect(page.locator("body")).to_contain_text("Wallet Provider Guard")
     expect(page.locator("body")).to_contain_text("Local Inference")
     expect(page.locator("body")).to_contain_text("Backfill plan")
     expect(page.locator("body")).to_contain_text("x402 products")
@@ -311,6 +312,14 @@ def exercise_workbench(page: Page) -> None:
         "0guard.telegram_wallet_alert_preview.v1"
     )
     expect(page.locator("#wallet-alert-output")).to_contain_text('"telegram_send": false')
+    page.locator("#run-wallet-provider-guard").click()
+    expect(page.locator("#wallet-alert-output")).to_contain_text(
+        "0guard.wallet_provider_guard.v1"
+    )
+    expect(page.locator("#wallet-alert-output")).to_contain_text("block_before_wallet_prompt")
+    expect(page.locator("#wallet-alert-output")).to_contain_text(
+        '"providerCallAllowed": false'
+    )
 
     health = page.request.get(f"{BASE_URL}/api/health")
     assert health.ok
@@ -343,6 +352,7 @@ def exercise_workbench(page: Page) -> None:
     assert "/api/product/brief" in frontend_body["apiRoutes"]
     assert "/api/readyz" in frontend_body["apiRoutes"]
     assert "/api/wallet/alert-preview" in frontend_body["apiRoutes"]
+    assert "/api/wallet/provider-guard" in frontend_body["apiRoutes"]
     assert "/api/threat-case-file" in frontend_body["apiRoutes"]
     assert "/api/experiments/frontier" in frontend_body["apiRoutes"]
     assert "/api/experiments/run" in frontend_body["apiRoutes"]
@@ -379,6 +389,7 @@ def exercise_workbench(page: Page) -> None:
     assert "#run-external-guardrail-check" in frontend_body["requiredSelectors"]
     assert "#run-wallet-alert-preview" in frontend_body["requiredSelectors"]
     assert "#run-telegram-wallet-alert-preview" in frontend_body["requiredSelectors"]
+    assert "#run-wallet-provider-guard" in frontend_body["requiredSelectors"]
     assert "#run-threat-case-file" in frontend_body["requiredSelectors"]
     assert "#load-frontier-experiments" in frontend_body["requiredSelectors"]
     assert "#load-reputation-adapters" in frontend_body["requiredSelectors"]
@@ -648,6 +659,35 @@ def exercise_workbench(page: Page) -> None:
     evaluate_body = evaluate.json()
     assert evaluate_body["decision"] == "deny"
     assert any("wallet signature" in blocker.lower() for blocker in evaluate_body["blockers"])
+
+    provider_guard = page.request.post(
+        f"{BASE_URL}/api/wallet/provider-guard",
+        data=json.dumps(
+            {
+                "origin": "https://claim-drop.evil.example",
+                "method": "eth_sendTransaction",
+                "params": [
+                    {
+                        "chainId": "0x1",
+                        "to": "0x000000000000000000000000000000000000dEaD",
+                        "data": (
+                            "0x095ea7b3"
+                            "ffffffffffffffffffffffffffffffff"
+                            "ffffffffffffffffffffffffffffffff"
+                        ),
+                        "value": "0x0",
+                    }
+                ],
+            }
+        ),
+        headers={"content-type": "application/json"},
+    )
+    assert provider_guard.ok
+    provider_guard_body = provider_guard.json()
+    assert provider_guard_body["schema"] == "0guard.wallet_provider_guard.v1"
+    assert provider_guard_body["decision"] == "deny"
+    assert provider_guard_body["enforcement"]["providerCallAllowed"] is False
+    assert provider_guard_body["safety"]["providerForwardingPerformedBy0guard"] is False
 
 
 def exercise_workbench_mobile(page: Page) -> None:

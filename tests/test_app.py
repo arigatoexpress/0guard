@@ -182,6 +182,7 @@ def test_frontend_contract_is_browser_smoke_ready_and_non_mutating(client):
     assert "/api/experiments/run" in data["apiRoutes"]
     assert "/api/threat-case-file" in data["apiRoutes"]
     assert "/api/wallet/alert-preview" in data["apiRoutes"]
+    assert "/api/wallet/provider-guard" in data["apiRoutes"]
     assert "/api/ton/status" in data["apiRoutes"]
     assert "/api/ton/risk-rules" in data["apiRoutes"]
     assert "/api/ton/wallet-risk-preview" in data["apiRoutes"]
@@ -290,6 +291,7 @@ def test_frontend_contract_is_browser_smoke_ready_and_non_mutating(client):
     assert "#wallet-address-input" in data["requiredSelectors"]
     assert "#run-wallet-alert-preview" in data["requiredSelectors"]
     assert "#run-telegram-wallet-alert-preview" in data["requiredSelectors"]
+    assert "#run-wallet-provider-guard" in data["requiredSelectors"]
     assert "#wallet-alert-output" in data["requiredSelectors"]
     assert "#open-telegram-miniapp" in data["requiredSelectors"]
 
@@ -317,6 +319,7 @@ def test_frontend_uses_packaged_template_and_static_assets():
     assert "run-evaluate" in (package_root / "static" / "app.js").read_text()
     assert "loadProductBrief" in (package_root / "static" / "app.js").read_text()
     assert "runThreatCaseFile" in (package_root / "static" / "app.js").read_text()
+    assert "runWalletProviderGuard" in (package_root / "static" / "app.js").read_text()
     assert "loadFrontierExperiments" in (package_root / "static" / "app.js").read_text()
     assert "loadReputationAdapters" in (package_root / "static" / "app.js").read_text()
     assert "loadPeerProtection" in (package_root / "static" / "app.js").read_text()
@@ -1665,6 +1668,47 @@ def test_wallet_alert_preview_denies_negative_amount_intents(client):
     assert telegram_body["schema"] == "0guard.telegram_wallet_alert_preview.v1"
     assert telegram_body["delivery"] == "preview_no_send"
     assert telegram_body["telegram_send"] is False
+
+
+def test_wallet_provider_guard_route_blocks_sensitive_provider_requests(client):
+    response = client.post(
+        "/api/wallet/provider-guard",
+        json={
+            "origin": "https://claim-drop.evil.example",
+            "method": "eth_sendTransaction",
+            "params": [
+                {
+                    "chainId": "0x1",
+                    "to": "0x000000000000000000000000000000000000dEaD",
+                    "data": (
+                        "0x095ea7b3"
+                        "ffffffffffffffffffffffffffffffff"
+                        "ffffffffffffffffffffffffffffffff"
+                    ),
+                    "value": "0x0",
+                }
+            ],
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["schema"] == "0guard.wallet_provider_guard.v1"
+    assert payload["decision"] == "deny"
+    assert payload["enforcement"]["walletPromptBlocked"] is True
+    assert payload["enforcement"]["providerCallAllowed"] is False
+    assert payload["preflight"]["schema"] == "0guard.native_preflight.v1"
+    assert payload["safety"]["providerForwardingPerformedBy0guard"] is False
+
+    read_only = client.post(
+        "/api/wallet/provider-guard",
+        json={"origin": "https://safe.example", "method": "eth_chainId", "params": []},
+    )
+    assert read_only.status_code == 200
+    assert read_only.get_json()["decision"] == "allow"
+
+    bad = client.post("/api/wallet/provider-guard", json={"params": []})
+    assert bad.status_code == 400
 
 
 def test_telegram_registration_and_mira_preview_are_local_and_redacted(monkeypatch, client):

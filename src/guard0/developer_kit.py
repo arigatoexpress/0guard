@@ -81,6 +81,11 @@ def developer_kit_manifest() -> dict[str, Any]:
             },
             {
                 "method": "POST",
+                "path": "/api/wallet/provider-guard",
+                "purpose": "EIP-1193 wallet-provider request verdict before a dapp forwards to MetaMask or another injected wallet.",
+            },
+            {
+                "method": "POST",
                 "path": "/api/threat-case-file",
                 "purpose": "Composed proof dossier for one agent intent across policy, reputation, provenance, and receipts.",
             },
@@ -177,6 +182,12 @@ def developer_kit_manifest() -> dict[str, Any]:
                 "path": "examples/native_preflight/nativePreflight.ts",
                 "runtime": "fetch-compatible browser, Node, or worker",
                 "purpose": "Drop-in wrapper that calls 0guard before invoking an app-owned signer.",
+            },
+            {
+                "language": "typescript",
+                "path": "examples/wallet_provider_guard/providerGuard.ts",
+                "runtime": "EIP-1193 browser wallet provider",
+                "purpose": "Proxy wrapper that blocks deny/review wallet-provider requests before the wallet popup.",
             },
         ],
         "adapterRecipes": _adapter_recipes(),
@@ -306,6 +317,19 @@ def _example_payloads() -> dict[str, dict[str, Any]]:
             "intentText": "Pay for an intelligence artifact before fulfillment preview.",
             "config": {"amountUsd": "5.00", "facilitator": "operator-reviewed"},
             "expectedDecision": "review",
+        },
+        "blockProviderApproval": {
+            "method": "eth_sendTransaction",
+            "origin": "https://example-dapp.test",
+            "params": [
+                {
+                    "chainId": "0x1",
+                    "to": "0x000000000000000000000000000000000000dEaD",
+                    "data": "0x095ea7b3ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+                    "value": "0x0",
+                }
+            ],
+            "expectedDecision": "deny",
         },
     }
 

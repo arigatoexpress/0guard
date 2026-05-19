@@ -762,6 +762,31 @@ async function runTelegramWalletAlertPreview(){
   const j = await r.json();
   writeJson('wallet-alert-output', j);
 }
+async function runWalletProviderGuard(){
+  const payload = {
+    origin: window.location.origin || 'http://127.0.0.1:8109',
+    method: 'eth_sendTransaction',
+    params: [
+      {
+        chainId: '0x1',
+        to: '0x000000000000000000000000000000000000dEaD',
+        data: '0x095ea7b3ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+        value: '0x0'
+      }
+    ],
+    intentText: 'Demo dapp wants to request an unlimited token approval from the wallet.'
+  };
+  const r = await fetch('/api/wallet/provider-guard', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+  });
+  const j = await r.json();
+  writeJson('wallet-alert-output', j);
+  if(j.decision){
+    updateDecision(j.decision);
+  }
+}
 document.getElementById('run-evaluate').addEventListener('click', evaluateIntent);
 document.getElementById('play-story').addEventListener('click', playStory);
 document.getElementById('run-drift-scenario').addEventListener('click', () => runStoryScenario('drift'));
@@ -841,6 +866,7 @@ document.getElementById('complete-telegram-opt-in').addEventListener('click', co
 document.getElementById('run-mira-preview').addEventListener('click', runMiraPreview);
 document.getElementById('run-wallet-alert-preview').addEventListener('click', runWalletAlertPreview);
 document.getElementById('run-telegram-wallet-alert-preview').addEventListener('click', runTelegramWalletAlertPreview);
+document.getElementById('run-wallet-provider-guard').addEventListener('click', runWalletProviderGuard);
 document.getElementById('load-deny-sample').addEventListener('click', () => {
   document.getElementById('intent-input').value = JSON.stringify(denySample, null, 2);
 });

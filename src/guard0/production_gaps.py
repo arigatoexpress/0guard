@@ -26,6 +26,7 @@ from guard0.reputation_backfill import (
 )
 from guard0.storage_upload_manifest import build_storage_upload_manifest
 from guard0.training_data import DEFAULT_INCIDENT_EVAL_PATH
+from guard0.wallet_provider_guard import build_wallet_provider_guard
 from guard0.x402_guard import build_x402_wallet_preflight_dry_run
 
 PRODUCTION_GAP_MATRIX_SCHEMA = "0guard.production_gap_matrix.v1"
@@ -53,6 +54,24 @@ def build_production_gap_matrix() -> dict[str, Any]:
     x402_dry_run = build_x402_wallet_preflight_dry_run()
     private_compute_smoke = build_private_compute_smoke_preview()
     storage_upload_manifest = build_storage_upload_manifest()
+    wallet_provider_guard = build_wallet_provider_guard(
+        {
+            "origin": "https://claim-drop.evil.example",
+            "method": "eth_sendTransaction",
+            "params": [
+                {
+                    "chainId": "0x1",
+                    "to": "0x000000000000000000000000000000000000dEaD",
+                    "data": (
+                        "0x095ea7b3"
+                        "ffffffffffffffffffffffffffffffff"
+                        "ffffffffffffffffffffffffffffffff"
+                    ),
+                    "value": "0x0",
+                }
+            ],
+        }
+    )
     summary = incident_summary()
     coverage = detection_coverage()
     model_roadmap = build_model_training_roadmap(
@@ -231,6 +250,51 @@ def build_production_gap_matrix() -> dict[str, Any]:
                 "Paid response contains only derived analysis, source ids, hashes, and receipt metadata.",
             ],
             ["/api/x402/data-products", "/api/x402/dry-run/wallet-preflight"],
+        ),
+        _gap(
+            "wallet.provider_guard",
+            "EIP-1193 wallet-provider guard",
+            "wallet",
+            STATUS_SOURCE_READY_LIVE_PENDING,
+            {
+                "schema": wallet_provider_guard.get("schema"),
+                "mode": wallet_provider_guard.get("mode"),
+                "demoMethod": wallet_provider_guard.get("providerMethod"),
+                "demoDecision": wallet_provider_guard.get("decision"),
+                "demoAction": (wallet_provider_guard.get("enforcement") or {}).get("action"),
+                "providerCallAllowed": (
+                    wallet_provider_guard.get("enforcement") or {}
+                ).get("providerCallAllowed"),
+                "walletPromptBlocked": (
+                    wallet_provider_guard.get("enforcement") or {}
+                ).get("walletPromptBlocked"),
+                "providerForwardingPerformedBy0guard": (
+                    wallet_provider_guard.get("safety") or {}
+                ).get("providerForwardingPerformedBy0guard"),
+                "rawParamsReturned": (
+                    wallet_provider_guard.get("safety") or {}
+                ).get("rawParamsReturned"),
+                "sdkExample": "examples/wallet_provider_guard/providerGuard.ts",
+            },
+            "Production wallet protection needs a guard in front of real EIP-1193 provider requests before wallet popups appear.",
+            "The API, workbench control, and SDK wrapper are implemented locally; they do not protect external users until deployed and embedded in a dapp or extension flow.",
+            "Deploy the route, wrap one MetaMask-compatible provider surface with the TypeScript helper, and prove deny/review requests stop before `provider.request`.",
+            "ZeroGuard wallet integration lane",
+            1,
+            ["hosted_route_deploy", "dapp_provider_integration", "production_review_ui"],
+            "Embed `examples/wallet_provider_guard/providerGuard.ts` in one demo dapp and verify read-only requests pass while signing/broadcast requests block before the wallet prompt.",
+            "Do not ask for private keys, forward denied requests, auto-broadcast transactions, or treat 0guard as wallet custody.",
+            [
+                "Hosted `/api/wallet/provider-guard` returns the same schema and safety flags as local tests.",
+                "The wrapper only forwards allow verdicts to the provider.",
+                "Review and deny verdicts show a user-readable receipt before any wallet popup.",
+                "Raw params, secrets, signatures, and payment headers are never returned by the guard route.",
+            ],
+            [
+                "/api/wallet/provider-guard",
+                "/api/native-preflight",
+                "examples/wallet_provider_guard/providerGuard.ts",
+            ],
         ),
         _gap(
             "infra.hosting_and_secrets",
@@ -462,13 +526,15 @@ def build_production_gap_matrix() -> dict[str, Any]:
         "whyNotProductionReadyYet": [
             "Historical feature store is not populated beyond the current curated/local artifacts.",
             "0G Storage bundle/readback and x402 dry-run routes are prepared, but live upload/settlement are not enabled.",
+            "Wallet-provider protection is implemented locally, but it is not yet hosted and embedded in a production dapp/provider flow.",
             "0G Private Computer has no server-side Router key or paid inference smoke in this runtime.",
             "Telegram live identity/webhook proof is not loaded in the current local process.",
             "The funded 0G storage node is near-current, but peer depth still blocks larger funding expansion.",
         ],
-            "whatIsRealNow": [
+        "whatIsRealNow": [
             "Validated 28-incident April 2026 corpus with 28/28 detector coverage.",
             "First incident eval JSONL and first open reputation backfill artifact when present locally.",
+            "EIP-1193 wallet-provider guard route, workbench control, and TypeScript wrapper that block deny/review requests before a wallet prompt.",
             "Public 0G mainnet receipt anchor and read-only verifier path.",
             "Local RV 0G storage-node soak snapshot with small test funding only.",
             "Raspberry Pi mesh snapshot showing cluster-ready edge posture.",
@@ -478,6 +544,7 @@ def build_production_gap_matrix() -> dict[str, Any]:
         "topHardGates": _top_hard_gates(gaps),
         "safeBuildOrder": [
             "Freeze the production gap matrix route and docs so every claim is inspectable.",
+            "Deploy and embed the EIP-1193 provider guard in a demo dapp before claiming live wallet protection.",
             "Create the first append-only historical feature run from the existing incident corpus.",
             _reputation_backfill_build_order(reputation_backfill),
             "Configure Router funding/key only after reviewing the disabled 0G Private Computer smoke contract.",
