@@ -545,6 +545,14 @@ def test_local_inference_x402_and_backfill_routes_are_no_side_effect(client):
     assert x402_policy_body["schema"] == "0guard.x402_settlement_policy.v1"
     assert x402_policy_body["spendCaps"]["perRequestMaxDisplay"] == "0.01 USDC"
     assert x402_policy_body["terms"]["rawPayloadResaleAllowed"] is False
+    assert x402_policy_body["settlementProofStatus"] == "missing"
+    assert x402_policy_body["settlementProofVerified"] is False
+    assert x402_policy_body["operatorProofPacket"]["paymentHeaderHashRequired"] is True
+    assert x402_policy_body["operatorProofPacket"]["rawPaymentHeaderStored"] is False
+    assert (
+        "record_x402_base_sepolia_settlement_proof.py"
+        in x402_policy_body["operatorProofPacket"]["recordProofCommandTemplate"]
+    )
     assert x402_policy_body["safety"]["x402SettlementEnabled"] is False
 
     backfill = client.get("/api/data/backfill-plan")

@@ -66,9 +66,21 @@ def test_x402_settlement_policy_freezes_caps_terms_and_facilitator_path(monkeypa
     assert "pay_to_address_missing" in policy["blockers"]
     assert policy["paymentRequirement"]["networkCaip2"] == "eip155:84532"
     assert policy["paymentRequirement"]["payToConfigured"] is False
+    assert policy["networkCaip2"] == "eip155:84532"
+    assert policy["amountAtomic"] == "10000"
+    assert policy["displayPrice"] == "0.01 USDC"
+    assert policy["payToConfigured"] is False
+    assert policy["settlementProofStatus"] == "missing"
+    assert policy["settlementProofVerified"] is False
     assert policy["spendCaps"]["perRequestMaxDisplay"] == "0.01 USDC"
     assert policy["terms"]["rawPayloadResaleAllowed"] is False
     assert "raw payment headers" in policy["terms"]["neverStore"]
+    assert policy["operatorProofPacket"]["status"] == "blocked_until_pay_to_configured"
+    assert policy["operatorProofPacket"]["paymentHeaderHashRequired"] is True
+    assert policy["operatorProofPacket"]["rawPaymentHeaderStored"] is False
+    assert "record_x402_base_sepolia_settlement_proof.py" in policy["operatorProofPacket"]["recordProofCommandTemplate"]
+    assert "--payment-header-hash <sha256-of-x-payment-header>" in policy["operatorProofPacket"]["recordProofCommandTemplate"]
+    assert len(policy["operatorProofPacket"]["termsHash"]) == 64
     assert policy["facilitators"][0]["endpoint"] == "https://x402.org/facilitator"
     assert policy["facilitators"][0]["apiKeyRequired"] is False
     assert policy["settlementProof"]["status"] == "missing"
@@ -86,6 +98,9 @@ def test_x402_settlement_policy_accepts_public_pay_to_without_settling(monkeypat
     assert policy["status"] == "ready_for_testnet_review"
     assert policy["paymentRequirement"]["payToConfigured"] is True
     assert policy["paymentRequirement"]["payTo"].endswith("dEaD")
+    assert policy["payToConfigured"] is True
+    assert policy["operatorProofPacket"]["status"] == "ready_for_external_base_sepolia_proof"
+    assert "0x000000000000000000000000000000000000dEaD" in policy["operatorProofPacket"]["recordProofCommandTemplate"]
     assert "pay_to_address_missing" not in policy["blockers"]
     assert policy["safety"]["settlementEnvGateEnabled"] is True
     assert policy["safety"]["x402SettlementEnabled"] is False
