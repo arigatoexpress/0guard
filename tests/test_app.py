@@ -1885,6 +1885,9 @@ def test_wallet_provider_external_proof_route_is_read_only_and_missing_by_defaul
     assert payload["schema"] == "0guard.wallet_provider_external_proof_verification.v1"
     assert payload["status"] == "missing"
     assert payload["verified"] is False
+    assert "record_wallet_provider_external_proof.py" in payload["recordProofCommandTemplate"]
+    assert payload["proofDraftAssistant"]["status"] == "ready_for_external_window_ethereum_proof"
+    assert payload["proofDraftAssistant"]["rawWalletAddressRequired"] is False
     assert payload["safety"]["proofVerificationOnly"] is True
     assert payload["safety"]["transactionSigningEnabled"] is False
     assert payload["safety"]["moneyMovementEnabled"] is False

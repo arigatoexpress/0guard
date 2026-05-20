@@ -101,6 +101,11 @@ def test_wallet_provider_external_proof_status_is_missing_without_artifact(tmp_p
     assert result["schema"] == "0guard.wallet_provider_external_proof_verification.v1"
     assert result["status"] == "missing"
     assert result["verified"] is False
+    assert "record_wallet_provider_external_proof.py" in result["recordProofCommandTemplate"]
+    assert result["proofDraftAssistant"]["schema"] == (
+        "0guard.wallet_provider_external_operator_proof_packet.v1"
+    )
+    assert result["proofDraftAssistant"]["rawWalletAddressRequired"] is False
     assert result["safety"]["transactionSigningEnabled"] is False
 
 
