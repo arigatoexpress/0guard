@@ -70,13 +70,13 @@
     "feedHash": "4265394b4cd2a379dfd6bfaa275e1ffe305f4de9c182bb619023cd778be86bd0",
     "httpStatus": 200,
     "lastModified": null,
-    "latencyMs": 288,
+    "latencyMs": 1441,
     "parsedDomainCount": 82168,
     "sampledEvidenceCount": 5,
     "status": "ok",
     "ttlSeconds": 21600
   },
-  "generatedAt": "2026-05-20T11:32:22+00:00",
+  "generatedAt": "2026-05-20T17:08:24+00:00",
   "input": {
     "limit": 5,
     "live": true,
@@ -125,7 +125,7 @@
   },
   "runReceipt": {
     "algorithm": "sha256_canonical_json",
-    "hash": "efd32c4a2a6c3ea53a54476b4aad181e6c24dfe88ac0fac6f92656fa98a4e775",
+    "hash": "024351cbfff1207c9b9f2b38246b494008f96b479a94ec22a5d4e61d30f8229f",
     "liveAnchorPerformed": false,
     "liveUploadPerformed": false,
     "zeroGChainReady": true,
