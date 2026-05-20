@@ -938,7 +938,7 @@
           <li><strong>Frontier lab:</strong> `/api/experiments/frontier` and `/api/experiments/run` show the next integrations as deterministic no-side-effect previews.</li>
           <li><strong>Cross-chain fabric:</strong> `/api/integrations/cross-chain` and `/api/integrations/virtuals-facilitator` prepare Virtuals/Base and x402 expansion without claiming live settlement or agent launch.</li>
           <li><strong>Telegram Mini App:</strong> `/telegram` is deployed on Cloud Run as a mobile wallet-alert preview surface with server-side Telegram `initData` validation support and no Telegram sends. The live bot is `t.me/Raris0guardBot`.</li>
-          <li><strong>Wallet Provider Guard:</strong> `/api/wallet/provider-guard` and `/demo/wallet-provider-guard` are live on Cloud Run. The hosted demo proves read-only provider requests can forward while chain switching and unlimited approval requests stop before provider access.</li>
+          <li><strong>Wallet Provider Guard:</strong> `/api/wallet/provider-guard` and `/demo/wallet-provider-guard` are live on Cloud Run. The GitHub Pages proof-capture page gives a wallet-enabled browser a separate origin for the real `window.ethereum` proof without storing raw params or wallet addresses.</li>
           <li><strong>Proof-first story:</strong> live 0G readback, mainnet receipt anchor, Storage-ready root hashes, and canonical provenance evidence with no raw upstream payload mirroring.</li>
           <li><strong>Mainnet proof:</strong> contract `0xBaC59b...2abc` and anchored deny receipt `0x9739...afd1` are public on 0G Explorer.</li>
           <li><strong>Media posture:</strong> the submitted MP4 remains archived for HackQuest continuity, but the public front door now prioritizes proof links, code-generated architecture graphics, and product routes over generative video assets.</li>
@@ -962,6 +962,9 @@
         </a>
         <a class="btn btn-secondary" href="https://guard0-miniapp-s77j6bxyra-uc.a.run.app/demo/wallet-provider-guard" target="_blank" rel="noopener">
           Provider Guard Demo
+        </a>
+        <a class="btn btn-secondary" href="wallet-provider-proof/">
+          Provider Proof Capture
         </a>
         <a class="btn btn-secondary" href="https://t.me/Raris0guardBot" target="_blank" rel="noopener">
           Telegram Bot

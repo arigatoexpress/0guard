@@ -586,11 +586,13 @@ def _external_proof_status(
 
 def _external_operator_proof_packet(proof_path: str) -> dict[str, Any]:
     proof_file = proof_path or "docs/hackathon-0g/wallet-provider-external-proof.json"
+    suggested_origin = "https://arigatoexpress.github.io"
+    suggested_url = "https://arigatoexpress.github.io/0guard/wallet-provider-proof/"
     command = " ".join(
         [
             "PYTHONPATH=src .venv/bin/python",
             "scripts/record_wallet_provider_external_proof.py",
-            "--external-dapp-origin <wallet-enabled-external-dapp-origin>",
+            f"--external-dapp-origin {suggested_origin}",
             "--guard-base-url <guard0-public-base-url>",
             "--wallet-address-hash <sha256-of-empty-throwaway-wallet-address>",
             "--read-receipt-hash <sha256-from-eth_chainId-verdict>",
@@ -608,6 +610,7 @@ def _external_operator_proof_packet(proof_path: str) -> dict[str, Any]:
         "status": "ready_for_external_window_ethereum_proof",
         "proofPath": proof_file,
         "recordProofCommandTemplate": command,
+        "externalDappSuggestedUrl": suggested_url,
         "externalDappOriginRequired": True,
         "guardBaseUrlRequired": True,
         "walletAddressHashRequired": True,

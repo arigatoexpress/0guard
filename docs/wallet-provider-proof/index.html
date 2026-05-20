@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>0guard Wallet Provider Proof Capture</title>
+    <meta
+      name="description"
+      content="Capture public-safe 0guard wallet-provider proof metadata from a real window.ethereum browser using a throwaway empty wallet."
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <nav class="topbar" aria-label="Proof capture navigation">
+          <a class="brand" href="../">
+            <span class="brand-mark">0g</span>
+            <span>0guard</span>
+          </a>
+          <a class="secondary-link" href="../hackathon-0g/">Proof hub</a>
+        </nav>
+
+        <section class="hero-grid">
+          <div>
+            <p class="eyebrow">External dapp proof</p>
+            <h1>Verify 0guard before the wallet prompt.</h1>
+            <p class="lede">
+              This page runs on GitHub Pages and calls the hosted 0guard API
+              before anything reaches a real injected wallet provider. Use a
+              throwaway empty wallet. The capture stores hashes and public
+              receipt metadata only.
+            </p>
+          </div>
+          <aside class="status-panel" aria-live="polite">
+            <span id="provider-status" class="pill review">checking provider</span>
+            <dl>
+              <div>
+                <dt>Origin</dt>
+                <dd id="origin-value">loading</dd>
+              </div>
+              <div>
+                <dt>Provider calls</dt>
+                <dd id="provider-call-count">0</dd>
+              </div>
+              <div>
+                <dt>Last decision</dt>
+                <dd id="decision-value">waiting</dd>
+              </div>
+            </dl>
+          </aside>
+        </section>
+      </header>
+
+      <section class="panel controls" aria-label="Wallet proof scenarios">
+        <label class="field">
+          <span>0guard API base URL</span>
+          <input
+            id="guard-base-url"
+            value="https://guard0-miniapp-s77j6bxyra-uc.a.run.app"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </label>
+        <div class="actions">
+          <button id="run-read-chain" type="button">Read chain</button>
+          <button id="run-switch-chain" type="button" class="secondary">Switch chain</button>
+          <button id="run-unlimited-approval" type="button" class="secondary">
+            Unlimited approval
+          </button>
+        </div>
+        <p class="note">
+          Only the read-only chain check may forward to <code>window.ethereum.request</code>.
+          Review and deny scenarios are expected to stop before a wallet prompt.
+        </p>
+      </section>
+
+      <section class="panel proof-panel" aria-label="Proof recorder">
+        <div class="proof-grid">
+          <label class="field">
+            <span>Throwaway wallet address</span>
+            <input
+              id="throwaway-wallet-address"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="0x..."
+            />
+          </label>
+          <div class="checks">
+            <label>
+              <input id="real-extension-check" type="checkbox" />
+              real wallet extension
+            </label>
+            <label>
+              <input id="empty-wallet-check" type="checkbox" />
+              throwaway wallet is empty
+            </label>
+            <label>
+              <input id="operator-reviewed-check" type="checkbox" />
+              operator reviewed proof
+            </label>
+          </div>
+        </div>
+        <button id="build-proof-draft" type="button" class="secondary">
+          Build recorder command
+        </button>
+        <p class="note">
+          The wallet address is hashed in this browser. The draft does not store
+          the raw address, raw wallet params, private keys, mnemonics, or payment
+          headers.
+        </p>
+      </section>
+
+      <section class="grid" aria-label="Proof evidence">
+        <article class="panel">
+          <h2>Guard result</h2>
+          <pre id="result-output">Awaiting request.</pre>
+        </article>
+        <article class="panel">
+          <h2>Provider call log</h2>
+          <pre id="provider-log">[]</pre>
+        </article>
+      </section>
+
+      <section class="panel">
+        <h2>Proof draft</h2>
+        <pre id="proof-output">Run all three requests, verify the wallet, then build the command.</pre>
+      </section>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

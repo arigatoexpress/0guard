@@ -102,8 +102,14 @@ def test_wallet_provider_external_proof_status_is_missing_without_artifact(tmp_p
     assert result["status"] == "missing"
     assert result["verified"] is False
     assert "record_wallet_provider_external_proof.py" in result["recordProofCommandTemplate"]
+    assert "--external-dapp-origin https://arigatoexpress.github.io" in (
+        result["recordProofCommandTemplate"]
+    )
     assert result["proofDraftAssistant"]["schema"] == (
         "0guard.wallet_provider_external_operator_proof_packet.v1"
+    )
+    assert result["proofDraftAssistant"]["externalDappSuggestedUrl"] == (
+        "https://arigatoexpress.github.io/0guard/wallet-provider-proof/"
     )
     assert result["proofDraftAssistant"]["rawWalletAddressRequired"] is False
     assert result["safety"]["transactionSigningEnabled"] is False
