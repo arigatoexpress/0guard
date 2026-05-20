@@ -70,15 +70,34 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--bot-token-secret", default=DEFAULT_BOT_SECRET)
     parser.add_argument("--webhook-secret", default=DEFAULT_WEBHOOK_SECRET)
     parser.add_argument("--skip-telegram-api", action="store_true")
+    parser.add_argument(
+        "--timeout-seconds",
+        type=float,
+        default=None,
+        help="HTTP timeout used for all requests (default: 12s when --skip-telegram-api else 30s).",
+    )
+    parser.add_argument(
+        "--route-timeout-seconds",
+        type=float,
+        default=None,
+        help="HTTP timeout for route probe GETs (default: 12s when --skip-telegram-api else 25s).",
+    )
     parser.add_argument("--format", choices=("json", "markdown"), default="markdown")
     args = parser.parse_args(argv)
+
+    http_timeout = args.timeout_seconds if args.timeout_seconds is not None else (12.0 if args.skip_telegram_api else 30.0)
+    route_timeout = (
+        args.route_timeout_seconds
+        if args.route_timeout_seconds is not None
+        else (12.0 if args.skip_telegram_api else 25.0)
+    )
 
     token = "" if args.skip_telegram_api else _load_secret(args.bot_token_env, args.bot_token_secret, args.gcloud_project)
     webhook_secret = "" if args.skip_telegram_api else _load_secret("", args.webhook_secret, args.gcloud_project)
     requested_base_url = args.base_url.rstrip("/")
     candidates = _base_url_candidates(requested_base_url)
     try:
-        base_url = _select_base_url(requested_base_url)
+        base_url = _select_base_url(requested_base_url, timeout=http_timeout)
     except requests.RequestException as exc:
         payload: dict[str, Any] = {
             "baseUrl": requested_base_url,
@@ -96,7 +115,7 @@ def main(argv: list[str] | None = None) -> int:
     checks: list[Check] = []
     payload: dict[str, Any] = {"baseUrl": base_url, "baseUrlSelection": {"ok": True, "tried": candidates}, "tokenPrinted": False}
 
-    health_path, health = _load_health(base_url)
+    health_path, health = _load_health(base_url, timeout=http_timeout)
     safety_flags = health.get("safety_flags") or {}
     payload["health"] = {
         "path": health_path,
@@ -116,7 +135,7 @@ def main(argv: list[str] | None = None) -> int:
         ]
     )
 
-    status = _get_json(f"{base_url}/api/telegram/status")
+    status = _get_json(f"{base_url}/api/telegram/status", timeout=http_timeout)
     payload["telegramStatus"] = _status_summary(status)
     checks.extend(
         [
@@ -127,7 +146,7 @@ def main(argv: list[str] | None = None) -> int:
         ]
     )
 
-    session = _post_json(f"{base_url}/api/telegram/miniapp/session", {})
+    session = _post_json(f"{base_url}/api/telegram/miniapp/session", {}, timeout=http_timeout)
     payload["browserPreviewSession"] = {
         "schema": session.get("schema"),
         "mode": session.get("mode"),
@@ -140,6 +159,7 @@ def main(argv: list[str] | None = None) -> int:
         signed_session = _post_json(
             f"{base_url}/api/telegram/miniapp/session",
             {"initData": _signed_demo_init_data(token)},
+            timeout=http_timeout,
         )
         auth = signed_session.get("auth") or {}
         payload["signedTelegramSession"] = {
@@ -162,6 +182,7 @@ def main(argv: list[str] | None = None) -> int:
                 "calldata": APPROVAL_CALLDATA,
             },
         },
+        timeout=http_timeout,
     )
     payload["miniAppPreview"] = {
         "schema": preview.get("schema"),
@@ -180,10 +201,10 @@ def main(argv: list[str] | None = None) -> int:
         ]
     )
 
-    payload["routeProbes"] = _route_probes(base_url)
+    payload["routeProbes"] = _route_probes(base_url, timeout=route_timeout)
 
     if token:
-        bot = _telegram_readbacks(token)
+        bot = _telegram_readbacks(token, timeout=http_timeout)
         payload["telegramApi"] = bot
         checks.extend(
             [
@@ -205,6 +226,7 @@ def main(argv: list[str] | None = None) -> int:
                 }
             },
             headers={"X-Telegram-Bot-Api-Secret-Token": webhook_secret},
+            timeout=http_timeout,
         )
         payload["webhookRoute"] = {
             "schema": webhook_route.get("schema"),
@@ -228,13 +250,13 @@ def main(argv: list[str] | None = None) -> int:
     return 0 if payload["ok"] else 1
 
 
-def _select_base_url(requested: str) -> str:
+def _select_base_url(requested: str, *, timeout: float) -> str:
     candidates = _base_url_candidates(requested)
     last_error: Exception | None = None
     for candidate in candidates:
         try:
-            _load_health(candidate)
-            if not _has_required_api_surface(candidate):
+            _load_health(candidate, timeout=timeout)
+            if not _has_required_api_surface(candidate, timeout=timeout):
                 continue
         except requests.RequestException as exc:
             last_error = exc
@@ -255,10 +277,10 @@ def _base_url_candidates(requested: str) -> list[str]:
     return candidates
 
 
-def _has_required_api_surface(base_url: str) -> bool:
+def _has_required_api_surface(base_url: str, *, timeout: float) -> bool:
     for path in REQUIRED_API_SURFACE:
         try:
-            response = requests.get(f"{base_url}{path}", timeout=10)
+            response = requests.get(f"{base_url}{path}", timeout=timeout)
         except requests.RequestException:
             return False
         if response.status_code == 404:
@@ -290,25 +312,31 @@ def _load_secret(env_name: str, secret_name: str, project: str) -> str:
     return result.stdout.strip()
 
 
-def _get_json(url: str) -> dict[str, Any]:
-    response = requests.get(url, timeout=30)
+def _get_json(url: str, *, timeout: float) -> dict[str, Any]:
+    response = requests.get(url, timeout=timeout)
     response.raise_for_status()
     return response.json()
 
 
-def _post_json(url: str, payload: dict[str, Any], headers: dict[str, str] | None = None) -> dict[str, Any]:
-    response = requests.post(url, json=payload, headers=headers or {}, timeout=30)
+def _post_json(
+    url: str,
+    payload: dict[str, Any],
+    headers: dict[str, str] | None = None,
+    *,
+    timeout: float,
+) -> dict[str, Any]:
+    response = requests.post(url, json=payload, headers=headers or {}, timeout=timeout)
     response.raise_for_status()
     return response.json()
 
 
-def _route_probes(base_url: str) -> list[dict[str, Any]]:
+def _route_probes(base_url: str, *, timeout: float) -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
     for name, path in ROUTE_PROBES:
         url = f"{base_url}{path}"
         try:
             start = time.monotonic()
-            resp = requests.get(url, timeout=25)
+            resp = requests.get(url, timeout=timeout)
             elapsed_ms = int((time.monotonic() - start) * 1000)
             results.append({"name": name, "path": path, "status": resp.status_code, "elapsedMs": elapsed_ms})
         except requests.RequestException as exc:
@@ -316,13 +344,13 @@ def _route_probes(base_url: str) -> list[dict[str, Any]]:
     return results
 
 
-def _load_health(base_url: str) -> tuple[str, dict[str, Any]]:
+def _load_health(base_url: str, *, timeout: float) -> tuple[str, dict[str, Any]]:
     try:
-        return "/api/healthz", _get_json(f"{base_url}/api/healthz")
+        return "/api/healthz", _get_json(f"{base_url}/api/healthz", timeout=timeout)
     except requests.HTTPError as exc:
         if exc.response is None or exc.response.status_code != 404:
             raise
-    return "/api/health", _get_json(f"{base_url}/api/health")
+    return "/api/health", _get_json(f"{base_url}/api/health", timeout=timeout)
 
 
 def _signed_demo_init_data(bot_token: str) -> str:
@@ -340,12 +368,12 @@ def _signed_demo_init_data(bot_token: str) -> str:
     return urlencode({**fields, "hash": signature})
 
 
-def _telegram_readbacks(bot_token: str) -> dict[str, Any]:
+def _telegram_readbacks(bot_token: str, *, timeout: float) -> dict[str, Any]:
     base = f"https://api.telegram.org/bot{bot_token}"
-    get_me = _get_json(f"{base}/getMe")
-    menu = _get_json(f"{base}/getChatMenuButton")
-    webhook = _get_json(f"{base}/getWebhookInfo")
-    commands = _get_json(f"{base}/getMyCommands")
+    get_me = _get_json(f"{base}/getMe", timeout=timeout)
+    menu = _get_json(f"{base}/getChatMenuButton", timeout=timeout)
+    webhook = _get_json(f"{base}/getWebhookInfo", timeout=timeout)
+    commands = _get_json(f"{base}/getMyCommands", timeout=timeout)
     menu_result = menu.get("result") or {}
     webhook_result = webhook.get("result") or {}
     return {
