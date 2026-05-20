@@ -218,12 +218,13 @@ def production_readiness() -> dict[str, Any]:
         ),
         _check(
             "x402_settlement_path",
-            "ok" if _x402_settlement_enabled(x402_preflight) else "review",
+            "ok" if _x402_settlement_path_complete(x402_policy) else "review",
             "Machine-payable data routes are production only after testnet/live settlement readback; caps and terms are tracked separately.",
             {
                 "status": x402_preflight.get("status"),
                 "httpStatus": x402_preflight.get("httpStatus"),
                 "settlementPolicySchema": x402_policy.get("schema"),
+                "settlementPolicyStatus": x402_policy.get("status"),
                 "spendCapsConfigured": bool(x402_policy.get("spendCaps")),
                 "termsConfigured": bool(x402_policy.get("terms")),
                 "payToConfigured": (
@@ -246,6 +247,18 @@ def production_readiness() -> dict[str, Any]:
                 ).get("rawPayloadResaleAllowed"),
                 "policySettlementEnabled": (x402_policy.get("safety") or {}).get(
                     "x402SettlementEnabled"
+                ),
+                "baseSepoliaSettlementProofStatus": (
+                    x402_policy.get("settlementProof") or {}
+                ).get("status"),
+                "baseSepoliaSettlementProofVerified": (
+                    x402_policy.get("settlementProof") or {}
+                ).get("verified"),
+                "settlementPerformedExternally": (
+                    x402_policy.get("settlementProof") or {}
+                ).get("settlementPerformedExternally"),
+                "settlementByZeroGuardEnabled": (x402_policy.get("safety") or {}).get(
+                    "settlementByZeroGuardEnabled"
                 ),
             },
         ),
@@ -457,13 +470,17 @@ def _private_compute_smoke_complete(payload: dict[str, Any]) -> bool:
     )
 
 
-def _x402_settlement_enabled(payload: dict[str, Any]) -> bool:
+def _x402_settlement_path_complete(payload: dict[str, Any]) -> bool:
+    payment = payload.get("paymentRequirement") or {}
+    proof = payload.get("settlementProof") or {}
     safety = payload.get("safety") or {}
-    readback = payload.get("paymentReadback") or {}
     return (
-        safety.get("x402SettlementEnabled") is True
-        and readback.get("settlementAttempted") is True
-        and readback.get("facilitatorCalled") is True
+        payment.get("payToConfigured") is True
+        and proof.get("verified") is True
+        and proof.get("settlementAttempted") is True
+        and proof.get("facilitatorCalled") is True
+        and proof.get("settlementPerformedExternally") is True
+        and safety.get("settlementByZeroGuardEnabled") is False
     )
 
 

@@ -17,6 +17,7 @@ PYTHONPATH=src .venv/bin/python scripts/reputation_backfill_supervisor_check.py 
 curl -s 'http://127.0.0.1:8109/api/intelligence/cyber-threats?cves=CVE-2024-3094&limit=5' | python3 -m json.tool
 curl -s http://127.0.0.1:8109/api/0g/storage-upload/manifest | python3 -m json.tool
 curl -s -i http://127.0.0.1:8109/api/x402/dry-run/wallet-preflight
+curl -s http://127.0.0.1:8109/api/x402/settlement-proof | python3 -m json.tool
 curl -s http://127.0.0.1:8109/api/0g/private-computer/smoke-preview | python3 -m json.tool
 ```
 
@@ -68,6 +69,11 @@ deferred, and orders the next production gates.
   artifact with a receipt hash.
 - x402 dry-run route: `/api/x402/dry-run/wallet-preflight` returns stable
   HTTP-402 metadata and accepts only a fixture header with settlement disabled.
+- x402 settlement-proof rail: `/api/x402/settlement-policy` now includes
+  proof status, and `/api/x402/settlement-proof` verifies an externally
+  performed Base Sepolia payment using only public receipt fields and hashes.
+  `scripts/record_x402_base_sepolia_settlement_proof.py` writes the artifact
+  only after caps/terms acknowledgement and never stores raw payment headers.
 - 0G Private Computer smoke contract: `/api/0g/private-computer/smoke-preview`
   scrubs prompts and refuses paid inference unless server-side gates are set.
 - RV 0G storage node soak: real local snapshot, process running, public storage
@@ -94,8 +100,9 @@ The hard gates are deliberately explicit:
 - 0G Storage upload/readback: bundle manifest, deterministic upload artifact,
   and offline proof recorder exist, but no live 0G Storage upload or gateway
   proof has been recorded yet.
-- x402 paid routes: product manifest and dry-run HTTP-402 route exist, but no
-  facilitator credentials, settlement, or spend-limited paid route is live.
+- x402 paid routes: product manifest, dry-run HTTP-402 route, caps/terms, and
+  settlement-proof recorder exist, but no Base Sepolia facilitator proof has
+  been recorded in this runtime and no mainnet settlement is enabled.
 - 0G Private Computer: adapter, prompt scrubber, and no-inference smoke
   contract exist, but this runtime has no server-side Router API key or paid
   inference smoke.
@@ -115,7 +122,10 @@ Priority order:
    Storage SDK from a reviewed signer environment, download it back, and record
    `docs/hackathon-0g/0g-storage-live-proof.json` only if the downloaded hash
    equals the uploaded bundle hash.
-5. Promote the x402 dry-run route to a testnet facilitator with spend limits.
+5. Run one reviewed Base Sepolia x402 payment from a throwaway buyer wallet,
+   then record only the tx hash, hashed payment header, response hash, and
+   reviewed caps/terms metadata with
+   `scripts/record_x402_base_sepolia_settlement_proof.py`.
 6. Run server-side 0G Private Computer inference only after Router funding,
    API-key handling, prompt scrubber, and budget caps are tested.
 
