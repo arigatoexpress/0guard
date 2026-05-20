@@ -40,6 +40,24 @@ Use `examples/wallet_provider_guard/providerGuard.ts` to wrap an EIP-1193
 provider. The wrapper calls 0guard before `provider.request(...)`, blocks
 `review` and `deny`, and only forwards `allow`.
 
+## External Wallet Proof
+
+`GET /api/wallet/provider-proof` reports whether a reviewed real
+`window.ethereum` proof has been recorded. The proof is deliberately separate
+from CI's mock-provider browser smoke:
+
+- run `examples/wallet_provider_guard/external_dapp/` on its own origin;
+- open it in a wallet-enabled browser with a throwaway empty wallet;
+- prove `eth_chainId` can forward to `window.ethereum.request`;
+- prove `wallet_switchEthereumChain` and `eth_sendTransaction` stop before a
+  wallet prompt and add no provider calls;
+- record only hashes and public metadata with
+  `scripts/record_wallet_provider_external_proof.py`.
+
+The artifact path is
+`docs/hackathon-0g/wallet-provider-external-proof.json`. It should not contain
+raw params, private keys, mnemonics, signatures, or a raw wallet address.
+
 ## What This Does Not Do
 
 - no key import

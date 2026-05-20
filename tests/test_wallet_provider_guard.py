@@ -5,6 +5,12 @@ import json
 import pytest
 
 from guard0.wallet_provider_guard import build_wallet_provider_guard
+from guard0.wallet_provider_guard import (
+    WALLET_PROVIDER_EXTERNAL_PROOF_SCHEMA,
+    build_wallet_provider_external_proof_status,
+    verify_wallet_provider_external_proof,
+    wallet_address_hash,
+)
 
 
 def test_wallet_provider_guard_allows_read_only_chain_probe():
@@ -87,3 +93,100 @@ def test_wallet_provider_guard_rejects_bad_shapes_and_omits_raw_params():
     assert "0x68656c6c6f" not in encoded
     assert "params" not in result
     assert result["decision"] == "deny"
+
+
+def test_wallet_provider_external_proof_status_is_missing_without_artifact(tmp_path):
+    result = build_wallet_provider_external_proof_status(tmp_path / "missing.json")
+
+    assert result["schema"] == "0guard.wallet_provider_external_proof_verification.v1"
+    assert result["status"] == "missing"
+    assert result["verified"] is False
+    assert result["safety"]["transactionSigningEnabled"] is False
+
+
+def test_wallet_provider_external_proof_accepts_real_extension_flow():
+    proof = _valid_external_proof()
+
+    result = verify_wallet_provider_external_proof(proof)
+
+    assert result["verified"] is True
+    assert result["realWalletExtension"] is True
+    assert result["mockProvider"] is False
+    assert result["throwawayWallet"] is True
+    assert result["readOnlyRequest"]["forwardedToProvider"] is True
+    assert result["reviewRequest"]["forwardedToProvider"] is False
+    assert result["denyRequest"]["forwardedToProvider"] is False
+    assert result["checks"]["denyDidNotAddProviderCall"] is True
+    assert result["safety"]["privateKeysReturned"] is False
+    assert result["safety"]["moneyMovementEnabled"] is False
+
+
+def test_wallet_provider_external_proof_rejects_mock_or_wallet_prompt():
+    proof = _valid_external_proof()
+    proof["mockProvider"] = True
+    proof["denyRequest"]["walletPromptShown"] = True
+
+    result = verify_wallet_provider_external_proof(proof)
+
+    assert result["verified"] is False
+    assert result["checks"]["mockProvider"] is False
+    assert result["checks"]["denyRequest"] is False
+    assert result["safety"]["providerForwardingPerformedBy0guard"] is False
+
+
+def test_wallet_address_hash_is_stable_and_does_not_return_raw_address():
+    address = "0x000000000000000000000000000000000000bEEF"
+
+    result = wallet_address_hash(address)
+
+    assert len(result) == 64
+    assert result == wallet_address_hash(address.lower())
+    assert address.lower() not in result
+
+
+def _valid_external_proof() -> dict:
+    wallet_hash = wallet_address_hash("0x000000000000000000000000000000000000bEEF")
+    return {
+        "schema": WALLET_PROVIDER_EXTERNAL_PROOF_SCHEMA,
+        "proofMode": "real_wallet_extension_window_ethereum",
+        "externalDappOrigin": "http://127.0.0.1:8142",
+        "guardBaseUrl": "https://guard0-miniapp-s77j6bxyra-uc.a.run.app",
+        "windowEthereumPresent": True,
+        "realWalletExtension": True,
+        "mockProvider": False,
+        "throwawayWallet": True,
+        "walletWasEmpty": True,
+        "walletAddressHash": wallet_hash,
+        "readOnlyRequest": {
+            "method": "eth_chainId",
+            "decision": "allow",
+            "forwardedToProvider": True,
+            "walletPromptShown": False,
+            "providerCallCount": 1,
+            "receiptHash": "a" * 64,
+        },
+        "reviewRequest": {
+            "method": "wallet_switchEthereumChain",
+            "decision": "review",
+            "forwardedToProvider": False,
+            "walletPromptShown": False,
+            "providerCallCount": 1,
+            "receiptHash": "b" * 64,
+        },
+        "denyRequest": {
+            "method": "eth_sendTransaction",
+            "decision": "deny",
+            "forwardedToProvider": False,
+            "walletPromptShown": False,
+            "providerCallCount": 1,
+            "receiptHash": "c" * 64,
+        },
+        "operatorReviewed": True,
+        "rawParamsReturned": False,
+        "providerCallLogRawParamsStored": False,
+        "privateKeysReturned": False,
+        "mnemonicsReturned": False,
+        "transactionSigningByZeroGuard": False,
+        "transactionBroadcastingByZeroGuard": False,
+        "moneyMovementByZeroGuard": False,
+    }

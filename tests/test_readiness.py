@@ -29,6 +29,10 @@ def test_production_readiness_is_honest_and_non_mutating(monkeypatch):
     assert checks["reputation_backfill_artifact"]["detail"]["freshWithinTtl"] is True
     assert checks["telegram_state_store"]["status"] == "ok"
     assert checks["storage_node_funded_soak"]["status"] == "review"
+    assert checks["wallet_provider_external_proof"]["status"] == "review"
+    assert checks["wallet_provider_external_proof"]["detail"]["verified"] is False
+    assert checks["wallet_provider_external_proof"]["detail"]["realWalletExtension"] is True
+    assert checks["wallet_provider_external_proof"]["detail"]["mockProvider"] is False
     assert checks["telegram_live_identity"]["status"] == "review"
     assert checks["private_compute_paid_smoke"]["status"] == "review"
     assert checks["x402_settlement_path"]["status"] == "review"
@@ -138,6 +142,8 @@ def _blocked_gate_payloads() -> dict:
     payloads["x402_policy"]["settlementProof"]["settlementAttempted"] = False
     payloads["x402_policy"]["settlementProof"]["facilitatorCalled"] = False
     payloads["x402_policy"]["settlementProof"]["settlementPerformedExternally"] = False
+    payloads["wallet_provider_proof"]["verified"] = False
+    payloads["wallet_provider_proof"]["proofPresent"] = True
     return payloads
 
 
@@ -238,6 +244,26 @@ def _green_gate_payloads() -> dict:
             "safety": {
                 "x402SettlementEnabled": False,
                 "settlementByZeroGuardEnabled": False,
+            },
+        },
+        "wallet_provider_proof": {
+            "schema": "0guard.wallet_provider_external_proof_verification.v1",
+            "status": "verified",
+            "verified": True,
+            "proofPresent": True,
+            "proofMode": "real_wallet_extension_window_ethereum",
+            "externalDappOrigin": "http://127.0.0.1:8142",
+            "windowEthereumPresent": True,
+            "realWalletExtension": True,
+            "mockProvider": False,
+            "throwawayWallet": True,
+            "walletWasEmpty": True,
+            "readOnlyRequest": {"forwardedToProvider": True},
+            "reviewRequest": {"forwardedToProvider": False},
+            "denyRequest": {"forwardedToProvider": False},
+            "safety": {
+                "rawParamsReturned": False,
+                "privateKeysReturned": False,
             },
         },
     }

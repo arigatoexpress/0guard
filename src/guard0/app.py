@@ -139,7 +139,10 @@ from guard0.storage_peer_diagnostics import (
     build_storage_peer_diagnostics,
 )
 from guard0.wallet_alerts import build_wallet_alert_preview, wallet_alert_quality_policy
-from guard0.wallet_provider_guard import build_wallet_provider_guard
+from guard0.wallet_provider_guard import (
+    build_wallet_provider_external_proof_status,
+    build_wallet_provider_guard,
+)
 from guard0.x402_guard import (
     build_x402_settlement_policy,
     build_x402_settlement_proof_status,
@@ -958,6 +961,7 @@ def api_frontend_contract():
                 "/api/x402/dry-run/wallet-preflight",
                 "/api/x402/settlement-policy",
                 "/api/x402/settlement-proof",
+                "/api/wallet/provider-proof",
                 "/api/intelligence/events",
                 "/api/intelligence/detector-candidates",
                 "/api/product/brief",
@@ -1679,6 +1683,11 @@ def api_wallet_provider_guard():
         )
     except (TypeError, ValueError) as exc:
         return _wallet_provider_cors(jsonify({"error": str(exc)}), status_code=400)
+
+
+@app.route("/api/wallet/provider-proof", methods=["GET"])
+def api_wallet_provider_proof():
+    return jsonify(build_wallet_provider_external_proof_status())
 
 
 @app.route("/api/hackathon/strategy", methods=["GET"])
