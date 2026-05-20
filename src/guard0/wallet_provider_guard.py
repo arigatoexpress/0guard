@@ -558,14 +558,18 @@ def _external_proof_status(
     *,
     proof_path: str | Path | None = None,
 ) -> dict[str, Any]:
+    proof_path_str = str(proof_path) if proof_path else ""
+    operator_packet = _external_operator_proof_packet(proof_path_str)
     return {
         "schema": WALLET_PROVIDER_EXTERNAL_PROOF_VERIFICATION_SCHEMA,
         "generatedAt": _now(),
         "status": status,
         "verified": False,
         "proofPresent": False,
-        "proofPath": str(proof_path) if proof_path else "",
+        "proofPath": proof_path_str,
         "reason": reason,
+        "recordProofCommandTemplate": operator_packet["recordProofCommandTemplate"],
+        "proofDraftAssistant": operator_packet,
         "safety": {
             "readOnly": True,
             "networkCalls": False,
@@ -577,6 +581,52 @@ def _external_proof_status(
             "moneyMovementEnabled": False,
             "privateKeysReturned": False,
         },
+    }
+
+
+def _external_operator_proof_packet(proof_path: str) -> dict[str, Any]:
+    proof_file = proof_path or "docs/hackathon-0g/wallet-provider-external-proof.json"
+    command = " ".join(
+        [
+            "PYTHONPATH=src .venv/bin/python",
+            "scripts/record_wallet_provider_external_proof.py",
+            "--external-dapp-origin <wallet-enabled-external-dapp-origin>",
+            "--guard-base-url <guard0-public-base-url>",
+            "--wallet-address-hash <sha256-of-empty-throwaway-wallet-address>",
+            "--read-receipt-hash <sha256-from-eth_chainId-verdict>",
+            "--review-receipt-hash <sha256-from-switch-chain-verdict>",
+            "--deny-receipt-hash <sha256-from-approval-deny-verdict>",
+            f"--out {proof_file}",
+            "--real-wallet-extension",
+            "--window-ethereum-present",
+            "--throwaway-empty-wallet",
+            "--operator-reviewed",
+        ]
+    )
+    return {
+        "schema": "0guard.wallet_provider_external_operator_proof_packet.v1",
+        "status": "ready_for_external_window_ethereum_proof",
+        "proofPath": proof_file,
+        "recordProofCommandTemplate": command,
+        "externalDappOriginRequired": True,
+        "guardBaseUrlRequired": True,
+        "walletAddressHashRequired": True,
+        "rawWalletAddressRequired": False,
+        "receiptHashesRequired": [
+            "read-receipt-hash",
+            "review-receipt-hash",
+            "deny-receipt-hash",
+        ],
+        "realWalletExtensionRequired": True,
+        "windowEthereumRequired": True,
+        "throwawayEmptyWalletRequired": True,
+        "operatorReviewedRequired": True,
+        "reviewAndDenyMustNotOpenWalletPrompt": True,
+        "rawParamsStored": False,
+        "privateKeysRequired": False,
+        "signingByZeroGuardEnabled": False,
+        "broadcastingByZeroGuardEnabled": False,
+        "moneyMovementByZeroGuardEnabled": False,
     }
 
 
