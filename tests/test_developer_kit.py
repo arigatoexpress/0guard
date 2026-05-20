@@ -75,24 +75,37 @@ def test_wallet_provider_guard_example_is_present_and_blocks_before_prompt():
     readme = REPO_ROOT / "examples" / "wallet_provider_guard" / "README.md"
     docs = REPO_ROOT / "docs" / "WALLET_PROVIDER_GUARD.md"
     external_dapp = REPO_ROOT / "examples" / "wallet_provider_guard" / "external_dapp"
+    pages_capture = REPO_ROOT / "docs" / "wallet-provider-proof"
 
     assert ts_example.exists()
     assert readme.exists()
     assert docs.exists()
     assert (external_dapp / "index.html").exists()
     assert (external_dapp / "app.js").exists()
+    assert (pages_capture / "index.html").exists()
+    assert (pages_capture / "app.js").exists()
 
     combined = "\n".join(
         path.read_text(encoding="utf-8")
-        for path in [ts_example, readme, docs, external_dapp / "index.html", external_dapp / "app.js"]
+        for path in [
+            ts_example,
+            readme,
+            docs,
+            external_dapp / "index.html",
+            external_dapp / "app.js",
+            pages_capture / "index.html",
+            pages_capture / "app.js",
+        ]
     )
     assert "/api/wallet/provider-guard" in combined
     assert "WalletGuardBlockedError" in combined
     assert "provider.request<T>(request)" in combined
     assert "window.ethereum" in combined
+    assert "https://arigatoexpress.github.io/0guard/wallet-provider-proof/" in combined
     assert "wallet_provider_external_proof_draft" in combined
     assert "rawWalletAddressStored" in combined
     assert "record_wallet_provider_external_proof.py" in combined
+    assert "unexpected_allow_refused_by_capture_page" in combined
     assert "review" in combined
     assert "deny" in combined
     assert "private_key" not in combined

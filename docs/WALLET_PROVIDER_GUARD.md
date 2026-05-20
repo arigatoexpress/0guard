@@ -46,7 +46,9 @@ provider. The wrapper calls 0guard before `provider.request(...)`, blocks
 `window.ethereum` proof has been recorded. The proof is deliberately separate
 from CI's mock-provider browser smoke:
 
-- run `examples/wallet_provider_guard/external_dapp/` on its own origin;
+- open the hosted proof-capture page at
+  `https://arigatoexpress.github.io/0guard/wallet-provider-proof/`, or run
+  `examples/wallet_provider_guard/external_dapp/` on its own origin;
 - open it in a wallet-enabled browser with a throwaway empty wallet;
 - prove `eth_chainId` can forward to `window.ethereum.request`;
 - prove `wallet_switchEthereumChain` and `eth_sendTransaction` stop before a
