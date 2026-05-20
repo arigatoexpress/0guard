@@ -846,6 +846,17 @@ def exercise_external_wallet_provider_dapp(page: Page) -> None:
     expect(page.locator("#result-output")).to_contain_text("block_before_wallet_prompt")
     expect(page.locator("#provider-log")).not_to_contain_text("eth_sendTransaction")
 
+    throwaway_address = "0x000000000000000000000000000000000000bEEF"
+    page.locator("#throwaway-wallet-address").fill(throwaway_address)
+    page.locator("#build-proof-draft").click()
+    proof_output = page.locator("#proof-output")
+    expect(proof_output).to_contain_text("0guard.wallet_provider_external_proof_draft.v1")
+    expect(proof_output).to_contain_text('"status": "ready_for_operator_review"')
+    expect(proof_output).to_contain_text("record_wallet_provider_external_proof.py")
+    expect(proof_output).to_contain_text('"rawWalletAddressStored": false')
+    expect(proof_output).to_contain_text('"rawParamsStored": false')
+    assert throwaway_address.lower() not in proof_output.inner_text().lower()
+
 
 def exercise_workbench_mobile(page: Page) -> None:
     page.goto(BASE_URL)

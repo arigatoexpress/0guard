@@ -24,6 +24,7 @@ const scenarios = {
 };
 
 const forwardedCalls = [];
+const proofScenarios = {};
 
 function el(id) {
   return document.getElementById(id);
@@ -83,17 +84,18 @@ async function run(kind) {
   setBusy(true);
   try{
     let providerResult = null;
-    let verdict = null;
     let forwarded = false;
-    try{
-      providerResult = await guardedProviderRequest(scenario.request);
-      forwarded = true;
-    }catch(error){
-      verdict = error.verdict || null;
-      if(!verdict){
-        throw error;
+    const verdict = await guardRequest(scenario.request);
+    setDecision(verdict.decision);
+    if(verdict.enforcement.providerCallAllowed){
+      if(!provider()?.request){
+        throw new Error('window.ethereum is not available. Open this page in a wallet-enabled browser.');
       }
+      forwardedCalls.push({method: scenario.request.method, at: new Date().toISOString()});
+      providerResult = await provider().request(scenario.request);
+      forwarded = true;
     }
+    proofScenarios[kind] = proofScenario(kind, scenario, verdict, forwarded);
     writeJson('result-output', {
       scenario: scenario.label,
       forwardedToProvider: forwarded,
@@ -101,6 +103,7 @@ async function run(kind) {
       verdict: publicVerdict(verdict),
       providerCallCount: forwardedCalls.length
     });
+    writeProofPreview();
   }catch(error){
     setDecision('deny');
     writeJson('result-output', {error: String(error.message || error)});
@@ -108,6 +111,18 @@ async function run(kind) {
     writeJson('provider-log', forwardedCalls);
     setBusy(false);
   }
+}
+
+function proofScenario(kind, scenario, verdict, forwarded) {
+  return {
+    kind,
+    method: scenario.request.method,
+    decision: verdict.decision,
+    forwardedToProvider: forwarded,
+    walletPromptShown: false,
+    providerCallCount: forwardedCalls.length,
+    receiptHash: verdict.receipt?.hash || ''
+  };
 }
 
 function publicVerdict(verdict) {
@@ -125,6 +140,89 @@ function publicVerdict(verdict) {
   };
 }
 
+async function sha256Hex(value) {
+  const encoded = new TextEncoder().encode(String(value || '').trim().toLowerCase());
+  const digest = await crypto.subtle.digest('SHA-256', encoded);
+  return Array.from(new Uint8Array(digest))
+    .map(byte => byte.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+async function buildProofDraft() {
+  const rawAddress = el('throwaway-wallet-address').value.trim();
+  const missing = [];
+  for(const key of ['read', 'switch', 'approval']){
+    if(!proofScenarios[key]?.receiptHash){
+      missing.push(key);
+    }
+  }
+  if(!rawAddress){
+    missing.push('throwaway_wallet_address_for_hashing');
+  }
+  if(missing.length){
+    writeJson('proof-output', {
+      schema: '0guard.wallet_provider_external_proof_draft.v1',
+      status: 'incomplete',
+      missing,
+      rawWalletAddressStored: false,
+      rawParamsStored: false
+    });
+    return;
+  }
+  const walletAddressHash = await sha256Hex(rawAddress);
+  const guardBaseUrl = el('guard-base-url').value.replace(/\/$/, '');
+  const draft = {
+    schema: '0guard.wallet_provider_external_proof_draft.v1',
+    generatedAt: new Date().toISOString(),
+    status: 'ready_for_operator_review',
+    externalDappOrigin: window.location.origin,
+    guardBaseUrl,
+    windowEthereumPresent: Boolean(provider()?.request),
+    walletAddressHash,
+    rawWalletAddressStored: false,
+    rawParamsStored: false,
+    recorderCommand: [
+      'PYTHONPATH=src .venv/bin/python scripts/record_wallet_provider_external_proof.py',
+      `--external-dapp-origin ${shellQuote(window.location.origin)}`,
+      `--guard-base-url ${shellQuote(guardBaseUrl)}`,
+      `--wallet-address-hash ${walletAddressHash}`,
+      `--read-receipt-hash ${proofScenarios.read.receiptHash}`,
+      `--review-receipt-hash ${proofScenarios.switch.receiptHash}`,
+      `--deny-receipt-hash ${proofScenarios.approval.receiptHash}`,
+      '--real-wallet-extension',
+      '--window-ethereum-present',
+      '--throwaway-empty-wallet',
+      '--operator-reviewed'
+    ].join(' \\\n  '),
+    scenarioEvidence: {
+      readOnlyRequest: proofScenarios.read,
+      reviewRequest: proofScenarios.switch,
+      denyRequest: proofScenarios.approval
+    },
+    operatorChecks: [
+      'The browser provider was a real wallet extension, not an injected test provider.',
+      'The account was a throwaway empty wallet.',
+      'Switch chain and unlimited approval did not open a wallet prompt.'
+    ]
+  };
+  writeJson('proof-output', draft);
+}
+
+function writeProofPreview() {
+  const completed = Object.keys(proofScenarios).sort();
+  writeJson('proof-output', {
+    schema: '0guard.wallet_provider_external_proof_draft.v1',
+    status: completed.length === 3 ? 'needs_throwaway_wallet_hash' : 'collecting_scenarios',
+    completed,
+    rawWalletAddressStored: false,
+    rawParamsStored: false
+  });
+}
+
+function shellQuote(value) {
+  return `'${String(value).replaceAll("'", "'\\\\''")}'`;
+}
+
 function setBusy(isBusy) {
   for(const button of document.querySelectorAll('button')){
     button.disabled = isBusy;
@@ -134,6 +232,11 @@ function setBusy(isBusy) {
 el('run-read-chain').addEventListener('click', () => run('read'));
 el('run-switch-chain').addEventListener('click', () => run('switch'));
 el('run-unlimited-approval').addEventListener('click', () => run('approval'));
+el('build-proof-draft').addEventListener('click', () => {
+  buildProofDraft().catch(error => {
+    writeJson('proof-output', {error: String(error.message || error)});
+  });
+});
 
 writeJson('result-output', {
   status: 'ready',

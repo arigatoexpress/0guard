@@ -53,7 +53,10 @@ base as `https://guard0-miniapp-s77j6bxyra-uc.a.run.app`, and use a throwaway
 empty account. `Read chain` may forward; `Switch chain` and `Unlimited approval`
 should stop before a wallet prompt.
 
-After the manual run, record only public-safe proof metadata:
+After the manual run, enter the empty throwaway wallet address in the proof
+draft panel. The page hashes it locally and emits the receipt hashes, provider
+call counts, and recorder command without storing the raw address or raw params.
+Record only that public-safe proof metadata:
 
 ```bash
 PYTHONPATH=src .venv/bin/python scripts/record_wallet_provider_external_proof.py \

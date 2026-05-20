@@ -51,6 +51,13 @@ code{font-size:.86em;color:var(--accent)}
   grid-template-columns:1fr 1fr;
   gap:16px;
 }
+.proof-grid{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:end;
+  gap:12px;
+}
+.proof-panel pre{margin-top:12px;min-height:180px}
 .pill{
   display:inline-flex;
   align-items:center;
@@ -116,5 +123,6 @@ pre{
 }
 .note{margin:12px 0 0;color:var(--muted);font-size:13px}
 @media(max-width:760px){
-  header,.grid{display:block}
+  header,.grid,.proof-grid{display:block}
+  .proof-grid button{margin-top:12px}
 }
