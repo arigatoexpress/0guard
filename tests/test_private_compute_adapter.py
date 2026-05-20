@@ -27,6 +27,12 @@ def test_private_compute_smoke_preview_blocks_until_gates_are_present():
     assert preview["router"]["apiKeyReturned"] is False
     assert preview["paidSmokeProof"]["status"] == "missing"
     assert preview["paidSmokeProof"]["verified"] is False
+    assert preview["operatorProofPacket"]["schema"] == (
+        "0guard.0g_private_compute_paid_smoke_operator_proof_packet.v1"
+    )
+    assert "record_0g_private_compute_paid_smoke.py" in preview["recordProofCommandTemplate"]
+    assert preview["operatorProofPacket"]["rawPromptRequired"] is False
+    assert preview["operatorProofPacket"]["apiKeyStoredInProof"] is False
     assert preview["sampleRequest"]["inferenceExecuted"] is False
     assert preview["safety"]["paidInferenceEnabled"] is False
     assert preview["safety"]["moneyMovementEnabled"] is False
@@ -46,6 +52,8 @@ def test_private_compute_smoke_preview_can_be_ready_without_executing():
     assert preview["sampleRequest"]["paidInferenceCallPrepared"] is True
     assert preview["sampleRequest"]["inferenceExecuted"] is False
     assert preview["paidSmokeProof"]["status"] == "missing"
+    assert preview["operatorProofPacket"]["status"] == "ready_for_external_paid_smoke_proof"
+    assert preview["operatorProofPacket"]["maxFirstSmokeCostUsd"] == 0.25
     assert preview["safety"]["networkCalls"] is False
     assert preview["safety"]["paidInferenceEnabled"] is True
 
@@ -97,6 +105,22 @@ def test_private_compute_paid_smoke_proof_rejects_over_cap_or_raw_storage():
     assert result["verified"] is False
     assert result["checks"]["costWithinFirstSmokeCap"] is False
     assert result["checks"]["rawResponseStored"] is False
+    assert result["safety"]["paidInferenceByZeroGuard"] is False
+
+
+def test_private_compute_paid_smoke_missing_status_exposes_operator_packet(tmp_path):
+    proof_path = tmp_path / "missing-proof.json"
+
+    result = build_private_compute_paid_smoke_proof_status(proof_path)
+
+    assert result["status"] == "missing"
+    assert result["verified"] is False
+    assert "record_0g_private_compute_paid_smoke.py" in result["recordProofCommandTemplate"]
+    assert result["operatorProofPacket"]["schema"] == (
+        "0guard.0g_private_compute_paid_smoke_operator_proof_packet.v1"
+    )
+    assert result["operatorProofPacket"]["rawResponseRequired"] is False
+    assert result["operatorProofPacket"]["apiKeyRequiredByRecorder"] is False
     assert result["safety"]["paidInferenceByZeroGuard"] is False
 
 
