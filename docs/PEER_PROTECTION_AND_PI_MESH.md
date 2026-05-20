@@ -68,6 +68,13 @@ Staged path on `rvpi-a`:
 The workbench reads the local snapshot through:
 
 - `/api/0g/pi-mesh?snapshot=1`
+- `/api/0g/node-pi-readiness-proof`
+
+The readiness-proof route verifies a redacted operator artifact that combines
+the storage-node soak, peer diagnostics, and Pi mesh status. The matching
+recorder consumes only already-collected local JSON snapshots and does not SSH,
+probe the LAN, restart services, read keys, sign, broadcast, move funds, or
+send messages.
 
 `rvpi-b` should become the proof cache:
 
@@ -84,6 +91,7 @@ the right job for them.
 - `/api/0g/private-computer`
 - `/api/0g/peer-protection`
 - `/api/0g/pi-mesh`
+- `/api/0g/node-pi-readiness-proof`
 - `/api/peer/outreach-preview`
 
 These are designed as product surfaces first: they are useful to a dashboard,

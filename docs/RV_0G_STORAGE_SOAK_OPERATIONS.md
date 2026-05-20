@@ -79,6 +79,23 @@ That means the only remaining expansion blocker is shallow peer
 discovery/availability. Public relay and DA tunnel blockers are cleared; larger
 funding is still blocked until peer depth reaches the reviewed target.
 
+## Public-Safe Readiness Proof
+
+After refreshing the storage soak, peer diagnostics, and Pi mesh snapshots, an
+operator can record a redacted proof artifact:
+
+```bash
+PYTHONPATH=src .venv/bin/python scripts/record_node_pi_readiness_proof.py \
+  --operator-reviewed-public-safe
+curl 'http://127.0.0.1:8109/api/0g/node-pi-readiness-proof'
+```
+
+The recorder only consumes existing local snapshot files and writes
+`docs/hackathon-0g/node-pi-readiness-proof.json`. It does not SSH, probe the
+LAN, restart services, read keys, sign, broadcast, move funds, or send
+messages. If peer depth or Pi readiness is still blocked, the artifact remains
+public-safe but reports `status=blocked` until the next reviewed green snapshot.
+
 ## Expansion Blockers
 
 Do not send larger mainnet funds until these are clear:

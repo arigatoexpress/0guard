@@ -1,0 +1,69 @@
+{
+  "mode": "redacted_local_snapshot_proof",
+  "peerDiagnostics": {
+    "blockers": [
+      "connected_peers_below_target_8"
+    ],
+    "connectedPeers": 0,
+    "hypothesisIds": [
+      "shallow_peer_discovery"
+    ],
+    "peerDepthReady": false,
+    "snapshotGeneratedAt": "2026-05-20T01:56:52.006985+00:00",
+    "snapshotPresent": true,
+    "targetPeers": 8
+  },
+  "piMesh": {
+    "blockers": [
+      "rvpi_a_unreachable",
+      "rvpi_a_edge_api_not_ready",
+      "ethernet_carrier_missing",
+      "rvpi_b_not_reachable_over_ethernet",
+      "rvpi_b_identity_unverified",
+      "rvpi_b_edge_api_not_ready"
+    ],
+    "clusterReady": false,
+    "edgeApiReady": false,
+    "ethernetCarrierReady": false,
+    "peerEthernetReachable": false,
+    "peerIdentityVerified": false,
+    "primaryReachable": false,
+    "recommendedAction": "install_or_authorize_rvpi_b_runtime_over_eth",
+    "snapshotGeneratedAt": "2026-05-20T01:58:03.267074+00:00",
+    "snapshotPresent": true
+  },
+  "rawSnapshotsStored": false,
+  "recordedAt": "2026-05-20T02:55:03+00:00",
+  "safety": {
+    "moneyMovementEnabled": false,
+    "networkCalls": false,
+    "privateKeysRead": false,
+    "privateKeysReturned": false,
+    "readOnly": true,
+    "telegramSendsEnabled": false,
+    "transactionBroadcastingEnabled": false,
+    "transactionSigningEnabled": false
+  },
+  "schema": "0guard.node_pi_readiness_proof.v1",
+  "storageNode": {
+    "activeMinerBalanceOg": 0.25,
+    "blockers": [
+      "connected_peers_below_target_8"
+    ],
+    "connectedPeers": 0,
+    "hundredOgTransferSent": false,
+    "largeTransferDetected": false,
+    "latestMainnetBlock": 33767267,
+    "logSyncHeight": 33767266,
+    "maxSyncGapBlocks": 8,
+    "onlyPriorTestFundingObserved": true,
+    "recommendedAction": "continue_soak_no_additional_funding",
+    "relayTcpOpen": true,
+    "rpcOk": true,
+    "snapshotGeneratedAt": "2026-05-20T01:57:04.964670+00:00",
+    "snapshotPresent": true,
+    "syncGapBlocks": 1,
+    "targetPeers": 8,
+    "zgsRunning": true
+  }
+}

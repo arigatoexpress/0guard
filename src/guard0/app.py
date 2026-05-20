@@ -44,6 +44,7 @@ from guard0.node_business import (
     build_telegram_node_business_preview,
     build_validator_capacity_status,
 )
+from guard0.node_readiness_proof import build_node_pi_readiness_proof_status
 from guard0.peer_protection import (
     DEFAULT_PI_MESH_STATUS_PATH,
     build_0g_hot_wallet_resources,
@@ -930,6 +931,7 @@ def api_frontend_contract():
                 "/api/0g/da-node/status",
                 "/api/0g/storage-node/status",
                 "/api/0g/storage-node/peer-diagnostics",
+                "/api/0g/node-pi-readiness-proof",
                 "/api/0g/storage-upload/manifest",
                 "/api/0g/alignment-node/status",
                 "/api/0g/validator-capacity",
@@ -2360,6 +2362,11 @@ def api_0g_storage_node_status():
 def api_0g_storage_node_peer_diagnostics():
     status_file = DEFAULT_STORAGE_PEER_DIAGNOSTICS_PATH if _truthy_query_arg("snapshot") else None
     return jsonify(build_storage_peer_diagnostics(status_file=status_file))
+
+
+@app.route("/api/0g/node-pi-readiness-proof", methods=["GET"])
+def api_0g_node_pi_readiness_proof():
+    return jsonify(build_node_pi_readiness_proof_status())
 
 
 @app.route("/api/0g/storage-upload/manifest", methods=["GET"])
