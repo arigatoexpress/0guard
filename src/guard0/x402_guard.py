@@ -25,6 +25,7 @@ X402_SETTLEMENT_PROOF_VERIFICATION_SCHEMA = (
 X402_BASE_SEPOLIA_BUYER_WALLET_STATUS_SCHEMA = (
     "0guard.x402_base_sepolia_buyer_wallet_status.v1"
 )
+X402_WALLET_PREFLIGHT_PAID_RESPONSE_SCHEMA = "0guard.x402_wallet_preflight_paid_response.v1"
 X402_FIXTURE_PAYMENT_HEADER = "fixture-paid-zeroguard-wallet-preflight-v1"
 X402_DOC_URL = "https://docs.cdp.coinbase.com/x402/welcome"
 X402_NETWORK_SUPPORT_URL = "https://docs.cdp.coinbase.com/x402/network-support"
@@ -127,6 +128,75 @@ def build_x402_wallet_preflight_dry_run(
     return payload
 
 
+def build_x402_wallet_preflight_paid_response(
+    *,
+    body: dict[str, Any] | None = None,
+    payment_verified_by_middleware: bool = True,
+) -> dict[str, Any]:
+    """Return the derived paid response for the official x402 testnet route.
+
+    This function does not inspect payment headers or settle directly. The
+    optional Flask x402 middleware verifies the header before this response is
+    generated and settles after the successful response is produced.
+    """
+
+    request_body = body or {}
+    product_response = _product_response(
+        request_body,
+        mode="x402_paid_response_pending_settlement_header",
+        reasons=[
+            "Official x402 middleware verified the testnet payment before route execution.",
+            "Settlement is performed by the x402 middleware after the successful response.",
+            "The response contains derived ZeroGuard signals only.",
+        ],
+        source_ids=["zeroguard_x402_testnet_wallet_preflight"],
+    )
+    payload = {
+        "schema": X402_WALLET_PREFLIGHT_PAID_RESPONSE_SCHEMA,
+        "generatedAt": _now(),
+        "mode": "x402_testnet_paid_route",
+        "status": "payment_verified_response_ready_for_settlement",
+        "resource": {
+            "productId": "wallet_preflight_verdict",
+            "route": "/x402/v1/wallet-preflight",
+            "method": "GET",
+            "responseSchema": product_response["schema"],
+        },
+        "productResponse": product_response,
+        "rightsPolicy": _rights_policy(),
+        "paymentReadback": {
+            "paymentVerifiedByMiddleware": payment_verified_by_middleware,
+            "paymentHeaderReturned": False,
+            "paymentHeaderStored": False,
+            "rawPaymentHeaderRequiredInBody": False,
+            "settlementExpectedAfterResponse": True,
+        },
+        "receipt": {
+            "hash": _hash_json(
+                {
+                    "schema": X402_WALLET_PREFLIGHT_PAID_RESPONSE_SCHEMA,
+                    "resource": "/x402/v1/wallet-preflight",
+                    "productResponse": product_response,
+                    "rightsPolicy": _rights_policy(),
+                }
+            ),
+            "algorithm": "sha256_canonical_json",
+        },
+        "safety": {
+            **_safety(),
+            "networkCalls": True,
+            "facilitatorCalled": payment_verified_by_middleware,
+            "x402SettlementEnabled": True,
+            "paymentSettlementEnabled": True,
+            "paymentHeaderStored": False,
+            "transactionSigningEnabled": False,
+            "transactionBroadcastingEnabled": False,
+            "moneyMovementEnabled": False,
+        },
+    }
+    return payload
+
+
 def _payment_requirement() -> dict[str, Any]:
     policy = build_x402_settlement_policy()
     pay_to = (policy.get("paymentRequirement") or {}).get("payTo")
@@ -150,7 +220,7 @@ def _payment_requirement_for_policy() -> dict[str, Any]:
         "network": "base-sepolia",
         "networkCaip2": "eip155:84532",
         "asset": "USDC",
-        "assetCaip19": "eip155:84532/erc20:0x0000000000000000000000000000000000000000",
+        "assetCaip19": f"eip155:84532/erc20:{BASE_SEPOLIA_USDC_CONTRACT}",
         "maxAmountRequired": "10000",
         "decimals": 6,
         "resource": "https://zeroguard.local/x402/v1/wallet-preflight",
@@ -470,23 +540,30 @@ def verify_x402_settlement_proof(
     }
 
 
-def _product_response(body: dict[str, Any]) -> dict[str, Any]:
+def _product_response(
+    body: dict[str, Any],
+    *,
+    mode: str = "fixture_paid_response_no_settlement",
+    reasons: list[str] | None = None,
+    source_ids: list[str] | None = None,
+) -> dict[str, Any]:
     target = str(body.get("target") or body.get("address") or body.get("url") or "").strip()
     return {
         "schema": "0guard.wallet_preflight_verdict.v1",
-        "mode": "fixture_paid_response_no_settlement",
+        "mode": mode,
         "targetProvided": bool(target),
         "targetHash": _hash_text(target) if target else "",
         "verdict": {
             "decision": "review",
             "severity": "medium",
-            "reasons": [
+            "reasons": reasons
+            or [
                 "Dry-run x402 fixture accepted.",
                 "No live facilitator settlement was performed.",
                 "Production verdicts must be generated by deterministic ZeroGuard checks.",
             ],
         },
-        "sourceIds": ["zeroguard_dry_run_contract"],
+        "sourceIds": source_ids or ["zeroguard_dry_run_contract"],
         "rawPayloadResaleAllowed": False,
         "paymentIsNotPermission": True,
     }

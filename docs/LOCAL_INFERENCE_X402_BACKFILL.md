@@ -76,7 +76,11 @@ Preparation order:
 6. Use `/api/x402/settlement-policy` as the operator packet: it exposes the
    payment requirement, caps hash, terms hash, proof status, and recorder
    command template without calling a facilitator.
-7. Only then consider mainnet settlement for a single low-cost route.
+7. Use `/x402/v1/wallet-preflight` only on a tagged/no-traffic revision with
+   `ZG_X402_ENABLE_SETTLEMENT=1`; public revisions keep this route disabled.
+   The route is protected by the official x402 Flask middleware and should be
+   exercised first on Base Sepolia for a single `0.01 USDC` proof.
+8. Only then consider mainnet settlement for a single low-cost route.
 
 Before the first Base Sepolia settlement proof, check the throwaway buyer
 wallet without touching its encrypted keystore:
