@@ -1,9 +1,16 @@
 """Tests for reputation backfill freshness supervision."""
 
 import json
+import importlib.util
 from datetime import datetime, timezone
+from pathlib import Path
 
-from scripts.reputation_backfill_supervisor_check import validate_supervisor_inputs
+SCRIPT_PATH = Path(__file__).resolve().parents[1] / "scripts" / "reputation_backfill_supervisor_check.py"
+SPEC = importlib.util.spec_from_file_location("reputation_backfill_supervisor_check", SCRIPT_PATH)
+assert SPEC and SPEC.loader
+supervisor_check = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(supervisor_check)
+validate_supervisor_inputs = supervisor_check.validate_supervisor_inputs
 
 
 def test_reputation_backfill_supervisor_check_passes_for_fresh_derived_artifacts(tmp_path):
