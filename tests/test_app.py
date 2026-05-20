@@ -145,6 +145,7 @@ def test_frontend_contract_is_browser_smoke_ready_and_non_mutating(client):
     assert "/api/0g/da-node/status" in data["apiRoutes"]
     assert "/api/0g/storage-node/status" in data["apiRoutes"]
     assert "/api/0g/storage-node/peer-diagnostics" in data["apiRoutes"]
+    assert "/api/0g/node-pi-readiness-proof" in data["apiRoutes"]
     assert "/api/0g/storage-upload/manifest" in data["apiRoutes"]
     assert "/api/0g/alignment-node/status" in data["apiRoutes"]
     assert "/api/0g/validator-capacity" in data["apiRoutes"]
@@ -1292,6 +1293,20 @@ def test_0g_storage_peer_diagnostics_route_is_read_only(monkeypatch, client):
     assert data["summary"]["connectedPeers"] == 2
     assert data["summary"]["peerDepthReady"] is False
     assert data["safety"]["privateKeysRead"] is False
+    assert data["safety"]["moneyMovementEnabled"] is False
+
+
+def test_0g_node_pi_readiness_proof_route_is_read_only(client):
+    response = client.get("/api/0g/node-pi-readiness-proof")
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["schema"] == "0guard.node_pi_readiness_proof_status.v1"
+    assert data["status"] in {"missing", "blocked", "ready"}
+    assert data["safety"]["proofVerificationOnly"] is True
+    assert data["safety"]["privateKeysReturned"] is False
+    assert data["safety"]["transactionSigningEnabled"] is False
+    assert data["safety"]["transactionBroadcastingEnabled"] is False
     assert data["safety"]["moneyMovementEnabled"] is False
 
 

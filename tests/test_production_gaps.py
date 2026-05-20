@@ -59,6 +59,10 @@ def test_production_gap_matrix_classifies_real_local_pending_and_mock_lanes():
         "Do not send the large 0G transfer"
     )
     assert "connectedPeers" in by_id["node.0g_storage_soak"]["currentEvidence"]
+    assert "nodePiProofStatus" in by_id["node.0g_storage_soak"]["currentEvidence"]
+    assert "/api/0g/node-pi-readiness-proof" in by_id["node.0g_storage_soak"]["routes"]
+    assert "nodePiProofStatus" in by_id["node.pi_mesh"]["currentEvidence"]
+    assert "/api/0g/node-pi-readiness-proof" in by_id["node.pi_mesh"]["routes"]
     assert by_id["model.0g_private_computer"]["currentEvidence"]["paidInferenceEnabled"] is False
     assert by_id["model.0g_private_computer"]["currentEvidence"]["smokeInferenceExecuted"] is False
     assert "/api/0g/private-computer/smoke-preview" in by_id["model.0g_private_computer"]["routes"]

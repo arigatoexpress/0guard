@@ -19,6 +19,7 @@ curl -s http://127.0.0.1:8109/api/0g/storage-upload/manifest | python3 -m json.t
 curl -s -i http://127.0.0.1:8109/api/x402/dry-run/wallet-preflight
 curl -s http://127.0.0.1:8109/api/x402/settlement-proof | python3 -m json.tool
 curl -s http://127.0.0.1:8109/api/0g/private-computer/smoke-preview | python3 -m json.tool
+curl -s http://127.0.0.1:8109/api/0g/node-pi-readiness-proof | python3 -m json.tool
 ```
 
 The routes are read-only. They do not fetch live vendor feeds, call paid
@@ -84,6 +85,11 @@ deferred, and orders the next production gates.
 - RV 0G storage node soak: real local snapshot, process running, public storage
   and DA relay sockets restored, only the small 0.25 0G test funding observed,
   and no 100 0G transfer sent.
+- Node/Pi readiness proof rail: `/api/0g/node-pi-readiness-proof` verifies a
+  public-safe redacted operator artifact for the storage-node soak, peer
+  diagnostics, and Pi mesh. The recorder consumes already collected snapshots;
+  it does not SSH, probe the LAN, read keys, sign, broadcast, move funds, or
+  send messages.
 - Pi mesh: rvpi-a and rvpi-b are represented as a real edge snapshot, but the
   current LAN readback may be offline and must not be treated as production
   cluster proof.
@@ -118,6 +124,9 @@ The hard gates are deliberately explicit:
   depends on server-side env and sends remain disabled.
 - Storage node expansion: the funded soak still needs peer depth to clear before
   larger funding or production claims.
+- Node/Pi cluster proof: the recorder and route exist, but readiness remains
+  blocked until peer depth, sync posture, and both Pi heartbeat checks are green
+  in the redacted proof artifact.
 
 ## Real Data Plan
 
@@ -134,7 +143,9 @@ Priority order:
    then record only the tx hash, hashed payment header, response hash, and
    reviewed caps/terms metadata with
    `scripts/record_x402_base_sepolia_settlement_proof.py`.
-6. Run server-side 0G Private Computer inference only after Router funding,
+6. Record `docs/hackathon-0g/node-pi-readiness-proof.json` after the read-only
+   storage-node, peer-diagnostics, and Pi-mesh snapshots show green readiness.
+7. Run server-side 0G Private Computer inference only after Router funding,
    API-key handling, prompt scrubber, and budget caps are tested.
 
 ## Model And Training Boundary

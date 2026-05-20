@@ -13,6 +13,7 @@ from guard0.local_inference import (
     build_local_inference_mesh,
     build_x402_data_products,
 )
+from guard0.node_readiness_proof import build_node_pi_readiness_proof_status
 from guard0.osint import source_registry_public
 from guard0.peer_protection import (
     DEFAULT_PI_MESH_STATUS_PATH,
@@ -49,6 +50,7 @@ def build_production_gap_matrix() -> dict[str, Any]:
     source_registry = source_registry_public()
     readiness = production_readiness()
     storage = build_storage_node_status(live=False, status_file=DEFAULT_STORAGE_STATUS_PATH)
+    node_pi_proof = build_node_pi_readiness_proof_status()
     pi_mesh = build_pi_mesh_plan(status_file=DEFAULT_PI_MESH_STATUS_PATH)
     reputation_backfill = build_reputation_backfill_status(DEFAULT_REPUTATION_BACKFILL_PATH)
     private_computer = build_0g_private_computer_integration(live=False)
@@ -412,6 +414,10 @@ def build_production_gap_matrix() -> dict[str, Any]:
                 "logSyncHeight": (storage.get("storageRpc") or {}).get("logSyncHeight"),
                 "activeMinerBalanceOg": (storage.get("funding") or {}).get("activeMinerBalanceOg"),
                 "hundredOgTransferSent": (storage.get("funding") or {}).get("hundredOgTransferSent"),
+                "nodePiProofStatus": node_pi_proof.get("status"),
+                "nodePiProofVerified": node_pi_proof.get("verified"),
+                "nodePiProofReady": node_pi_proof.get("ready"),
+                "nodePiProofBlockers": node_pi_proof.get("blockers"),
             },
             "The node is a credible 0G operations wedge only after peer count, sync gap, and relay posture are stable.",
             "This is real local infrastructure data, but it is not yet green enough for larger funding claims.",
@@ -427,7 +433,7 @@ def build_production_gap_matrix() -> dict[str, Any]:
                 "Relay health is stable.",
                 "Only the expected small test funding is observed until expansion approval.",
             ],
-            ["/api/0g/storage-node/status?snapshot=1"],
+            ["/api/0g/storage-node/status?snapshot=1", "/api/0g/node-pi-readiness-proof"],
         ),
         _gap(
             "node.pi_mesh",
@@ -438,6 +444,10 @@ def build_production_gap_matrix() -> dict[str, Any]:
                 "status": (pi_mesh.get("readiness") or {}).get("status"),
                 "clusterReady": (pi_mesh.get("readiness") or {}).get("clusterReady"),
                 "blockers": (pi_mesh.get("readiness") or {}).get("blockers"),
+                "nodePiProofStatus": node_pi_proof.get("status"),
+                "nodePiProofVerified": node_pi_proof.get("verified"),
+                "nodePiProofReady": node_pi_proof.get("ready"),
+                "nodePiProofBlockers": node_pi_proof.get("blockers"),
             },
             "The Pi pair gives ZeroGuard cheap, resilient edge telemetry and proof-cache capacity.",
             "The snapshot is real local evidence, but production still needs service supervision and append-only export.",
@@ -452,7 +462,7 @@ def build_production_gap_matrix() -> dict[str, Any]:
                 "Mac/host app ingests the heartbeat without SSH scraping.",
                 "No secrets or raw chats are present in heartbeat files.",
             ],
-            ["/api/0g/pi-mesh?snapshot=1"],
+            ["/api/0g/pi-mesh?snapshot=1", "/api/0g/node-pi-readiness-proof"],
         ),
         _gap(
             "model.0g_private_computer",
