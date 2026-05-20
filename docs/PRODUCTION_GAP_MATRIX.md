@@ -61,8 +61,9 @@ deferred, and orders the next production gates.
   `supervisorInstalled`, and `supervisedFreshnessReady` at the top level so the
   hosted API can be checked without digging through nested manifests.
 - 0G Storage upload manifest: `/api/0g/storage-upload/manifest` hashes the
-  public-safe bundle, exposes the deterministic upload artifact hash, and
-  verifies local hash readback without uploading.
+  public-safe bundle, exposes the deterministic upload artifact hash, verifies
+  local hash readback without uploading, and now surfaces flat
+  `status`/`verified`/`proofPresent`/`bundleRoot` fields for public readback.
 - 0G Storage live-proof rail: `scripts/build_0g_storage_bundle.py` writes the
   exact public-safe JSON artifact for an operator-run SDK upload, and
   `scripts/record_0g_storage_live_proof.py` records the externally uploaded
@@ -118,8 +119,8 @@ The hard gates are deliberately explicit:
   dependency/address matching, retention rules, and vendor/legal review before
   customer compliance claims.
 - 0G Storage upload/readback: bundle manifest, deterministic upload artifact,
-  and offline proof recorder exist, but no live 0G Storage upload or gateway
-  proof has been recorded yet.
+  offline proof recorder, and recorder command template exist, but no live 0G
+  Storage upload or gateway proof has been recorded yet.
 - x402 paid routes: product manifest, dry-run HTTP-402 route, caps/terms, and
   settlement-proof recorder exist, but no Base Sepolia facilitator proof has
   been recorded in this runtime and no mainnet settlement is enabled.

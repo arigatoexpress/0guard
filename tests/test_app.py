@@ -421,6 +421,11 @@ def test_peer_protection_routes_are_no_send_and_no_broadcast(client):
     assert storage_manifest.status_code == 200
     storage_manifest_body = storage_manifest.get_json()
     assert storage_manifest_body["schema"] == "0guard.0g_storage_upload_manifest.v1"
+    assert storage_manifest_body["status"] == "pending_live_upload_readback"
+    assert storage_manifest_body["verified"] is False
+    assert storage_manifest_body["proofPresent"] is False
+    assert storage_manifest_body["bundleFileCount"] == storage_manifest_body["bundle"]["fileCount"]
+    assert storage_manifest_body["bundleRoot"] == storage_manifest_body["bundle"]["bundleRoot"]
     assert storage_manifest_body["uploadPlan"]["liveUploadPerformed"] is False
     assert storage_manifest_body["readbackVerifier"]["liveStorageGatewayReadback"] is False
     assert storage_manifest_body["safety"]["moneyMovementEnabled"] is False

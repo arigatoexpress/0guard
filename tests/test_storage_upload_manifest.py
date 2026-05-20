@@ -20,9 +20,18 @@ def test_storage_upload_manifest_hashes_public_safe_bundle(tmp_path):
     manifest = build_storage_upload_manifest([first, second])
 
     assert manifest["schema"] == "0guard.0g_storage_upload_manifest.v1"
+    assert manifest["status"] == "pending_live_upload_readback"
+    assert manifest["verified"] is False
+    assert manifest["proofPresent"] is False
+    assert manifest["bundleFileCount"] == 2
+    assert manifest["bundleRoot"] == manifest["bundle"]["bundleRoot"]
+    assert manifest["bundleArtifactSha256"] == manifest["bundleArtifact"]["artifactSha256"]
+    assert manifest["liveProofStatus"] == "missing"
+    assert manifest["liveProofVerified"] is False
     assert manifest["bundle"]["fileCount"] == 2
     assert manifest["bundle"]["bundleRoot"]
     assert manifest["uploadPlan"]["liveUploadPerformed"] is False
+    assert "record_0g_storage_live_proof.py" in manifest["uploadPlan"]["recordProofCommandTemplate"]
     assert manifest["readbackVerifier"]["allMatched"] is True
     assert manifest["rightsPolicy"]["rawPayloadResaleAllowed"] is False
     assert manifest["safety"]["liveStorageUpload"] is False
@@ -105,6 +114,13 @@ def test_verified_live_storage_proof_turns_manifest_upload_readback_green(tmp_pa
     manifest = build_storage_upload_manifest([first], live_proof_path=proof_path)
 
     assert manifest["liveProof"]["verified"] is True
+    assert manifest["status"] == "verified_live_readback"
+    assert manifest["verified"] is True
+    assert manifest["proofPresent"] is True
+    assert manifest["liveProofStatus"] == "verified"
+    assert manifest["liveProofVerified"] is True
+    assert manifest["liveUploadPerformed"] is True
+    assert manifest["liveStorageGatewayReadback"] is True
     assert manifest["uploadPlan"]["liveUploadPerformed"] is True
     assert manifest["readbackVerifier"]["liveStorageGatewayReadback"] is True
     assert manifest["safety"]["liveStorageUpload"] is True
