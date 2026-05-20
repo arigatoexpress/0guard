@@ -447,6 +447,10 @@ def test_peer_protection_routes_are_no_send_and_no_broadcast(client):
     assert private_smoke_body["sampleRequest"]["inferenceExecuted"] is False
     assert private_smoke_body["router"]["apiKeyReturned"] is False
     assert private_smoke_body["paidSmokeProof"]["status"] == "missing"
+    assert private_smoke_body["operatorProofPacket"]["status"] == (
+        "ready_for_external_paid_smoke_proof"
+    )
+    assert private_smoke_body["operatorProofPacket"]["apiKeyStoredInProof"] is False
     assert private_smoke_body["safety"]["networkCalls"] is False
     assert private_smoke_body["safety"]["transactionSigningEnabled"] is False
 
@@ -459,6 +463,11 @@ def test_peer_protection_routes_are_no_send_and_no_broadcast(client):
     )
     assert private_smoke_proof_body["status"] == "missing"
     assert private_smoke_proof_body["verified"] is False
+    assert (
+        "record_0g_private_compute_paid_smoke.py"
+        in private_smoke_proof_body["recordProofCommandTemplate"]
+    )
+    assert private_smoke_proof_body["operatorProofPacket"]["rawPromptRequired"] is False
     assert private_smoke_proof_body["safety"]["proofVerificationOnly"] is True
     assert private_smoke_proof_body["safety"]["paidInferenceByZeroGuard"] is False
     assert private_smoke_proof_body["safety"]["apiKeyReturned"] is False

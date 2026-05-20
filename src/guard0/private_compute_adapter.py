@@ -23,6 +23,9 @@ PRIVATE_COMPUTE_PAID_SMOKE_PROOF_SCHEMA = "0guard.0g_private_compute_paid_smoke_
 PRIVATE_COMPUTE_PAID_SMOKE_PROOF_VERIFICATION_SCHEMA = (
     "0guard.0g_private_compute_paid_smoke_proof_verification.v1"
 )
+PRIVATE_COMPUTE_PAID_SMOKE_OPERATOR_PACKET_SCHEMA = (
+    "0guard.0g_private_compute_paid_smoke_operator_proof_packet.v1"
+)
 PRIVATE_COMPUTE_FIRST_SMOKE_MAX_COST_USD = 0.25
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_PRIVATE_COMPUTE_PAID_SMOKE_PROOF_PATH = (
@@ -70,6 +73,9 @@ def build_private_compute_smoke_preview(
 
     paid_smoke_proof = build_private_compute_paid_smoke_proof_status(paid_smoke_proof_path)
     paid_smoke_verified = paid_smoke_proof.get("verified") is True
+    operator_packet = paid_smoke_proof.get("operatorProofPacket") or _paid_smoke_operator_packet(
+        paid_smoke_proof_path
+    )
     status = (
         "paid_smoke_complete"
         if paid_smoke_verified
@@ -100,6 +106,8 @@ def build_private_compute_smoke_preview(
         "promptScrub": scrub,
         "sampleRequest": _sample_request(scrub),
         "paidSmokeProof": paid_smoke_proof,
+        "operatorProofPacket": operator_packet,
+        "recordProofCommandTemplate": operator_packet["recordProofCommandTemplate"],
         "operatorNext": [
             "Store the Router key server-side only after funding a tiny reviewed Router budget.",
             "Set ZG_ALLOW_PAID_INFERENCE=1 and a positive ZG_0G_INFERENCE_BUDGET_USD only for a controlled smoke.",
@@ -345,6 +353,7 @@ def _paid_smoke_proof_status(
     *,
     proof_path: str | Path | None = None,
 ) -> dict[str, Any]:
+    operator_packet = _paid_smoke_operator_packet(proof_path)
     return {
         "schema": PRIVATE_COMPUTE_PAID_SMOKE_PROOF_VERIFICATION_SCHEMA,
         "generatedAt": _now(),
@@ -353,6 +362,8 @@ def _paid_smoke_proof_status(
         "proofPresent": False,
         "proofPath": _relative_repo_path(Path(proof_path)) if proof_path else "",
         "reason": reason,
+        "recordProofCommandTemplate": operator_packet["recordProofCommandTemplate"],
+        "operatorProofPacket": operator_packet,
         "safety": {
             **_safety(paid_inference_enabled=False, prompt_safe=True),
             "proofVerificationOnly": True,
@@ -364,6 +375,59 @@ def _paid_smoke_proof_status(
             "rawResponseReturned": False,
             "paymentHeadersStored": False,
         },
+    }
+
+
+def _paid_smoke_operator_packet(proof_path: str | Path | None) -> dict[str, Any]:
+    proof_file = (
+        _relative_repo_path(Path(proof_path))
+        if proof_path
+        else "docs/hackathon-0g/0g-private-compute-paid-smoke-proof.json"
+    )
+    command = " ".join(
+        [
+            "PYTHONPATH=src .venv/bin/python",
+            "scripts/record_0g_private_compute_paid_smoke.py",
+            "--prompt-hash <sha256-of-approved-scrubbed-prompt>",
+            "--request-hash <sha256-of-router-request-body>",
+            "--response-hash <sha256-of-model-response-body>",
+            "--router-receipt-hash <sha256-of-router-receipt-or-billing-metadata>",
+            f"--budget-usd {PRIVATE_COMPUTE_FIRST_SMOKE_MAX_COST_USD}",
+            "--cost-usd <observed-smoke-cost-usd>",
+            f"--out {proof_file}",
+            "--operator-reviewed-budget",
+            "--prompt-safe-for-inference",
+            "--paid-inference-performed-externally",
+            "--raw-prompt-not-stored",
+            "--raw-response-not-stored",
+            "--api-key-not-returned",
+        ]
+    )
+    return {
+        "schema": PRIVATE_COMPUTE_PAID_SMOKE_OPERATOR_PACKET_SCHEMA,
+        "status": "ready_for_external_paid_smoke_proof",
+        "proofPath": proof_file,
+        "recordProofCommandTemplate": command,
+        "model": MODEL_ID,
+        "routerBaseUrl": ROUTER_BASE_URL,
+        "chatCompletionsUrl": CHAT_COMPLETIONS_URL,
+        "maxFirstSmokeCostUsd": PRIVATE_COMPUTE_FIRST_SMOKE_MAX_COST_USD,
+        "promptHashRequired": True,
+        "requestHashRequired": True,
+        "responseHashRequired": True,
+        "routerReceiptHashRequired": True,
+        "operatorReviewedBudgetRequired": True,
+        "promptSafeForInferenceRequired": True,
+        "paidInferencePerformedExternallyRequired": True,
+        "rawPromptRequired": False,
+        "rawResponseRequired": False,
+        "apiKeyRequiredByRecorder": False,
+        "apiKeyStoredInProof": False,
+        "paidInferenceByZeroGuardEnabled": False,
+        "networkCallsByRecorder": False,
+        "transactionSigningByZeroGuardEnabled": False,
+        "transactionBroadcastingByZeroGuardEnabled": False,
+        "moneyMovementByZeroGuardEnabled": False,
     }
 
 
