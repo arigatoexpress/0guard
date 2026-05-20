@@ -33,7 +33,9 @@ can verify now from what remains before a production/mainnet launch.
   `contract_not_configured` honestly otherwise.
 - 0G Storage payload: Storage-ready receipts and deterministic root hashes are
   produced for matching threat intel. Evidence:
-  `zero_g.storage_receipt.root_hash` and `/api/0g/storage-upload/manifest`.
+  `zero_g.storage_receipt.root_hash` and `/api/0g/storage-upload/manifest`,
+  which exposes flat live-proof status fields plus the external recorder
+  command template.
 - 0G node telemetry: read-only DA/storage/alignment/validator/operator routes
   expose balance, relay, peer, sync, yield-source, and readiness posture without
   funding or signing. Evidence: `/api/0g/da-node/status`,

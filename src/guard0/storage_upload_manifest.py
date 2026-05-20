@@ -46,6 +46,7 @@ def build_storage_upload_manifest(
     )
     live_verified = live_proof["verified"] is True
     local_readback["liveStorageGatewayReadback"] = live_verified
+    artifact_sha = storage_bundle_sha256(paths)
     return {
         "schema": STORAGE_UPLOAD_MANIFEST_SCHEMA,
         "generatedAt": _now(),
@@ -54,6 +55,17 @@ def build_storage_upload_manifest(
             if live_verified
             else "public_safe_bundle_manifest_no_live_upload"
         ),
+        "status": "verified_live_readback" if live_verified else "pending_live_upload_readback",
+        "verified": live_verified,
+        "proofPresent": live_proof.get("proofPresent") is True,
+        "reason": live_proof.get("reason", ""),
+        "bundleFileCount": len(existing_files),
+        "bundleRoot": bundle_root,
+        "bundleArtifactSha256": artifact_sha,
+        "liveProofStatus": live_proof.get("status"),
+        "liveProofVerified": live_verified,
+        "liveUploadPerformed": live_verified,
+        "liveStorageGatewayReadback": live_verified,
         "bundle": {
             "id": "zeroguard-public-safe-derived-bundle",
             "fileCount": len(existing_files),
@@ -70,7 +82,7 @@ def build_storage_upload_manifest(
                 "--out dist/0g-storage/zeroguard-public-safe-derived-bundle.json"
             ),
             "defaultOutputPath": "dist/0g-storage/zeroguard-public-safe-derived-bundle.json",
-            "artifactSha256": storage_bundle_sha256(paths),
+            "artifactSha256": artifact_sha,
             "rawPayloadResaleAllowed": False,
         },
         "uploadPlan": {
@@ -90,6 +102,16 @@ def build_storage_upload_manifest(
                 "upload budget and rollback plan",
                 "download/readback proof saved with content hash equality",
             ],
+            "recordProofCommandTemplate": (
+                "PYTHONPATH=src .venv/bin/python scripts/record_0g_storage_live_proof.py "
+                "--bundle-file dist/0g-storage/zeroguard-public-safe-derived-bundle.json "
+                "--downloaded-file <downloaded-readback.json> "
+                "--root-hash <0g-storage-root-hash> "
+                "--tx-hash <upload-transaction-hash> "
+                "--indexer-url <0g-storage-indexer-url> "
+                "--gateway-url <download-readback-url> "
+                "--operator-approved-public-safe"
+            ),
         },
         "readbackVerifier": local_readback,
         "liveProof": live_proof,
