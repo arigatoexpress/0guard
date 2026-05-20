@@ -61,9 +61,10 @@ can verify now from what remains before a production/mainnet launch.
   `data/backfill/reputation_features/phishdestroy/latest.json`.
 - x402 dry-run and proof rail: wallet-preflight product route returns HTTP-402
   metadata and accepts only a fixture payment header without facilitator calls
-  or settlement. The settlement-policy route now exposes caps/terms plus proof
-  status, and `/api/x402/settlement-proof` verifies an externally performed
-  Base Sepolia payment using only hashes and public receipt metadata.
+  or settlement. The settlement-policy route now exposes caps/terms hashes,
+  proof status, and the external recorder command template, while
+  `/api/x402/settlement-proof` verifies an externally performed Base Sepolia
+  payment using only hashes and public receipt metadata.
   Evidence: `/api/x402/dry-run/wallet-preflight`,
   `/api/x402/settlement-policy`, and `/api/x402/settlement-proof`.
 - Telegram Mira preview: local opt-in and response preview exist without

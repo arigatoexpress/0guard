@@ -158,6 +158,20 @@ def build_x402_settlement_policy() -> dict[str, Any]:
     testnet_only = not _truthy_env("ZG_X402_ALLOW_MAINNET")
     caps = _spend_caps()
     terms = _terms()
+    payment_requirement = {
+        "route": "/x402/v1/wallet-preflight",
+        "apiRoute": "/api/x402/dry-run/wallet-preflight",
+        "network": "base-sepolia",
+        "networkCaip2": "eip155:84532",
+        "asset": "USDC",
+        "decimals": 6,
+        "maxAmountRequired": "10000",
+        "displayPrice": "0.01 USDC",
+        "payTo": pay_to,
+        "payToConfigured": bool(pay_to),
+        "settlementMode": "testnet_first_when_enabled",
+        "scheme": "exact",
+    }
     settlement_proof = build_x402_settlement_proof_status()
     settlement_proof_verified = settlement_proof.get("verified") is True
     blockers = []
@@ -181,22 +195,26 @@ def build_x402_settlement_policy() -> dict[str, Any]:
             else "blocked_before_settlement"
         ),
         "blockers": blockers,
-        "paymentRequirement": {
-            "route": "/x402/v1/wallet-preflight",
-            "apiRoute": "/api/x402/dry-run/wallet-preflight",
-            "network": "base-sepolia",
-            "networkCaip2": "eip155:84532",
-            "asset": "USDC",
-            "decimals": 6,
-            "maxAmountRequired": "10000",
-            "displayPrice": "0.01 USDC",
-            "payTo": pay_to,
-            "payToConfigured": bool(pay_to),
-            "settlementMode": "testnet_first_when_enabled",
-            "scheme": "exact",
-        },
+        "paymentRoute": payment_requirement["route"],
+        "network": payment_requirement["network"],
+        "networkCaip2": payment_requirement["networkCaip2"],
+        "asset": payment_requirement["asset"],
+        "amountAtomic": payment_requirement["maxAmountRequired"],
+        "displayPrice": payment_requirement["displayPrice"],
+        "payTo": pay_to,
+        "payToConfigured": bool(pay_to),
+        "settlementProofStatus": settlement_proof.get("status"),
+        "settlementProofVerified": settlement_proof_verified,
+        "settlementProofPresent": settlement_proof.get("proofPresent") is True,
+        "paymentRequirement": payment_requirement,
         "spendCaps": caps,
         "terms": terms,
+        "operatorProofPacket": _operator_proof_packet(
+            payment_requirement=payment_requirement,
+            caps=caps,
+            terms=terms,
+            settlement_proof=settlement_proof,
+        ),
         "facilitators": [
             {
                 "id": "x402_org_testnet",
@@ -481,6 +499,10 @@ def _settlement_proof_status(
         "proofPresent": False,
         "proofPath": str(proof_path) if proof_path else "",
         "reason": reason,
+        "recordProofCommandTemplate": _record_settlement_proof_command(
+            pay_to=_public_pay_to_address(),
+            amount_atomic=_payment_requirement_for_policy()["maxAmountRequired"],
+        ),
         "safety": {
             **_safety(),
             "settlementProofVerificationOnly": True,
@@ -516,6 +538,60 @@ def _hash_text(value: str) -> str:
 def _hash_json(value: Any) -> str:
     encoded = json.dumps(value, sort_keys=True, separators=(",", ":"), default=str).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
+
+
+def _operator_proof_packet(
+    *,
+    payment_requirement: dict[str, Any],
+    caps: dict[str, Any],
+    terms: dict[str, Any],
+    settlement_proof: dict[str, Any],
+) -> dict[str, Any]:
+    pay_to = str(payment_requirement.get("payTo") or "")
+    amount_atomic = str(payment_requirement.get("maxAmountRequired") or "")
+    return {
+        "schema": "0guard.x402_base_sepolia_operator_proof_packet.v1",
+        "status": (
+            "verified"
+            if settlement_proof.get("verified") is True
+            else "ready_for_external_base_sepolia_proof"
+            if pay_to
+            else "blocked_until_pay_to_configured"
+        ),
+        "proofPath": str(DEFAULT_X402_SETTLEMENT_PROOF_PATH.relative_to(REPO_ROOT)),
+        "recordProofCommandTemplate": _record_settlement_proof_command(
+            pay_to=pay_to,
+            amount_atomic=amount_atomic,
+        ),
+        "paymentRequirementHash": _hash_json(payment_requirement),
+        "spendCapsHash": _hash_json(caps),
+        "termsHash": _hash_json(terms),
+        "rawPaymentHeaderRequired": False,
+        "rawPaymentHeaderStored": False,
+        "paymentHeaderHashRequired": True,
+        "responseHashRequired": True,
+        "operatorReviewedCapsAndTermsRequired": True,
+        "settlementPerformedExternallyRequired": True,
+        "settlementProofVerified": settlement_proof.get("verified") is True,
+        "settlementProofStatus": settlement_proof.get("status"),
+    }
+
+
+def _record_settlement_proof_command(*, pay_to: str, amount_atomic: str) -> str:
+    reviewed_pay_to = pay_to or "<reviewed-pay-to-address>"
+    reviewed_amount = amount_atomic or "10000"
+    return (
+        "PYTHONPATH=src .venv/bin/python "
+        "scripts/record_x402_base_sepolia_settlement_proof.py "
+        "--tx-hash <base-sepolia-settlement-tx-hash> "
+        "--payer <throwaway-buyer-wallet-address> "
+        f"--pay-to {reviewed_pay_to} "
+        "--payment-header-hash <sha256-of-x-payment-header> "
+        "--response-hash <sha256-of-derived-paid-response> "
+        f"--amount-atomic {reviewed_amount} "
+        "--operator-reviewed-caps-and-terms "
+        "--settlement-performed-externally"
+    )
 
 
 def _now() -> str:

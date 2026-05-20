@@ -76,8 +76,9 @@ deferred, and orders the next production gates.
 - x402 dry-run route: `/api/x402/dry-run/wallet-preflight` returns stable
   HTTP-402 metadata and accepts only a fixture header with settlement disabled.
 - x402 settlement-proof rail: `/api/x402/settlement-policy` now includes
-  proof status, and `/api/x402/settlement-proof` verifies an externally
-  performed Base Sepolia payment using only public receipt fields and hashes.
+  proof status, caps/terms hashes, and the external proof recorder command
+  template, while `/api/x402/settlement-proof` verifies an externally performed
+  Base Sepolia payment using only public receipt fields and hashes.
   `scripts/record_x402_base_sepolia_settlement_proof.py` writes the artifact
   only after caps/terms acknowledgement and never stores raw payment headers.
 - Wallet-provider external proof rail: `/api/wallet/provider-proof` verifies a
@@ -122,8 +123,9 @@ The hard gates are deliberately explicit:
   offline proof recorder, and recorder command template exist, but no live 0G
   Storage upload or gateway proof has been recorded yet.
 - x402 paid routes: product manifest, dry-run HTTP-402 route, caps/terms, and
-  settlement-proof recorder exist, but no Base Sepolia facilitator proof has
-  been recorded in this runtime and no mainnet settlement is enabled.
+  settlement-proof recorder/operator packet exist, but no Base Sepolia
+  facilitator proof has been recorded in this runtime and no mainnet settlement
+  is enabled.
 - Wallet-provider protection: hosted guard API, SDK wrapper, and external dapp
   exist, but no real extension/throwaway-wallet proof artifact has been
   recorded yet.

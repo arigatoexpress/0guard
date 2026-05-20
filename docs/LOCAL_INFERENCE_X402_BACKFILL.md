@@ -11,7 +11,7 @@ safety boundary.
 | Local inference mesh | `/api/local-inference/status` | Read-only live probe when `?live=1`; no prompts. |
 | Telegram digest | `/api/telegram/local-inference-preview` | Preview-only message body; no Telegram send. |
 | 0G Private Computer smoke | `/api/0g/private-computer/smoke-preview`, `/api/0g/private-computer/smoke-proof` | Prompt scrub and no-inference request contract plus proof verification for one externally performed paid smoke; paid calls remain blocked by env/key/budget gates. |
-| x402 data products | `/api/x402/data-products`, `/api/x402/dry-run/wallet-preflight`, `/api/x402/settlement-policy`, `/api/x402/settlement-proof` | Product manifest, dry-run HTTP 402, caps/terms, and external proof verification; no settlement from the workbench. |
+| x402 data products | `/api/x402/data-products`, `/api/x402/dry-run/wallet-preflight`, `/api/x402/settlement-policy`, `/api/x402/settlement-proof` | Product manifest, dry-run HTTP 402, caps/terms hashes, external proof packet, and proof verification; no settlement from the workbench. |
 | Historical backfill | `/api/data/backfill-plan`, `/api/reputation/backfill/status` | Backfill schema plus first derived reputation artifact. |
 | Production gap matrix | `/api/production/gaps` | Real/local/source-ready/mock classifier; no live fetch. |
 | Model training roadmap | `/api/model/training-roadmap` | Eval-first 0GM/local model data plan; no training run. |
@@ -73,7 +73,10 @@ Preparation order:
 5. Record only public receipt metadata with
    `scripts/record_x402_base_sepolia_settlement_proof.py`; never store raw
    `X-PAYMENT` headers, signatures, or private keys.
-6. Only then consider mainnet settlement for a single low-cost route.
+6. Use `/api/x402/settlement-policy` as the operator packet: it exposes the
+   payment requirement, caps hash, terms hash, proof status, and recorder
+   command template without calling a facilitator.
+7. Only then consider mainnet settlement for a single low-cost route.
 
 Sources:
 
