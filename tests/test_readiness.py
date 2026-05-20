@@ -94,6 +94,73 @@ def test_production_readiness_marks_stale_or_unsupervised_backfill_review(monkey
     assert checks["reputation_backfill_artifact"]["detail"]["supervisorInstalled"] is False
 
 
+def test_production_readiness_prefers_packaged_node_pi_proof(monkeypatch):
+    payloads = _blocked_gate_payloads()
+    payloads["pi_mesh"]["readiness"] = {
+        "clusterReady": False,
+        "blockers": ["run_rv_pi_mesh_snapshot"],
+    }
+    payloads["node_pi_proof"] = {
+        "status": "blocked",
+        "verified": False,
+        "proofPresent": True,
+        "recordedAt": "2026-05-20T06:32:58+00:00",
+        "blockers": ["connected_peers_below_target_8"],
+        "checks": {
+            "storageSnapshotPresent": True,
+            "storageRpcOk": True,
+            "storageProcessRunning": True,
+            "storageRelayTcpOpen": True,
+            "storagePeerDepthReady": False,
+            "storageSyncReady": True,
+            "onlyPriorTestFundingObserved": True,
+            "hundredOgTransferSent": True,
+        },
+        "storageNode": {
+            "snapshotPresent": True,
+            "zgsRunning": True,
+            "rpcOk": True,
+            "relayTcpOpen": True,
+            "connectedPeers": 0,
+            "targetPeers": 8,
+            "syncGapBlocks": 1,
+            "activeMinerBalanceOg": 0.25,
+            "onlyPriorTestFundingObserved": True,
+            "hundredOgTransferSent": False,
+        },
+        "peerDiagnostics": {
+            "connectedPeers": 0,
+            "targetPeers": 8,
+            "peerDepthReady": False,
+            "hypothesisIds": ["shallow_peer_discovery"],
+        },
+        "piMesh": {
+            "snapshotPresent": True,
+            "clusterReady": True,
+            "blockers": [],
+            "primaryReachable": True,
+            "peerEthernetReachable": True,
+            "edgeApiReady": True,
+        },
+        "safety": {"telegramSendsEnabled": False},
+    }
+    monkeypatch.setattr(readiness_module, "_production_gate_payloads", lambda: payloads)
+
+    result = production_readiness()
+    checks = {check["id"]: check for check in result["checks"]}
+
+    assert checks["pi_mesh_cluster"]["status"] == "ok"
+    assert checks["pi_mesh_cluster"]["detail"]["mode"] == "node_pi_readiness_proof"
+    assert checks["storage_node_funded_soak"]["status"] == "review"
+    assert checks["storage_node_funded_soak"]["detail"]["mode"] == "node_pi_readiness_proof"
+    assert checks["storage_node_funded_soak"]["detail"]["connectedPeers"] == 0
+    assert checks["storage_node_funded_soak"]["detail"]["targetPeers"] == 8
+    assert "connected_peers_below_target_8" in checks["storage_node_funded_soak"]["detail"]["blockedBy"]
+    assert "pi_mesh_cluster" not in result["hardGates"]
+    assert "storage_node_funded_soak" in result["hardGates"]
+    assert result["nodePiProofStatus"] == "blocked"
+
+
 def test_production_readiness_detects_file_backed_telegram_store(monkeypatch, tmp_path):
     monkeypatch.setattr(readiness_module, "_production_gate_payloads", _blocked_gate_payloads)
     monkeypatch.setenv("TELEGRAM_OPT_IN_STORE_PATH", str(tmp_path / "telegram-opt-ins.json"))

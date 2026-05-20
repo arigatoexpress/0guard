@@ -29,6 +29,7 @@ def production_readiness() -> dict[str, Any]:
     production_gates = _production_gate_payloads()
     storage = production_gates["storage"]
     pi_mesh = production_gates["pi_mesh"]
+    node_pi_proof = production_gates.get("node_pi_proof") or {}
     reputation_backfill = production_gates["reputation_backfill"]
     private_compute_smoke = production_gates["private_compute_smoke"]
     storage_upload = production_gates["storage_upload"]
@@ -154,23 +155,15 @@ def production_readiness() -> dict[str, Any]:
         ),
         _check(
             "storage_node_funded_soak",
-            "ok" if _storage_soak_ready(storage) else "review",
+            "ok" if _storage_soak_ready(storage, node_pi_proof) else "review",
             "RV Windows 0G mainnet storage node must be synced, peered, relayed, and funded only within the reviewed budget.",
-            _storage_soak_detail(storage),
+            _storage_soak_detail(storage, node_pi_proof),
         ),
         _check(
             "pi_mesh_cluster",
-            "ok" if (pi_mesh.get("readiness") or {}).get("clusterReady") else "review",
+            "ok" if _pi_mesh_cluster_ready(pi_mesh, node_pi_proof) else "review",
             "Raspberry Pi sentinels should be reachable over the private Ethernet mesh without secrets or sends.",
-            {
-                "mode": pi_mesh.get("mode"),
-                "clusterReady": (pi_mesh.get("readiness") or {}).get("clusterReady"),
-                "blockers": (pi_mesh.get("readiness") or {}).get("blockers"),
-                "nodeCount": len(pi_mesh.get("observedNodes") or []),
-                "telegramSendsEnabled": (pi_mesh.get("safety") or {}).get(
-                    "telegramSendsEnabled"
-                ),
-            },
+            _pi_mesh_cluster_detail(pi_mesh, node_pi_proof),
         ),
         _check(
             "telegram_live_identity",
@@ -358,7 +351,7 @@ def production_readiness() -> dict[str, Any]:
                 "id": "storage_node_expansion_watch",
                 "why": "The storage node is nearly synced but still below the peer target for larger mainnet expansion.",
                 "requiresSecret": False,
-                "blockedBy": (storage.get("readiness") or {}).get("blockedBy") or [],
+                "blockedBy": _storage_soak_blockers(storage, node_pi_proof),
             },
             {
                 "rank": 4,
@@ -372,6 +365,8 @@ def production_readiness() -> dict[str, Any]:
                 "requiresSecret": False,
             },
         ],
+        "nodePiProofStatus": node_pi_proof.get("status"),
+        "nodePiProofRecordedAt": node_pi_proof.get("recordedAt"),
         "safety": _safety(),
     }
 
@@ -395,6 +390,7 @@ def _production_gate_payloads() -> dict[str, dict[str, Any]]:
     # Keep imports local so the broad production matrix can import readiness without
     # getting tangled in an eager circular import.
     from guard0.da_node import DEFAULT_STORAGE_STATUS_PATH, build_storage_node_status
+    from guard0.node_readiness_proof import build_node_pi_readiness_proof_status
     from guard0.peer_protection import DEFAULT_PI_MESH_STATUS_PATH, build_pi_mesh_plan
     from guard0.private_compute_adapter import build_private_compute_smoke_preview
     from guard0.reputation_backfill import (
@@ -416,6 +412,10 @@ def _production_gate_payloads() -> dict[str, dict[str, Any]]:
         "pi_mesh": _safe_payload(
             "pi_mesh_status",
             lambda: build_pi_mesh_plan(status_file=DEFAULT_PI_MESH_STATUS_PATH),
+        ),
+        "node_pi_proof": _safe_payload(
+            "node_pi_readiness_proof_status",
+            build_node_pi_readiness_proof_status,
         ),
         "reputation_backfill": _safe_payload(
             "reputation_backfill_status",
@@ -450,7 +450,25 @@ def _safe_payload(name: str, builder: Any) -> dict[str, Any]:
     return payload if isinstance(payload, dict) else {"status": "invalid_payload", "source": name}
 
 
-def _storage_soak_ready(storage: dict[str, Any]) -> bool:
+def _storage_soak_ready(
+    storage: dict[str, Any],
+    node_pi_proof: dict[str, Any] | None = None,
+) -> bool:
+    proof_checks = _node_pi_storage_checks(node_pi_proof)
+    if proof_checks:
+        return all(
+            proof_checks.get(key) is True
+            for key in (
+                "storageSnapshotPresent",
+                "storageRpcOk",
+                "storageProcessRunning",
+                "storageRelayTcpOpen",
+                "storagePeerDepthReady",
+                "storageSyncReady",
+                "onlyPriorTestFundingObserved",
+                "hundredOgTransferSent",
+            )
+        )
     readiness = storage.get("readiness") or {}
     funded = storage.get("fundedSoak") or {}
     return (
@@ -461,7 +479,37 @@ def _storage_soak_ready(storage: dict[str, Any]) -> bool:
     )
 
 
-def _storage_soak_detail(storage: dict[str, Any]) -> dict[str, Any]:
+def _storage_soak_detail(
+    storage: dict[str, Any],
+    node_pi_proof: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    proof_storage = _node_pi_storage_status(node_pi_proof)
+    if proof_storage:
+        peer = (node_pi_proof or {}).get("peerDiagnostics") or {}
+        return {
+            "mode": "node_pi_readiness_proof",
+            "status": (node_pi_proof or {}).get("status"),
+            "proofPresent": (node_pi_proof or {}).get("proofPresent"),
+            "proofRecordedAt": (node_pi_proof or {}).get("recordedAt"),
+            "processStatus": "running" if proof_storage.get("zgsRunning") else "not_running",
+            "blockedBy": _storage_soak_blockers(storage, node_pi_proof),
+            "connectedPeers": proof_storage.get("connectedPeers"),
+            "targetPeers": proof_storage.get("targetPeers"),
+            "peerDepthReady": peer.get("peerDepthReady"),
+            "peerHypothesisIds": peer.get("hypothesisIds") or [],
+            "logSyncHeight": None,
+            "latestMainnetBlock": None,
+            "syncGapBlocks": proof_storage.get("syncGapBlocks"),
+            "nextTxSeq": None,
+            "dbSizeHuman": None,
+            "activeMinerAddress": None,
+            "activeMinerBalanceOg": proof_storage.get("activeMinerBalanceOg"),
+            "onlyPriorTestFundingObserved": proof_storage.get("onlyPriorTestFundingObserved"),
+            "hundredOgTransferSent": proof_storage.get("hundredOgTransferSent"),
+            "largeTransferDetected": None,
+            "largeFundingExpansionReady": _storage_soak_ready(storage, node_pi_proof),
+            "mainnetFundingRecommended": False,
+        }
     readiness = storage.get("readiness") or {}
     sync = storage.get("sync") or {}
     funding = storage.get("fundingSummary") or storage.get("funding") or {}
@@ -484,6 +532,86 @@ def _storage_soak_detail(storage: dict[str, Any]) -> dict[str, Any]:
         "largeFundingExpansionReady": readiness.get("largeFundingExpansionReady"),
         "mainnetFundingRecommended": funding.get("mainnetFundingRecommended"),
     }
+
+
+def _storage_soak_blockers(
+    storage: dict[str, Any],
+    node_pi_proof: dict[str, Any] | None = None,
+) -> list[str]:
+    proof_storage = _node_pi_storage_status(node_pi_proof)
+    if proof_storage:
+        blockers = (node_pi_proof or {}).get("blockers") or proof_storage.get("blockers") or []
+        return [str(item) for item in blockers]
+    readiness = storage.get("readiness") or {}
+    return [str(item) for item in readiness.get("blockedBy") or storage.get("blockers") or []]
+
+
+def _pi_mesh_cluster_ready(
+    pi_mesh: dict[str, Any],
+    node_pi_proof: dict[str, Any] | None = None,
+) -> bool:
+    proof_pi = _node_pi_mesh_status(node_pi_proof)
+    if proof_pi:
+        return proof_pi.get("clusterReady") is True
+    return (pi_mesh.get("readiness") or {}).get("clusterReady") is True
+
+
+def _pi_mesh_cluster_detail(
+    pi_mesh: dict[str, Any],
+    node_pi_proof: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    proof_pi = _node_pi_mesh_status(node_pi_proof)
+    if proof_pi:
+        return {
+            "mode": "node_pi_readiness_proof",
+            "proofPresent": (node_pi_proof or {}).get("proofPresent"),
+            "proofRecordedAt": (node_pi_proof or {}).get("recordedAt"),
+            "clusterReady": proof_pi.get("clusterReady"),
+            "blockers": proof_pi.get("blockers") or [],
+            "primaryReachable": proof_pi.get("primaryReachable"),
+            "peerEthernetReachable": proof_pi.get("peerEthernetReachable"),
+            "edgeApiReady": proof_pi.get("edgeApiReady"),
+            "nodeCount": 2 if proof_pi.get("clusterReady") is True else None,
+            "telegramSendsEnabled": (node_pi_proof or {}).get("safety", {}).get(
+                "telegramSendsEnabled"
+            ),
+        }
+    return {
+        "mode": pi_mesh.get("mode"),
+        "clusterReady": (pi_mesh.get("readiness") or {}).get("clusterReady"),
+        "blockers": (pi_mesh.get("readiness") or {}).get("blockers"),
+        "nodeCount": len(pi_mesh.get("observedNodes") or []),
+        "telegramSendsEnabled": (pi_mesh.get("safety") or {}).get("telegramSendsEnabled"),
+    }
+
+
+def _node_pi_storage_checks(node_pi_proof: dict[str, Any] | None) -> dict[str, Any]:
+    if not _node_pi_proof_present(node_pi_proof):
+        return {}
+    checks = (node_pi_proof or {}).get("checks") or {}
+    return checks if isinstance(checks, dict) else {}
+
+
+def _node_pi_storage_status(node_pi_proof: dict[str, Any] | None) -> dict[str, Any]:
+    if not _node_pi_proof_present(node_pi_proof):
+        return {}
+    storage = (node_pi_proof or {}).get("storageNode") or {}
+    if not isinstance(storage, dict) or storage.get("snapshotPresent") is not True:
+        return {}
+    return storage
+
+
+def _node_pi_mesh_status(node_pi_proof: dict[str, Any] | None) -> dict[str, Any]:
+    if not _node_pi_proof_present(node_pi_proof):
+        return {}
+    pi_mesh = (node_pi_proof or {}).get("piMesh") or {}
+    if not isinstance(pi_mesh, dict) or pi_mesh.get("snapshotPresent") is not True:
+        return {}
+    return pi_mesh
+
+
+def _node_pi_proof_present(node_pi_proof: dict[str, Any] | None) -> bool:
+    return isinstance(node_pi_proof, dict) and node_pi_proof.get("proofPresent") is True
 
 
 def _telegram_identity_configured() -> bool:
