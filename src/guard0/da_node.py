@@ -16,6 +16,7 @@ DA_NODE_STATUS_SCHEMA = "0guard.0g_da_node_status.v1"
 DA_NODE_TELEGRAM_PREVIEW_SCHEMA = "0guard.telegram_da_node_preview.v1"
 STORAGE_NODE_STATUS_SCHEMA = "0guard.0g_storage_node_status.v1"
 STORAGE_NODE_TELEGRAM_PREVIEW_SCHEMA = "0guard.telegram_storage_node_preview.v1"
+NODE_PI_STORAGE_SNAPSHOT_SCHEMA = "0guard.node_pi_storage_snapshot_from_proof.v1"
 DEFAULT_DA_RPC = "https://evmrpc-testnet.0g.ai"
 DEFAULT_DA_CHAIN_ID = 16602
 DEFAULT_DA_ENTRANCE_ADDRESS = "0x857C0A28A8634614BB2C96039Cf4a20AFF709Aa9"
@@ -30,6 +31,7 @@ DEFAULT_STORAGE_FLOW_ADDRESS = "0x62d4144db0f0a6fbbaeb6296c785c71b3d57c526"
 DEFAULT_STORAGE_SOCKET = "35.254.123.37:1234"
 DEFAULT_STORAGE_MIN_PEERS = 1
 DEFAULT_STORAGE_STATUS_PATH = "content/rv_0g_storage_soak.local.json"
+DEFAULT_NODE_PI_READINESS_PROOF_PATH = "docs/hackathon-0g/node-pi-readiness-proof.json"
 
 EVM_ADDRESS_RE = re.compile(r"^0x[a-fA-F0-9]{40}$")
 SENSITIVE_KEY_RE = re.compile(r"(private|secret|mnemonic|token|password)", re.IGNORECASE)
@@ -120,6 +122,8 @@ def build_storage_node_status(
 
     cfg = _storage_node_config(status_file=status_file)
     file_status = _load_status_file(cfg["statusFile"]) if cfg["statusFile"] else None
+    if cfg["statusFile"] and not _storage_snapshot_loaded(file_status):
+        file_status = _node_pi_storage_snapshot_from_proof() or file_status
     started = time.perf_counter()
     rpc_status = _storage_rpc_status_unknown(cfg)
 
@@ -445,6 +449,7 @@ def _storage_readiness(
     if (
         rpc_status.get("connectedPeers") is not None
         and rpc_status["connectedPeers"] < cfg["minimumPeers"]
+        and "connected_peers_below_target_8" not in expansion_blockers
     ):
         blockers.append("insufficient_connected_peers")
     if expansion_blockers:
@@ -651,6 +656,11 @@ def _storage_rpc_status_from_file(
         return None
     identity = storage_rpc.get("networkIdentity") or {}
     status = storage_rpc.get("status") or "ok"
+    source = (
+        "node_pi_readiness_proof"
+        if file_status.get("schema") == NODE_PI_STORAGE_SNAPSHOT_SCHEMA
+        else "rv_soak_snapshot_file"
+    )
     return {
         "status": status,
         "rpc": cfg["rpc"],
@@ -674,12 +684,12 @@ def _storage_rpc_status_from_file(
         ),
         "latencyMs": storage_rpc.get("latencyMs"),
         "error": storage_rpc.get("error"),
-        "source": "rv_soak_snapshot_file",
+        "source": source,
     }
 
 
 def _storage_funded_soak_summary(file_status: dict[str, Any] | None) -> dict[str, Any]:
-    if not isinstance(file_status, dict) or file_status.get("schema") != "0guard.rv_0g_storage_soak_snapshot.v1":
+    if not _storage_snapshot_loaded(file_status):
         return {
             "status": "not_loaded",
             "activeMinerKeyPresent": False,
@@ -716,6 +726,101 @@ def _storage_funded_soak_summary(file_status: dict[str, Any] | None) -> dict[str
             "tcp34000": public_relay.get("tcp34000"),
             "tcp5678": public_relay.get("tcp5678"),
         },
+    }
+
+
+def _storage_snapshot_loaded(file_status: dict[str, Any] | None) -> bool:
+    return isinstance(file_status, dict) and file_status.get("schema") in {
+        "0guard.rv_0g_storage_soak_snapshot.v1",
+        NODE_PI_STORAGE_SNAPSHOT_SCHEMA,
+    }
+
+
+def _node_pi_storage_snapshot_from_proof() -> dict[str, Any] | None:
+    try:
+        proof = json.loads(Path(DEFAULT_NODE_PI_READINESS_PROOF_PATH).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(proof, dict) or proof.get("schema") != "0guard.node_pi_readiness_proof.v1":
+        return None
+    storage = proof.get("storageNode") if isinstance(proof.get("storageNode"), dict) else {}
+    if storage.get("snapshotPresent") is not True:
+        return None
+    safety = proof.get("safety") if isinstance(proof.get("safety"), dict) else {}
+    if any(
+        safety.get(key) is not False
+        for key in (
+            "privateKeysRead",
+            "privateKeysReturned",
+            "transactionSigningEnabled",
+            "transactionBroadcastingEnabled",
+            "moneyMovementEnabled",
+            "telegramSendsEnabled",
+        )
+    ):
+        return None
+    blockers = [str(item) for item in proof.get("blockers") or storage.get("blockers") or []]
+    connected_peers = storage.get("connectedPeers")
+    sync_gap = storage.get("syncGapBlocks")
+    target_peers = storage.get("targetPeers") or 8
+    max_sync_gap = storage.get("maxSyncGapBlocks") or 8
+    expansion_ready = (
+        isinstance(connected_peers, int)
+        and connected_peers >= int(target_peers)
+        and isinstance(sync_gap, int)
+        and sync_gap <= int(max_sync_gap)
+        and not blockers
+    )
+    return {
+        "schema": NODE_PI_STORAGE_SNAPSHOT_SCHEMA,
+        "generatedAt": storage.get("snapshotGeneratedAt") or proof.get("recordedAt"),
+        "sourceProof": {
+            "schema": proof.get("schema"),
+            "recordedAt": proof.get("recordedAt"),
+            "status": proof.get("status"),
+            "verified": proof.get("verified"),
+            "blockers": blockers,
+        },
+        "storageRpc": {
+            "status": "ok" if storage.get("rpcOk") is True else "degraded",
+            "connectedPeers": connected_peers,
+            "logSyncHeight": storage.get("logSyncHeight"),
+            "logSyncBlock": storage.get("logSyncBlock"),
+            "nextTxSeq": storage.get("nextTxSeq"),
+            "networkIdentity": {
+                "chainId": DEFAULT_STORAGE_CHAIN_ID,
+                "flowAddress": DEFAULT_STORAGE_FLOW_ADDRESS,
+            },
+            "shardConfig": storage.get("shardConfig"),
+        },
+        "health": {
+            "zgsRunning": storage.get("zgsRunning"),
+            "relayTcpOpen": storage.get("relayTcpOpen"),
+            "rpcOk": storage.get("rpcOk"),
+            "expansionReady": expansion_ready,
+            "expansionBlockers": blockers,
+        },
+        "sync": {
+            "latestMainnetBlock": storage.get("latestMainnetBlock"),
+            "logSyncHeight": storage.get("logSyncHeight"),
+            "syncGapBlocks": sync_gap,
+            "nextTxSeq": storage.get("nextTxSeq"),
+        },
+        "disk": {"dbSizeHuman": storage.get("dbSizeHuman")},
+        "config": {
+            "fundedProofPresent": True,
+            "privateKeyMaterialReturned": False,
+        },
+        "funding": {
+            "activeMinerAddress": storage.get("activeMinerAddress"),
+            "activeMinerBalanceOg": storage.get("activeMinerBalanceOg"),
+            "onlyPriorTestFundingObserved": storage.get("onlyPriorTestFundingObserved"),
+            "hundredOgTransferSent": storage.get("hundredOgTransferSent"),
+            "largeTransferDetected": storage.get("largeTransferDetected"),
+        },
+        "status": "loaded",
+        "safe": True,
+        "telegram_send": False,
     }
 
 
@@ -793,6 +898,8 @@ def _storage_mode(
     rpc_status: dict[str, Any],
     file_status: dict[str, Any] | None,
 ) -> str:
+    if rpc_status.get("source") == "node_pi_readiness_proof":
+        return "node_pi_readiness_proof" if not live else "live_fallback_to_node_pi_readiness_proof"
     if rpc_status.get("source") == "rv_soak_snapshot_file":
         return "rv_soak_snapshot_file" if not live else "live_fallback_to_rv_soak_snapshot_file"
     return "live_storage_rpc_read_only" if live else "configured_snapshot"

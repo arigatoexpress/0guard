@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 
+from guard0 import da_node as da_node_module
 from guard0.da_node import (
     build_da_node_status,
     build_storage_node_status,
@@ -226,6 +227,81 @@ def test_storage_node_status_loads_rv_funded_soak_snapshot(tmp_path):
     assert status["fundedSoak"]["shardConfig"] == {"shardId": 0, "numShard": 1}
     encoded = json.dumps(status)
     assert "must_strip" not in encoded
+    assert status["safety"]["privateKeysReturned"] is False
+
+
+def test_storage_node_status_falls_back_to_node_pi_proof(monkeypatch, tmp_path):
+    missing_status_path = tmp_path / "missing-rv-soak.local.json"
+    proof_path = tmp_path / "node-pi-readiness-proof.json"
+    proof_path.write_text(
+        json.dumps(
+            {
+                "schema": "0guard.node_pi_readiness_proof.v1",
+                "recordedAt": "2026-05-20T06:32:58+00:00",
+                "blockers": ["connected_peers_below_target_8"],
+                "storageNode": {
+                    "snapshotPresent": True,
+                    "snapshotGeneratedAt": "2026-05-20T06:29:41.603889+00:00",
+                    "zgsRunning": True,
+                    "rpcOk": True,
+                    "relayTcpOpen": True,
+                    "connectedPeers": 0,
+                    "targetPeers": 8,
+                    "syncGapBlocks": 1,
+                    "maxSyncGapBlocks": 8,
+                    "latestMainnetBlock": 33785354,
+                    "logSyncHeight": 33785353,
+                    "nextTxSeq": 107339,
+                    "activeMinerBalanceOg": 0.25,
+                    "onlyPriorTestFundingObserved": True,
+                    "hundredOgTransferSent": False,
+                    "largeTransferDetected": False,
+                },
+                "peerDiagnostics": {
+                    "snapshotPresent": True,
+                    "connectedPeers": 0,
+                    "targetPeers": 8,
+                    "peerDepthReady": False,
+                },
+                "piMesh": {
+                    "snapshotPresent": True,
+                    "clusterReady": True,
+                    "blockers": [],
+                },
+                "rawSnapshotsStored": False,
+                "safety": {
+                    "privateKeysRead": False,
+                    "privateKeysReturned": False,
+                    "transactionSigningEnabled": False,
+                    "transactionBroadcastingEnabled": False,
+                    "moneyMovementEnabled": False,
+                    "telegramSendsEnabled": False,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        da_node_module,
+        "DEFAULT_NODE_PI_READINESS_PROOF_PATH",
+        str(proof_path),
+    )
+
+    status = build_storage_node_status(live=False, status_file=str(missing_status_path))
+
+    assert status["mode"] == "node_pi_readiness_proof"
+    assert status["source"] == "node_pi_readiness_proof"
+    assert status["storageRpc"]["connectedPeers"] == 0
+    assert status["storageRpc"]["logSyncHeight"] == 33785353
+    assert status["sync"]["latestMainnetBlock"] == 33785354
+    assert status["sync"]["syncGapBlocks"] == 1
+    assert status["readiness"]["status"] == "blocked"
+    assert status["readiness"]["processStatus"] == "running"
+    assert status["readiness"]["blockedBy"] == ["connected_peers_below_target_8"]
+    assert status["fundingSummary"]["activeMinerBalanceOg"] == 0.25
+    assert status["fundingSummary"]["onlyPriorTestFundingObserved"] is True
+    assert status["fundingSummary"]["hundredOgTransferSent"] is False
+    assert status["safety"]["networkCalls"] is False
     assert status["safety"]["privateKeysReturned"] is False
 
 

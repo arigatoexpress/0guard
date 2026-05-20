@@ -2,31 +2,43 @@
   "mode": "redacted_local_snapshot_proof",
   "peerDiagnostics": {
     "blockers": [
-      "connected_peers_below_target_8"
+      "zgs_node_not_running",
+      "connected_peers_below_target_8",
+      "network_enr_address_not_visible_in_config",
+      "socket_probe_degraded"
     ],
     "connectedPeers": 0,
     "hypothesisIds": [
-      "shallow_peer_discovery"
+      "shallow_peer_discovery",
+      "udp_relay_not_confirmed",
+      "bootnode_visibility_unknown"
     ],
     "peerDepthReady": false,
-    "snapshotGeneratedAt": "2026-05-20T06:29:53.468050+00:00",
+    "snapshotGeneratedAt": "2026-05-20T18:39:03.585178+00:00",
     "snapshotPresent": true,
     "targetPeers": 8
   },
   "piMesh": {
-    "blockers": [],
-    "clusterReady": true,
-    "edgeApiReady": true,
-    "ethernetCarrierReady": true,
-    "peerEthernetReachable": true,
-    "peerIdentityVerified": true,
-    "primaryReachable": true,
-    "recommendedAction": "keep_collecting_edge_heartbeats",
-    "snapshotGeneratedAt": "2026-05-20T06:31:21.353161+00:00",
+    "blockers": [
+      "rvpi_a_unreachable",
+      "rvpi_a_edge_api_not_ready",
+      "ethernet_carrier_missing",
+      "rvpi_b_not_reachable_over_ethernet",
+      "rvpi_b_identity_unverified",
+      "rvpi_b_edge_api_not_ready"
+    ],
+    "clusterReady": false,
+    "edgeApiReady": false,
+    "ethernetCarrierReady": false,
+    "peerEthernetReachable": false,
+    "peerIdentityVerified": false,
+    "primaryReachable": false,
+    "recommendedAction": "install_or_authorize_rvpi_b_runtime_over_eth",
+    "snapshotGeneratedAt": "2026-05-20T18:39:42.817121+00:00",
     "snapshotPresent": true
   },
   "rawSnapshotsStored": false,
-  "recordedAt": "2026-05-20T06:32:58+00:00",
+  "recordedAt": "2026-05-20T18:40:07+00:00",
   "safety": {
     "moneyMovementEnabled": false,
     "networkCalls": false,
@@ -41,22 +53,29 @@
   "storageNode": {
     "activeMinerBalanceOg": 0.25,
     "blockers": [
-      "connected_peers_below_target_8"
+      "zgs_node_not_running",
+      "storage_rpc_not_ok",
+      "connected_peers_below_target_8",
+      "storage_log_sync_gap_too_large",
+      "funded_storage_task_not_running",
+      "storage_relay_task_not_running",
+      "adjacent_da_relay_task_not_running",
+      "active_config_missing_miner_key"
     ],
-    "connectedPeers": 0,
+    "connectedPeers": null,
     "hundredOgTransferSent": false,
     "largeTransferDetected": false,
-    "latestMainnetBlock": 33785354,
-    "logSyncHeight": 33785353,
+    "latestMainnetBlock": 33834117,
+    "logSyncHeight": null,
     "maxSyncGapBlocks": 8,
     "onlyPriorTestFundingObserved": true,
     "recommendedAction": "continue_soak_no_additional_funding",
     "relayTcpOpen": true,
-    "rpcOk": true,
-    "snapshotGeneratedAt": "2026-05-20T06:29:41.603889+00:00",
+    "rpcOk": false,
+    "snapshotGeneratedAt": "2026-05-20T18:39:33.184049+00:00",
     "snapshotPresent": true,
-    "syncGapBlocks": 1,
+    "syncGapBlocks": null,
     "targetPeers": 8,
-    "zgsRunning": true
+    "zgsRunning": false
   }
 }
