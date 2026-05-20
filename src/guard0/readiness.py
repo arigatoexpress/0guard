@@ -241,6 +241,18 @@ def production_readiness() -> dict[str, Any]:
             {
                 "status": private_compute_smoke.get("status"),
                 "blockers": private_compute_smoke.get("blockers"),
+                "paidSmokeProofStatus": (
+                    private_compute_smoke.get("paidSmokeProof") or {}
+                ).get("status"),
+                "paidSmokeProofVerified": (
+                    private_compute_smoke.get("paidSmokeProof") or {}
+                ).get("verified"),
+                "paidInferencePerformedExternally": (
+                    private_compute_smoke.get("paidSmokeProof") or {}
+                ).get("paidInferencePerformedExternally"),
+                "paidSmokeCostUsd": (
+                    private_compute_smoke.get("paidSmokeProof") or {}
+                ).get("costUsd"),
                 "apiKeyConfigured": (
                     private_compute_smoke.get("router") or {}
                 ).get("apiKeyConfigured"),
@@ -508,11 +520,20 @@ def _fresh_within_ttl(payload: dict[str, Any]) -> bool:
 
 def _private_compute_smoke_complete(payload: dict[str, Any]) -> bool:
     safety = payload.get("safety") or {}
-    return (
+    paid_smoke_proof = payload.get("paidSmokeProof") or {}
+    proof_complete = (
+        paid_smoke_proof.get("verified") is True
+        and paid_smoke_proof.get("paidInferencePerformedExternally") is True
+        and (paid_smoke_proof.get("safety") or {}).get("paidInferenceByZeroGuard") is False
+        and (paid_smoke_proof.get("safety") or {}).get("rawPromptReturned") is False
+        and (paid_smoke_proof.get("safety") or {}).get("rawResponseReturned") is False
+    )
+    legacy_complete = (
         safety.get("inferenceExecuted") is True
         and safety.get("paidInferenceEnabled") is True
         and safety.get("promptSafeForInference") is True
     )
+    return proof_complete or legacy_complete
 
 
 def _wallet_provider_external_proof_complete(payload: dict[str, Any]) -> bool:

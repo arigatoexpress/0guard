@@ -53,7 +53,10 @@ from guard0.peer_protection import (
     build_peer_protection_plan,
     build_pi_mesh_plan,
 )
-from guard0.private_compute_adapter import build_private_compute_smoke_preview
+from guard0.private_compute_adapter import (
+    build_private_compute_paid_smoke_proof_status,
+    build_private_compute_smoke_preview,
+)
 from guard0.case_file import build_threat_case_file
 from guard0.developer_kit import developer_kit_manifest
 from guard0.external_guardrails import (
@@ -938,6 +941,7 @@ def api_frontend_contract():
                 "/api/0g/node-business",
                 "/api/0g/private-computer",
                 "/api/0g/private-computer/smoke-preview",
+                "/api/0g/private-computer/smoke-proof",
                 "/api/local-inference/status",
                 "/api/telegram/local-inference-preview",
                 "/api/0g/hot-wallet-resources",
@@ -2398,6 +2402,11 @@ def api_0g_private_computer():
 def api_0g_private_computer_smoke_preview():
     body = request.get_json(silent=True) or {} if request.method == "POST" else {}
     return jsonify(build_private_compute_smoke_preview(body))
+
+
+@app.route("/api/0g/private-computer/smoke-proof", methods=["GET"])
+def api_0g_private_computer_smoke_proof():
+    return jsonify(build_private_compute_paid_smoke_proof_status())
 
 
 @app.route("/api/local-inference/status", methods=["GET"])

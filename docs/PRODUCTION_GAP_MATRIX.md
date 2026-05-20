@@ -19,6 +19,7 @@ curl -s http://127.0.0.1:8109/api/0g/storage-upload/manifest | python3 -m json.t
 curl -s -i http://127.0.0.1:8109/api/x402/dry-run/wallet-preflight
 curl -s http://127.0.0.1:8109/api/x402/settlement-proof | python3 -m json.tool
 curl -s http://127.0.0.1:8109/api/0g/private-computer/smoke-preview | python3 -m json.tool
+curl -s http://127.0.0.1:8109/api/0g/private-computer/smoke-proof | python3 -m json.tool
 curl -s http://127.0.0.1:8109/api/0g/node-pi-readiness-proof | python3 -m json.tool
 ```
 
@@ -85,6 +86,11 @@ deferred, and orders the next production gates.
   wallet proof.
 - 0G Private Computer smoke contract: `/api/0g/private-computer/smoke-preview`
   scrubs prompts and refuses paid inference unless server-side gates are set.
+  `/api/0g/private-computer/smoke-proof` verifies a separately performed paid
+  smoke using only prompt/request/response hashes, bounded-cost metadata, and
+  no-secret/no-raw-payload flags. The recorder
+  `scripts/record_0g_private_compute_paid_smoke.py` writes the proof artifact
+  only after budget, prompt-safety, and external-inference acknowledgements.
 - RV 0G storage node soak: real local snapshot, process running, public storage
   and DA relay sockets restored, only the small 0.25 0G test funding observed,
   and no 100 0G transfer sent.
@@ -120,9 +126,9 @@ The hard gates are deliberately explicit:
 - Wallet-provider protection: hosted guard API, SDK wrapper, and external dapp
   exist, but no real extension/throwaway-wallet proof artifact has been
   recorded yet.
-- 0G Private Computer: adapter, prompt scrubber, and no-inference smoke
-  contract exist, but this runtime has no server-side Router API key or paid
-  inference smoke.
+- 0G Private Computer: adapter, prompt scrubber, no-inference smoke contract,
+  and paid-smoke proof verifier exist, but this runtime has no server-side
+  Router API key or recorded paid inference smoke.
 - Telegram: preview and opt-in routes exist, but live identity/webhook proof
   depends on server-side env and sends remain disabled.
 - Storage node expansion: the funded soak still needs peer depth to clear before
@@ -149,7 +155,9 @@ Priority order:
 6. Record `docs/hackathon-0g/node-pi-readiness-proof.json` after the read-only
    storage-node, peer-diagnostics, and Pi-mesh snapshots show green readiness.
 7. Run server-side 0G Private Computer inference only after Router funding,
-   API-key handling, prompt scrubber, and budget caps are tested.
+   API-key handling, prompt scrubber, and budget caps are tested; then record
+   `docs/hackathon-0g/0g-private-compute-paid-smoke-proof.json` with
+   `scripts/record_0g_private_compute_paid_smoke.py`.
 
 ## Model And Training Boundary
 

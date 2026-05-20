@@ -75,6 +75,11 @@ def test_production_gap_matrix_classifies_real_local_pending_and_mock_lanes():
     assert by_id["model.0g_private_computer"]["currentEvidence"]["paidInferenceEnabled"] is False
     assert by_id["model.0g_private_computer"]["currentEvidence"]["smokeInferenceExecuted"] is False
     assert "/api/0g/private-computer/smoke-preview" in by_id["model.0g_private_computer"]["routes"]
+    assert "/api/0g/private-computer/smoke-proof" in by_id["model.0g_private_computer"]["routes"]
+    assert (
+        by_id["model.0g_private_computer"]["currentEvidence"]["paidSmokeProofVerified"]
+        is False
+    )
     assert by_id["mock.demo_fixtures"]["currentStatus"] == "mock_fixture_only"
 
 

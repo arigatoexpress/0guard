@@ -10,7 +10,7 @@ safety boundary.
 | --- | --- | --- |
 | Local inference mesh | `/api/local-inference/status` | Read-only live probe when `?live=1`; no prompts. |
 | Telegram digest | `/api/telegram/local-inference-preview` | Preview-only message body; no Telegram send. |
-| 0G Private Computer smoke | `/api/0g/private-computer/smoke-preview` | Prompt scrub and no-inference request contract; paid calls blocked by env/key/budget gates. |
+| 0G Private Computer smoke | `/api/0g/private-computer/smoke-preview`, `/api/0g/private-computer/smoke-proof` | Prompt scrub and no-inference request contract plus proof verification for one externally performed paid smoke; paid calls remain blocked by env/key/budget gates. |
 | x402 data products | `/api/x402/data-products`, `/api/x402/dry-run/wallet-preflight`, `/api/x402/settlement-policy`, `/api/x402/settlement-proof` | Product manifest, dry-run HTTP 402, caps/terms, and external proof verification; no settlement from the workbench. |
 | Historical backfill | `/api/data/backfill-plan`, `/api/reputation/backfill/status` | Backfill schema plus first derived reputation artifact. |
 | Production gap matrix | `/api/production/gaps` | Real/local/source-ready/mock classifier; no live fetch. |
@@ -32,6 +32,9 @@ The Telegram bot should call ZeroGuard routes in this order:
 3. A model summary only after a local model is loaded and the prompt is scrubbed.
 4. 0G Private Computer only after Router funding, API-key storage, and prompt
    minimization are reviewed.
+5. The first paid 0G Private Computer smoke should be recorded as hashes and
+   bounded-cost metadata only; do not store the raw prompt, raw model response,
+   Router API key, private keys, or payment headers.
 
 Allowed Telegram command ideas:
 
