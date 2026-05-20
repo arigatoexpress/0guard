@@ -69,6 +69,8 @@ def test_docker_image_includes_repo_professionalization_artifacts():
     assert "COPY docs/hackathon-0g/assets/README.md" in dockerfile
     assert "COPY docs/hackathon-0g/hackquest-submission-proof.json" in dockerfile
     assert "COPY docs/hackathon-0g/veo3-flow-production-prompt.md" in dockerfile
+    assert "RUN mkdir -p ./content" in dockerfile
+    assert "COPY content/" not in dockerfile
 
 
 def test_public_asset_registry_covers_tracked_media():

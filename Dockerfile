@@ -18,7 +18,7 @@ COPY NOTICE ./
 COPY scripts/ ./scripts/
 COPY .github/workflows/reputation-backfill-supervisor.yml ./.github/workflows/reputation-backfill-supervisor.yml
 COPY data/ ./data/
-COPY content/ ./content/
+RUN mkdir -p ./content
 COPY contracts/ ./contracts/
 COPY foundry/src/ ./foundry/src/
 COPY docs/LEGAL_AND_ASSET_POLICY.md ./docs/LEGAL_AND_ASSET_POLICY.md
