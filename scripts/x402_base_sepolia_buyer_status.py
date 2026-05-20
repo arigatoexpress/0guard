@@ -3,8 +3,10 @@
 
 This helper is deliberately not a settlement client. It never reads or decrypts
 the encrypted keystore, never asks macOS Keychain for the passphrase, never
-signs an x402 payment header, and never calls a facilitator. It only checks
-public balances needed before the first externally performed 0.01 USDC proof.
+signs an x402 payment header, and never calls a facilitator. It checks the
+buyer USDC balance required before the first externally performed 0.01 USDC
+proof and includes the native ETH balance only as public context; Base Sepolia
+USDC x402 authorization is gasless for the buyer.
 """
 
 from __future__ import annotations
@@ -124,6 +126,12 @@ def _update_manifest(path: Path, manifest: dict[str, Any], status: dict[str, Any
             **dict(manifest.get("recommendedFunding") or {}),
             "usdcContract": status["usdcContract"],
             "perRequestCap": status["requiredForFirstProof"]["usdcDisplay"],
+            "buyerNativeGasRequired": status["requiredForFirstProof"][
+                "nativeGasRequiredForBuyer"
+            ],
+            "buyerAuthorizationMethod": status["requiredForFirstProof"][
+                "buyerAuthorizationMethod"
+            ],
         },
     }
     tmp_path = path.with_suffix(f"{path.suffix}.tmp")

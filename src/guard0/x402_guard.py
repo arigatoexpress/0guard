@@ -35,6 +35,8 @@ BASE_SEPOLIA_NETWORK = "base-sepolia"
 BASE_SEPOLIA_CAIP2 = "eip155:84532"
 BASE_SEPOLIA_RPC_URL = "https://sepolia.base.org"
 BASE_SEPOLIA_USDC_CONTRACT = "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
+BASE_SEPOLIA_X402_BUYER_AUTHORIZATION_METHOD = "EIP-3009 transferWithAuthorization"
+BASE_SEPOLIA_X402_BUYER_GAS_MODEL = "facilitator_sponsored_settlement_gas"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_X402_SETTLEMENT_PROOF_PATH = (
     REPO_ROOT / "docs" / "hackathon-0g" / "x402-base-sepolia-settlement-proof.json"
@@ -305,17 +307,12 @@ def build_x402_base_sepolia_buyer_wallet_status(
     parsed_eth_balance = _parse_nonnegative_int(eth_balance_wei)
     parsed_usdc_balance = _parse_nonnegative_int(usdc_balance_atomic)
     address_valid = _valid_evm_address(address)
-    native_gas_ready = parsed_eth_balance is not None and parsed_eth_balance > 0
     usdc_ready = (
         parsed_usdc_balance is not None and parsed_usdc_balance >= required_usdc_atomic
     )
     blockers: list[str] = []
     if not address_valid:
         blockers.append("buyer_address_invalid")
-    if parsed_eth_balance is None:
-        blockers.append("base_sepolia_eth_balance_not_checked")
-    elif not native_gas_ready:
-        blockers.append("base_sepolia_eth_required_for_gas")
     if parsed_usdc_balance is None:
         blockers.append("base_sepolia_usdc_balance_not_checked")
     elif not usdc_ready:
@@ -344,7 +341,10 @@ def build_x402_base_sepolia_buyer_wallet_status(
             "baseSepoliaUsdcDisplay": _format_usdc(parsed_usdc_balance),
         },
         "requiredForFirstProof": {
-            "nativeGas": "any positive Base Sepolia ETH balance for gas",
+            "nativeGas": "not required from the buyer for Base Sepolia USDC x402 EIP-3009 authorization",
+            "nativeGasRequiredForBuyer": False,
+            "buyerAuthorizationMethod": BASE_SEPOLIA_X402_BUYER_AUTHORIZATION_METHOD,
+            "settlementGasModel": BASE_SEPOLIA_X402_BUYER_GAS_MODEL,
             "usdcAtomic": str(required_usdc_atomic),
             "usdcDisplay": caps["perRequestMaxDisplay"],
             "facilitator": X402_TESTNET_FACILITATOR_URL,
@@ -352,11 +352,12 @@ def build_x402_base_sepolia_buyer_wallet_status(
         "nextAction": (
             "Run the external x402 settlement proof and record only hashes."
             if not blockers
-            else "Fund the throwaway buyer with Base Sepolia ETH and 0.01 USDC testnet."
+            else "Fund the throwaway buyer with 0.01 USDC testnet on Base Sepolia."
         ),
         "sources": [
             X402_NETWORK_SUPPORT_URL,
             "https://docs.x402.org/core-concepts/network-and-token-support",
+            "https://github.com/coinbase/x402/blob/main/go/mechanisms/evm/README.md",
             "https://docs.base.org/tools/network-faucets",
         ],
         "safety": {
