@@ -26,6 +26,7 @@ COPY docs/hackathon-0g/README.md ./docs/hackathon-0g/README.md
 COPY docs/hackathon-0g/assets/README.md ./docs/hackathon-0g/assets/README.md
 COPY docs/hackathon-0g/hackquest-submission-proof.json ./docs/hackathon-0g/hackquest-submission-proof.json
 COPY docs/hackathon-0g/mainnet-proof.json ./docs/hackathon-0g/mainnet-proof.json
+COPY docs/hackathon-0g/node-pi-readiness-proof.json ./docs/hackathon-0g/node-pi-readiness-proof.json
 COPY docs/hackathon-0g/veo3-flow-production-prompt.md ./docs/hackathon-0g/veo3-flow-production-prompt.md
 
 # Expose Flask port
