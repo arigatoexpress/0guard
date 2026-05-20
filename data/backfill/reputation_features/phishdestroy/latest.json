@@ -70,13 +70,13 @@
     "feedHash": "8ea6f3184c61bf741e6384f5725ce3f26766bb85130be8faf064373a8f876d19",
     "httpStatus": 200,
     "lastModified": null,
-    "latencyMs": 1313,
+    "latencyMs": 895,
     "parsedDomainCount": 82073,
     "sampledEvidenceCount": 5,
     "status": "ok",
     "ttlSeconds": 21600
   },
-  "generatedAt": "2026-05-19T23:24:43+00:00",
+  "generatedAt": "2026-05-20T05:27:51+00:00",
   "input": {
     "limit": 5,
     "live": true,
@@ -125,7 +125,7 @@
   },
   "runReceipt": {
     "algorithm": "sha256_canonical_json",
-    "hash": "26c2caf98d6114b553d9fc0da5c84c69965a4ee4735e093ae28b2af72195cd0b",
+    "hash": "e6613d25879cbe02a24f65a667eaf134a9d7b2bf2f468b1c609af0ea2e9c02c3",
     "liveAnchorPerformed": false,
     "liveUploadPerformed": false,
     "zeroGChainReady": true,
@@ -148,11 +148,15 @@
     "writeLocalArtifact": true
   },
   "scheduleManifest": {
+    "checkScriptPath": "scripts/reputation_backfill_supervisor_check.py",
     "command": "PYTHONPATH=src .venv/bin/python scripts/reputation_backfill_worker.py --source phishdestroy_destroylist --live --out data/backfill/reputation_features/phishdestroy/latest.json",
     "recommendedIntervalSeconds": 21600,
     "requiresSecret": false,
-    "supervisorInstalled": false,
+    "scheduleCronUtc": "17 */6 * * *",
+    "supervisorInstalled": true,
+    "supervisorType": "github_actions_scheduled_freshness_monitor",
     "ttlSeconds": 21600,
+    "workflowPath": ".github/workflows/reputation-backfill-supervisor.yml",
     "writesRawPayloads": false
   },
   "schema": "0guard.reputation_backfill_run.v1",
