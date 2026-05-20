@@ -29,6 +29,15 @@ def test_production_gap_matrix_classifies_real_local_pending_and_mock_lanes():
     assert "scheduled_backfill_runner" in by_id["data.historical_feature_store"]["blockedBy"]
     assert "/api/data/historical-feature-store" in by_id["data.historical_feature_store"]["routes"]
     assert "firstOpenFeedLatestRunExists" in by_id["data.live_reputation_feeds"]["currentEvidence"]
+    assert "firstOpenFeedFreshWithinTtl" in by_id["data.live_reputation_feeds"]["currentEvidence"]
+    assert (
+        "firstOpenFeedSupervisorInstalled"
+        in by_id["data.live_reputation_feeds"]["currentEvidence"]
+    )
+    assert (
+        "firstOpenFeedSupervisedFreshnessReady"
+        in by_id["data.live_reputation_feeds"]["currentEvidence"]
+    )
     assert "/api/reputation/backfill/status" in by_id["data.live_reputation_feeds"]["routes"]
     assert by_id["onchain.0g_storage_upload_readback"]["currentStatus"] == (
         "source_ready_live_pending"

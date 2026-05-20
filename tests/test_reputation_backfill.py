@@ -72,6 +72,9 @@ def test_reputation_backfill_persists_derived_only_latest(tmp_path):
     assert status["parsedDomainCount"] == 2
     assert status["rawPayloadsReturned"] is False
     assert status["rawDomainsReturned"] is False
+    assert status["freshWithinTtl"] is True
+    assert status["supervisorInstalled"] is True
+    assert status["supervisedFreshnessReady"] is True
     assert status["safety"]["networkCalls"] is False
     assert status["scheduleManifest"]["supervisorInstalled"] is True
     assert status["scheduleManifest"]["supervisorType"] == (
