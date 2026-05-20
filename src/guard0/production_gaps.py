@@ -257,6 +257,12 @@ def build_production_gap_matrix() -> dict[str, Any]:
                 "settlementPolicySchema": x402_policy.get("schema"),
                 "spendCapsConfigured": bool(x402_policy.get("spendCaps")),
                 "termsConfigured": bool(x402_policy.get("terms")),
+                "settlementProofStatus": (
+                    x402_policy.get("settlementProof") or {}
+                ).get("status"),
+                "settlementProofVerified": (
+                    x402_policy.get("settlementProof") or {}
+                ).get("verified"),
                 "payToConfigured": (
                     x402_policy.get("paymentRequirement") or {}
                 ).get("payToConfigured"),
@@ -265,21 +271,23 @@ def build_production_gap_matrix() -> dict[str, Any]:
                 ),
             },
             "x402 turns ZeroGuard from a demo into a machine-payable defensive intelligence API.",
-            "The product manifest, dry-run HTTP-402 route, caps, and terms are real, but pay-to/facilitator readback and settlement remain disabled.",
-            "Start with dry-run 402 metadata, add testnet facilitator coverage, then enable one low-cost derived route with caps.",
+            "The product manifest, dry-run HTTP-402 route, caps, terms, and settlement-proof rail are real, but facilitator readback is not recorded yet.",
+            "Use the proof recorder after one externally performed Base Sepolia settlement, then keep mainnet disabled until receipt readback is reviewed.",
             "ZeroGuard payment/API lane",
             2,
             _x402_settlement_blockers(x402_policy),
-            "Wire the dry-run route to the Base Sepolia x402.org facilitator only after the pay-to address is reviewed.",
+            "Record a Base Sepolia facilitator proof at `/api/x402/settlement-proof` after a reviewed throwaway-wallet payment.",
             "Do not enable mainnet payment settlement before route schemas, refund policy, and rate limits are fixed.",
             [
                 "Protected route has contract tests for unpaid, paid-fixture, and malformed payment states.",
                 "Paid response contains only derived analysis, source ids, hashes, and receipt metadata.",
+                "Proof metadata stores only hashes and public receipt fields, never raw payment headers.",
             ],
             [
                 "/api/x402/data-products",
                 "/api/x402/dry-run/wallet-preflight",
                 "/api/x402/settlement-policy",
+                "/api/x402/settlement-proof",
             ],
         ),
         _gap(
@@ -890,10 +898,13 @@ def _historical_feature_store_blockers(store: dict[str, Any]) -> list[str]:
 
 
 def _x402_settlement_blockers(policy: dict[str, Any]) -> list[str]:
-    blockers = ["testnet_facilitator_readback", "settlement_receipt_storage"]
+    blockers = []
     payment = policy.get("paymentRequirement") if isinstance(policy.get("paymentRequirement"), dict) else {}
     if not payment.get("payToConfigured"):
-        blockers.insert(0, "pay_to_address")
+        blockers.append("pay_to_address")
+    proof = policy.get("settlementProof") if isinstance(policy.get("settlementProof"), dict) else {}
+    if proof.get("verified") is not True:
+        blockers.extend(["testnet_facilitator_readback", "settlement_receipt_storage"])
     return blockers
 
 

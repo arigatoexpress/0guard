@@ -54,9 +54,13 @@ can verify now from what remains before a production/mainnet launch.
   artifact with hashes/counts/evidence only, no raw domains. Evidence:
   `/api/reputation/backfill/status` and
   `data/backfill/reputation_features/phishdestroy/latest.json`.
-- x402 dry-run: wallet-preflight product route returns HTTP-402 metadata and
-  accepts only a fixture payment header without facilitator calls or settlement.
-  Evidence: `/api/x402/dry-run/wallet-preflight`.
+- x402 dry-run and proof rail: wallet-preflight product route returns HTTP-402
+  metadata and accepts only a fixture payment header without facilitator calls
+  or settlement. The settlement-policy route now exposes caps/terms plus proof
+  status, and `/api/x402/settlement-proof` verifies an externally performed
+  Base Sepolia payment using only hashes and public receipt metadata.
+  Evidence: `/api/x402/dry-run/wallet-preflight`,
+  `/api/x402/settlement-policy`, and `/api/x402/settlement-proof`.
 - Telegram Mira preview: local opt-in and response preview exist without
   sending Telegram messages. Evidence: `/api/telegram/status` and
   `/api/telegram/mira-preview`.
@@ -86,6 +90,12 @@ can verify now from what remains before a production/mainnet launch.
   through `pc.0g.ai`, create one server-side API key, review the smoke-preview
   contract, and run a tiny operator-confirmed inference smoke before using 0GM
   explanations in previews.
+- x402 Base Sepolia proof: product caps/terms and the recorder now exist, but
+  no real facilitator proof is recorded by default. Next step: from a
+  throwaway buyer wallet, perform one reviewed low-cost x402 payment to the
+  reviewed pay-to address, hash the payment header and derived response packet,
+  then run `scripts/record_x402_base_sepolia_settlement_proof.py`. Never store
+  the raw `X-PAYMENT` header, signatures, or private keys.
 - 0G model data loop: 0GM/local inference should summarize and explain
   deterministic verdict packets, not replace policy authority. Next step: build
   the remaining eval harness around the new incident JSONL export, then extend

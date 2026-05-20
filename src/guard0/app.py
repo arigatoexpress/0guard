@@ -140,7 +140,11 @@ from guard0.storage_peer_diagnostics import (
 )
 from guard0.wallet_alerts import build_wallet_alert_preview, wallet_alert_quality_policy
 from guard0.wallet_provider_guard import build_wallet_provider_guard
-from guard0.x402_guard import build_x402_settlement_policy, build_x402_wallet_preflight_dry_run
+from guard0.x402_guard import (
+    build_x402_settlement_policy,
+    build_x402_settlement_proof_status,
+    build_x402_wallet_preflight_dry_run,
+)
 
 app = Flask(__name__)
 
@@ -953,6 +957,7 @@ def api_frontend_contract():
                 "/api/x402/data-products",
                 "/api/x402/dry-run/wallet-preflight",
                 "/api/x402/settlement-policy",
+                "/api/x402/settlement-proof",
                 "/api/intelligence/events",
                 "/api/intelligence/detector-candidates",
                 "/api/product/brief",
@@ -1279,6 +1284,11 @@ def api_x402_dry_run_wallet_preflight():
 @app.route("/api/x402/settlement-policy", methods=["GET"])
 def api_x402_settlement_policy():
     return jsonify(build_x402_settlement_policy())
+
+
+@app.route("/api/x402/settlement-proof", methods=["GET"])
+def api_x402_settlement_proof():
+    return jsonify(build_x402_settlement_proof_status())
 
 
 @app.route("/api/intelligence/events", methods=["GET"])

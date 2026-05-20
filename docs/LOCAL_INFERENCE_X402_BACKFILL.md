@@ -11,7 +11,7 @@ safety boundary.
 | Local inference mesh | `/api/local-inference/status` | Read-only live probe when `?live=1`; no prompts. |
 | Telegram digest | `/api/telegram/local-inference-preview` | Preview-only message body; no Telegram send. |
 | 0G Private Computer smoke | `/api/0g/private-computer/smoke-preview` | Prompt scrub and no-inference request contract; paid calls blocked by env/key/budget gates. |
-| x402 data products | `/api/x402/data-products`, `/api/x402/dry-run/wallet-preflight` | Product manifest plus dry-run HTTP 402; no settlement. |
+| x402 data products | `/api/x402/data-products`, `/api/x402/dry-run/wallet-preflight`, `/api/x402/settlement-policy`, `/api/x402/settlement-proof` | Product manifest, dry-run HTTP 402, caps/terms, and external proof verification; no settlement from the workbench. |
 | Historical backfill | `/api/data/backfill-plan`, `/api/reputation/backfill/status` | Backfill schema plus first derived reputation artifact. |
 | Production gap matrix | `/api/production/gaps` | Real/local/source-ready/mock classifier; no live fetch. |
 | Model training roadmap | `/api/model/training-roadmap` | Eval-first 0GM/local model data plan; no training run. |
@@ -65,8 +65,12 @@ Preparation order:
 2. Use `/api/x402/dry-run/wallet-preflight` as the dry-run protected route
    that returns fixture 402 metadata.
 3. Add MetaMask Smart Account / ERC-7710 permission checks for bounded access.
-4. Add 1Shot or CDP facilitator testing on testnet after spend limits are fixed.
-5. Only then enable mainnet settlement for a single low-cost route.
+4. Add 1Shot or x402.org facilitator testing on Base Sepolia after spend
+   limits are fixed.
+5. Record only public receipt metadata with
+   `scripts/record_x402_base_sepolia_settlement_proof.py`; never store raw
+   `X-PAYMENT` headers, signatures, or private keys.
+6. Only then consider mainnet settlement for a single low-cost route.
 
 Sources:
 

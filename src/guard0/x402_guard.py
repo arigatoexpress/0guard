@@ -11,17 +11,29 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 X402_WALLET_PREFLIGHT_DRY_RUN_SCHEMA = "0guard.x402_wallet_preflight_dry_run.v1"
 X402_SETTLEMENT_POLICY_SCHEMA = "0guard.x402_settlement_policy.v1"
+X402_SETTLEMENT_PROOF_SCHEMA = "0guard.x402_base_sepolia_settlement_proof.v1"
+X402_SETTLEMENT_PROOF_VERIFICATION_SCHEMA = (
+    "0guard.x402_base_sepolia_settlement_proof_verification.v1"
+)
 X402_FIXTURE_PAYMENT_HEADER = "fixture-paid-zeroguard-wallet-preflight-v1"
 X402_DOC_URL = "https://docs.cdp.coinbase.com/x402/welcome"
 X402_NETWORK_SUPPORT_URL = "https://docs.cdp.coinbase.com/x402/network-support"
 X402_ORG_URL = "https://www.x402.org/"
 X402_TESTNET_FACILITATOR_URL = "https://x402.org/facilitator"
 CDP_X402_FACILITATOR_URL = "https://api.cdp.coinbase.com/platform/v2/x402"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_X402_SETTLEMENT_PROOF_PATH = (
+    REPO_ROOT / "docs" / "hackathon-0g" / "x402-base-sepolia-settlement-proof.json"
+)
+HEX_32_RE = re.compile(r"^(0x)?[a-fA-F0-9]{64}$")
+EVM_ADDRESS_RE = re.compile(r"^0x[a-fA-F0-9]{40}$")
 
 
 def build_x402_wallet_preflight_dry_run(
@@ -109,23 +121,32 @@ def build_x402_wallet_preflight_dry_run(
 def _payment_requirement() -> dict[str, Any]:
     policy = build_x402_settlement_policy()
     pay_to = (policy.get("paymentRequirement") or {}).get("payTo")
+    payment = _payment_requirement_for_policy()
     return {
+        **payment,
         "x402Version": 1,
+        "displayPrice": "0.01 USDC",
+        "payTo": pay_to or "operator_pay_to_required_before_live_settlement",
+        "payToConfigured": bool(pay_to),
+        "settlementMode": "dry_run_fixture_only",
+        "facilitator": "not_configured",
+        "capsRoute": "/api/x402/settlement-policy",
+    }
+
+
+def _payment_requirement_for_policy() -> dict[str, Any]:
+    return {
+        "route": "/x402/v1/wallet-preflight",
+        "apiRoute": "/api/x402/dry-run/wallet-preflight",
         "network": "base-sepolia",
         "networkCaip2": "eip155:84532",
         "asset": "USDC",
         "assetCaip19": "eip155:84532/erc20:0x0000000000000000000000000000000000000000",
         "maxAmountRequired": "10000",
         "decimals": 6,
-        "displayPrice": "0.01 USDC",
-        "payTo": pay_to or "operator_pay_to_required_before_live_settlement",
-        "payToConfigured": bool(pay_to),
         "resource": "https://zeroguard.local/x402/v1/wallet-preflight",
         "description": "ZeroGuard wallet preflight verdict packet",
         "mimeType": "application/json",
-        "settlementMode": "dry_run_fixture_only",
-        "facilitator": "not_configured",
-        "capsRoute": "/api/x402/settlement-policy",
     }
 
 
@@ -137,6 +158,8 @@ def build_x402_settlement_policy() -> dict[str, Any]:
     testnet_only = not _truthy_env("ZG_X402_ALLOW_MAINNET")
     caps = _spend_caps()
     terms = _terms()
+    settlement_proof = build_x402_settlement_proof_status()
+    settlement_proof_verified = settlement_proof.get("verified") is True
     blockers = []
     if not pay_to:
         blockers.append("pay_to_address_missing")
@@ -144,11 +167,19 @@ def build_x402_settlement_policy() -> dict[str, Any]:
         blockers.append("settlement_env_gate_disabled")
     if testnet_only:
         blockers.append("mainnet_settlement_disabled")
+    if not settlement_proof_verified:
+        blockers.append("base_sepolia_settlement_proof_missing")
     return {
         "schema": X402_SETTLEMENT_POLICY_SCHEMA,
         "generatedAt": _now(),
         "mode": "settlement_policy_no_facilitator_call",
-        "status": "ready_for_testnet_review" if pay_to else "blocked_before_settlement",
+        "status": (
+            "testnet_settlement_proof_recorded"
+            if settlement_proof_verified
+            else "ready_for_testnet_review"
+            if pay_to
+            else "blocked_before_settlement"
+        ),
         "blockers": blockers,
         "paymentRequirement": {
             "route": "/x402/v1/wallet-preflight",
@@ -198,6 +229,7 @@ def build_x402_settlement_policy() -> dict[str, Any]:
             "Pin response schema, refund wording, and rate limits in tests.",
             "Keep mainnet disabled until testnet receipt readback is committed.",
         ],
+        "settlementProof": settlement_proof,
         "sources": [X402_DOC_URL, X402_NETWORK_SUPPORT_URL, X402_ORG_URL],
         "safety": {
             **_safety(),
@@ -205,6 +237,120 @@ def build_x402_settlement_policy() -> dict[str, Any]:
             "settlementEnvGateEnabled": settlement_env_enabled,
             "mainnetSettlementAllowedByEnv": not testnet_only,
             "payToConfigured": bool(pay_to),
+            "baseSepoliaSettlementProofVerified": settlement_proof_verified,
+            "settlementPerformedExternally": (
+                settlement_proof.get("settlementPerformedExternally") is True
+            ),
+            "settlementByZeroGuardEnabled": False,
+        },
+    }
+
+
+def build_x402_settlement_proof_status(
+    proof_path: str | Path | None = DEFAULT_X402_SETTLEMENT_PROOF_PATH,
+) -> dict[str, Any]:
+    """Return verification status for an externally produced x402 testnet proof."""
+
+    return verify_x402_settlement_proof(
+        _load_settlement_proof(proof_path) if proof_path else None,
+        proof_path=proof_path,
+    )
+
+
+def verify_x402_settlement_proof(
+    proof: dict[str, Any] | None,
+    *,
+    proof_path: str | Path | None = None,
+) -> dict[str, Any]:
+    """Validate public-safe receipt metadata from a Base Sepolia x402 proof.
+
+    The proof must be produced outside this workbench by a signer-owned
+    environment. This verifier accepts only receipt hashes, amount/caps metadata,
+    and derived response hashes. It must never receive raw payment headers,
+    signatures, keys, or private payloads.
+    """
+
+    if not isinstance(proof, dict):
+        return _settlement_proof_status(
+            "missing",
+            "settlement_proof_file_missing",
+            proof_path=proof_path,
+        )
+
+    payment = _payment_requirement_for_policy()
+    caps = _spend_caps()
+    max_atomic = int(str(caps["perRequestMaxAtomic"]))
+    amount_atomic = _parse_positive_int(proof.get("amountAtomic"))
+    checks = {
+        "schema": proof.get("schema") == X402_SETTLEMENT_PROOF_SCHEMA,
+        "network": proof.get("network") == "base-sepolia",
+        "networkCaip2": proof.get("networkCaip2") == "eip155:84532",
+        "asset": proof.get("asset") == "USDC",
+        "decimals": proof.get("decimals") == 6,
+        "amountAtomicWithinCap": amount_atomic is not None
+        and 0 < amount_atomic <= max_atomic,
+        "route": proof.get("route") == payment["route"],
+        "transactionHash": _valid_hex_32(proof.get("transactionHash")),
+        "facilitatorUrl": proof.get("facilitatorUrl") == X402_TESTNET_FACILITATOR_URL,
+        "payer": _valid_evm_address(proof.get("payer")),
+        "payTo": _valid_evm_address(proof.get("payTo")),
+        "paymentHeaderHash": _valid_sha256(proof.get("paymentHeaderHash")),
+        "responseHash": _valid_sha256(proof.get("responseHash")),
+        "operatorReviewedCapsAndTerms": proof.get("operatorReviewedCapsAndTerms") is True,
+        "settlementAttempted": proof.get("settlementAttempted") is True,
+        "facilitatorCalled": proof.get("facilitatorCalled") is True,
+        "settled": proof.get("settled") is True,
+        "settlementPerformedExternally": proof.get("settlementPerformedExternally") is True,
+        "rawPayloadResaleAllowed": proof.get("rawPayloadResaleAllowed") is False,
+        "paymentHeaderStored": proof.get("paymentHeaderStored") is False,
+        "paymentHeaderReturned": proof.get("paymentHeaderReturned") is False,
+        "privateKeysReturned": proof.get("privateKeysReturned") is False,
+        "transactionSigningByZeroGuard": proof.get("transactionSigningByZeroGuard") is False,
+        "transactionBroadcastingByZeroGuard": proof.get("transactionBroadcastingByZeroGuard")
+        is False,
+        "moneyMovementByZeroGuard": proof.get("moneyMovementByZeroGuard") is False,
+    }
+    configured_pay_to = _public_pay_to_address()
+    if configured_pay_to:
+        checks["payToMatchesConfiguredAddress"] = (
+            str(proof.get("payTo", "")).lower() == configured_pay_to.lower()
+        )
+    verified = all(checks.values())
+    return {
+        "schema": X402_SETTLEMENT_PROOF_VERIFICATION_SCHEMA,
+        "generatedAt": _now(),
+        "status": "verified" if verified else "review",
+        "verified": verified,
+        "proofPresent": True,
+        "proofPath": str(proof_path) if proof_path else proof.get("proofPath"),
+        "route": proof.get("route"),
+        "network": proof.get("network"),
+        "networkCaip2": proof.get("networkCaip2"),
+        "asset": proof.get("asset"),
+        "decimals": proof.get("decimals"),
+        "amountAtomic": str(proof.get("amountAtomic") or ""),
+        "perRequestMaxAtomic": caps["perRequestMaxAtomic"],
+        "transactionHash": proof.get("transactionHash"),
+        "facilitatorUrl": proof.get("facilitatorUrl"),
+        "payer": proof.get("payer"),
+        "payTo": proof.get("payTo"),
+        "paymentHeaderHash": proof.get("paymentHeaderHash"),
+        "responseHash": proof.get("responseHash"),
+        "settlementAttempted": proof.get("settlementAttempted") is True,
+        "facilitatorCalled": proof.get("facilitatorCalled") is True,
+        "settled": proof.get("settled") is True,
+        "settlementPerformedExternally": proof.get("settlementPerformedExternally") is True,
+        "termsVersion": proof.get("termsVersion"),
+        "checks": checks,
+        "safety": {
+            **_safety(),
+            "settlementProofVerificationOnly": True,
+            "facilitatorCalledByZeroGuard": False,
+            "facilitatorCalledExternally": proof.get("facilitatorCalled") is True,
+            "settlementPerformedExternally": proof.get("settlementPerformedExternally") is True,
+            "settlementByZeroGuardEnabled": False,
+            "paymentHeaderStored": False,
+            "paymentHeaderReturned": False,
         },
     }
 
@@ -310,6 +456,57 @@ def _public_pay_to_address() -> str:
 def _truthy_env(name: str) -> bool:
     value = os.getenv(name, "")
     return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _load_settlement_proof(path: str | Path | None) -> dict[str, Any] | None:
+    if not path:
+        return None
+    try:
+        return json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def _settlement_proof_status(
+    status: str,
+    reason: str,
+    *,
+    proof_path: str | Path | None = None,
+) -> dict[str, Any]:
+    return {
+        "schema": X402_SETTLEMENT_PROOF_VERIFICATION_SCHEMA,
+        "generatedAt": _now(),
+        "status": status,
+        "verified": False,
+        "proofPresent": False,
+        "proofPath": str(proof_path) if proof_path else "",
+        "reason": reason,
+        "safety": {
+            **_safety(),
+            "settlementProofVerificationOnly": True,
+            "settlementByZeroGuardEnabled": False,
+        },
+    }
+
+
+def _valid_hex_32(value: Any) -> bool:
+    return isinstance(value, str) and bool(HEX_32_RE.fullmatch(value.strip()))
+
+
+def _valid_sha256(value: Any) -> bool:
+    return isinstance(value, str) and bool(re.fullmatch(r"[a-fA-F0-9]{64}", value.strip()))
+
+
+def _valid_evm_address(value: Any) -> bool:
+    return isinstance(value, str) and bool(EVM_ADDRESS_RE.fullmatch(value.strip()))
+
+
+def _parse_positive_int(value: Any) -> int | None:
+    try:
+        parsed = int(str(value))
+    except (TypeError, ValueError):
+        return None
+    return parsed if parsed > 0 else None
 
 
 def _hash_text(value: str) -> str:

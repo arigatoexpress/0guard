@@ -36,6 +36,8 @@ def test_production_readiness_is_honest_and_non_mutating(monkeypatch):
     assert checks["x402_settlement_path"]["detail"]["termsConfigured"] is True
     assert checks["x402_settlement_path"]["detail"]["payToConfigured"] is False
     assert checks["x402_settlement_path"]["detail"]["perRequestMax"] == "0.01 USDC"
+    assert checks["x402_settlement_path"]["detail"]["baseSepoliaSettlementProofVerified"] is False
+    assert checks["x402_settlement_path"]["detail"]["settlementByZeroGuardEnabled"] is False
     assert "storage_node_funded_soak" in result["hardGates"]
     assert checks["telegram_state_store"]["detail"]["storeMode"] == "local_json_default"
     assert checks["telegram_state_store"]["detail"]["defaultLocalStore"] is True
@@ -132,6 +134,10 @@ def _blocked_gate_payloads() -> dict:
     payloads["x402_preflight"]["paymentReadback"]["settlementAttempted"] = False
     payloads["x402_preflight"]["paymentReadback"]["facilitatorCalled"] = False
     payloads["x402_policy"]["paymentRequirement"]["payToConfigured"] = False
+    payloads["x402_policy"]["settlementProof"]["verified"] = False
+    payloads["x402_policy"]["settlementProof"]["settlementAttempted"] = False
+    payloads["x402_policy"]["settlementProof"]["facilitatorCalled"] = False
+    payloads["x402_policy"]["settlementProof"]["settlementPerformedExternally"] = False
     return payloads
 
 
@@ -207,20 +213,31 @@ def _green_gate_payloads() -> dict:
             },
         },
         "x402_preflight": {
-            "status": "settled",
+            "status": "payment_fixture_accepted_no_settlement",
             "httpStatus": 200,
-            "safety": {"x402SettlementEnabled": True},
+            "safety": {"x402SettlementEnabled": False},
             "paymentReadback": {
-                "settlementAttempted": True,
-                "facilitatorCalled": True,
+                "settlementAttempted": False,
+                "facilitatorCalled": False,
             },
             "rightsPolicy": {"rawPayloadResaleAllowed": False},
         },
         "x402_policy": {
             "schema": "0guard.x402_settlement_policy.v1",
+            "status": "testnet_settlement_proof_recorded",
             "spendCaps": {"perRequestMaxDisplay": "0.01 USDC"},
             "terms": {"rawPayloadResaleAllowed": False},
             "paymentRequirement": {"payToConfigured": True},
-            "safety": {"x402SettlementEnabled": False},
+            "settlementProof": {
+                "status": "verified",
+                "verified": True,
+                "settlementAttempted": True,
+                "facilitatorCalled": True,
+                "settlementPerformedExternally": True,
+            },
+            "safety": {
+                "x402SettlementEnabled": False,
+                "settlementByZeroGuardEnabled": False,
+            },
         },
     }
