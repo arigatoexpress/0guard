@@ -267,11 +267,11 @@ def build_x402_settlement_policy() -> dict[str, Any]:
         "generatedAt": _now(),
         "mode": "settlement_policy_no_facilitator_call",
         "status": (
-            "testnet_settlement_proof_recorded"
+            "blocked_before_settlement"
+            if not pay_to
+            else "testnet_settlement_proof_recorded"
             if settlement_proof_verified
             else "ready_for_testnet_review"
-            if pay_to
-            else "blocked_before_settlement"
         ),
         "blockers": blockers,
         "paymentRoute": payment_requirement["route"],
@@ -746,11 +746,11 @@ def _operator_proof_packet(
     return {
         "schema": "0guard.x402_base_sepolia_operator_proof_packet.v1",
         "status": (
-            "verified"
+            "blocked_until_pay_to_configured"
+            if not pay_to
+            else "verified"
             if settlement_proof.get("verified") is True
             else "ready_for_external_base_sepolia_proof"
-            if pay_to
-            else "blocked_until_pay_to_configured"
         ),
         "proofPath": str(DEFAULT_X402_SETTLEMENT_PROOF_PATH.relative_to(REPO_ROOT)),
         "recordProofCommandTemplate": _record_settlement_proof_command(

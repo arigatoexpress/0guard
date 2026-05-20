@@ -563,8 +563,8 @@ def test_local_inference_x402_and_backfill_routes_are_no_side_effect(client):
     assert x402_policy_body["schema"] == "0guard.x402_settlement_policy.v1"
     assert x402_policy_body["spendCaps"]["perRequestMaxDisplay"] == "0.01 USDC"
     assert x402_policy_body["terms"]["rawPayloadResaleAllowed"] is False
-    assert x402_policy_body["settlementProofStatus"] == "missing"
-    assert x402_policy_body["settlementProofVerified"] is False
+    assert x402_policy_body["settlementProofStatus"] == "verified"
+    assert x402_policy_body["settlementProofVerified"] is True
     assert x402_policy_body["operatorProofPacket"]["paymentHeaderHashRequired"] is True
     assert x402_policy_body["operatorProofPacket"]["rawPaymentHeaderStored"] is False
     assert (

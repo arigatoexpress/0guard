@@ -89,8 +89,8 @@ def test_x402_settlement_policy_freezes_caps_terms_and_facilitator_path(monkeypa
     assert policy["amountAtomic"] == "10000"
     assert policy["displayPrice"] == "0.01 USDC"
     assert policy["payToConfigured"] is False
-    assert policy["settlementProofStatus"] == "missing"
-    assert policy["settlementProofVerified"] is False
+    assert policy["settlementProofStatus"] == "verified"
+    assert policy["settlementProofVerified"] is True
     assert policy["spendCaps"]["perRequestMaxDisplay"] == "0.01 USDC"
     assert policy["terms"]["rawPayloadResaleAllowed"] is False
     assert "raw payment headers" in policy["terms"]["neverStore"]
@@ -102,9 +102,9 @@ def test_x402_settlement_policy_freezes_caps_terms_and_facilitator_path(monkeypa
     assert len(policy["operatorProofPacket"]["termsHash"]) == 64
     assert policy["facilitators"][0]["endpoint"] == "https://x402.org/facilitator"
     assert policy["facilitators"][0]["apiKeyRequired"] is False
-    assert policy["settlementProof"]["status"] == "missing"
-    assert policy["settlementProof"]["verified"] is False
-    assert "base_sepolia_settlement_proof_missing" in policy["blockers"]
+    assert policy["settlementProof"]["status"] == "verified"
+    assert policy["settlementProof"]["verified"] is True
+    assert "base_sepolia_settlement_proof_missing" not in policy["blockers"]
     assert policy["safety"]["facilitatorCalled"] is False
     assert policy["safety"]["x402SettlementEnabled"] is False
 
