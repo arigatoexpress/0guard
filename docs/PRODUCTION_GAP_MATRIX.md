@@ -55,7 +55,14 @@ deferred, and orders the next production gates.
   runs the derived-only PhishDestroy worker in no-write mode every six hours and
   fails closed if the latest artifact is stale or raw-payload flags regress.
 - 0G Storage upload manifest: `/api/0g/storage-upload/manifest` hashes the
-  public-safe bundle and verifies local hash readback without uploading.
+  public-safe bundle, exposes the deterministic upload artifact hash, and
+  verifies local hash readback without uploading.
+- 0G Storage live-proof rail: `scripts/build_0g_storage_bundle.py` writes the
+  exact public-safe JSON artifact for an operator-run SDK upload, and
+  `scripts/record_0g_storage_live_proof.py` records the externally uploaded
+  root/tx/readback hashes without calling a gateway, reading keys, signing, or
+  moving funds. A verified `docs/hackathon-0g/0g-storage-live-proof.json`
+  artifact is what turns the readiness gate green.
 - Historical feature store exports: the latest JSONL alias remains available
   for manifesting, while each writer run also creates an immutable `runs/*.jsonl`
   artifact with a receipt hash.
@@ -84,8 +91,9 @@ The hard gates are deliberately explicit:
   exist, but production blocking still requires source freshness supervision,
   dependency/address matching, retention rules, and vendor/legal review before
   customer compliance claims.
-- 0G Storage upload/readback: bundle manifest and local hash readback exist,
-  but no live 0G Storage upload or gateway proof exists.
+- 0G Storage upload/readback: bundle manifest, deterministic upload artifact,
+  and offline proof recorder exist, but no live 0G Storage upload or gateway
+  proof has been recorded yet.
 - x402 paid routes: product manifest and dry-run HTTP-402 route exist, but no
   facilitator credentials, settlement, or spend-limited paid route is live.
 - 0G Private Computer: adapter, prompt scrubber, and no-inference smoke
@@ -103,8 +111,10 @@ Priority order:
 1. Add an append-only historical feature run from the current incident corpus.
 2. Install supervision around the first derived-only reputation worker.
 3. Add a small DuckDB or SQLite feature store once JSONL runs are useful.
-4. Upload the public-safe manifest bundle to 0G Storage and verify gateway
-   readback.
+4. Build the deterministic public-safe bundle, upload it with the official 0G
+   Storage SDK from a reviewed signer environment, download it back, and record
+   `docs/hackathon-0g/0g-storage-live-proof.json` only if the downloaded hash
+   equals the uploaded bundle hash.
 5. Promote the x402 dry-run route to a testnet facilitator with spend limits.
 6. Run server-side 0G Private Computer inference only after Router funding,
    API-key handling, prompt scrubber, and budget caps are tested.

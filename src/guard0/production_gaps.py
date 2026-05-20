@@ -218,10 +218,19 @@ def build_production_gap_matrix() -> dict[str, Any]:
                 "liveUploadPerformed": (storage_upload_manifest.get("safety") or {}).get(
                     "liveStorageUpload"
                 ),
+                "liveProofStatus": (storage_upload_manifest.get("liveProof") or {}).get(
+                    "status"
+                ),
+                "liveProofVerified": (storage_upload_manifest.get("liveProof") or {}).get(
+                    "verified"
+                ),
+                "bundleArtifactSha256": (
+                    storage_upload_manifest.get("bundleArtifact") or {}
+                ).get("artifactSha256"),
             },
             "Storage is how threat packets become durable data products instead of local API responses.",
-            "The app now prepares a public-safe bundle manifest and local hash readback; it still does not upload or read back from 0G Storage by default.",
-            "Use the 0G TypeScript or Go SDK to upload public-safe derived bundles, save roots, and verify downloads before public claims.",
+            "The app now prepares a public-safe bundle manifest, deterministic upload artifact hash, and live-proof recorder; it still does not upload or read back from 0G Storage by default.",
+            "Use the 0G TypeScript or Go SDK to upload the deterministic public-safe bundle, then record root, tx, and downloaded hash proof before public claims.",
             "ZeroGuard storage adapter",
             1,
             ["storage_sdk_live_adapter", "operator_signer", "upload_budget", "gateway_readback"],

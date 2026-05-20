@@ -184,6 +184,11 @@ def production_readiness() -> dict[str, Any]:
                 "liveStorageGatewayReadback": (storage_upload.get("safety") or {}).get(
                     "liveStorageGatewayReadback"
                 ),
+                "liveProofStatus": (storage_upload.get("liveProof") or {}).get("status"),
+                "liveProofVerified": (storage_upload.get("liveProof") or {}).get("verified"),
+                "bundleArtifactSha256": (storage_upload.get("bundleArtifact") or {}).get(
+                    "artifactSha256"
+                ),
                 "operatorRequired": (storage_upload.get("uploadPlan") or {}).get(
                     "operatorRequired"
                 ),

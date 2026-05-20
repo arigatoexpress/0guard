@@ -68,9 +68,14 @@ can verify now from what remains before a production/mainnet launch.
   `ZGG_CHAIN_RPC=https://evmrpc.0g.ai`, `ZGG_CHAIN_ID=16661`, and
   `ZGG_RECEIPT_CONTRACT=0xBaC59b1571b7c7195915c5B36D8A719Ed7182abc`.
 - Live 0G Storage upload: current Storage receipts and bundle manifests are
-  deterministic and Storage-ready but not uploaded by default. Next step: wire
-  the 0G Storage SDK/gateway upload behind explicit operator config and add
-  gateway readback by key or root hash.
+  deterministic and Storage-ready but not uploaded by default. The exact
+  operator path is now:
+  `PYTHONPATH=src .venv/bin/python scripts/build_0g_storage_bundle.py`, upload
+  `dist/0g-storage/zeroguard-public-safe-derived-bundle.json` with the official
+  0G Storage SDK from a reviewed signer environment, download it back, then run
+  `scripts/record_0g_storage_live_proof.py` with the upload root, transaction
+  hash, uploaded bundle, and downloaded file. The readiness gate stays blocked
+  until the recorded downloaded hash equals the uploaded bundle hash.
 - Historical feature store: the backfill plan exists, but production still
   needs scheduled append-only JSONL runs and then DuckDB/SQLite query storage
   for source-cited incidents, reputation features, node telemetry, and x402
