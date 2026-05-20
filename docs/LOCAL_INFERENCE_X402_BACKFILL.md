@@ -78,6 +78,22 @@ Preparation order:
    command template without calling a facilitator.
 7. Only then consider mainnet settlement for a single low-cost route.
 
+Before the first Base Sepolia settlement proof, check the throwaway buyer
+wallet without touching its encrypted keystore:
+
+```bash
+PYTHONPATH=src .venv/bin/python scripts/x402_base_sepolia_buyer_status.py \
+  --manifest ~/.0guard-secrets/wallets/x402-base-sepolia-buyer-*.public.json \
+  --update-manifest
+```
+
+The status should become `ready_for_external_x402_settlement_proof` only after
+the throwaway buyer has a positive Base Sepolia ETH balance for gas and at least
+`10000` atomic USDC (`0.01 USDC`) at
+`0x036CbD53842c5426634e7929541eC2318f3dCF7e`. The script performs read-only RPC
+calls, does not read the keystore, does not request the Keychain passphrase, and
+does not call the facilitator.
+
 Sources:
 
 - https://docs.cdp.coinbase.com/x402/welcome
