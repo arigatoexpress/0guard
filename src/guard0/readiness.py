@@ -34,6 +34,7 @@ def production_readiness() -> dict[str, Any]:
     storage_upload = production_gates["storage_upload"]
     x402_preflight = production_gates["x402_preflight"]
     x402_policy = production_gates["x402_policy"]
+    wallet_provider_proof = production_gates["wallet_provider_proof"]
 
     checks = [
         _check(
@@ -109,6 +110,45 @@ def production_readiness() -> dict[str, Any]:
                     "wire Firestore/Cloud SQL before high-volume production sends"
                     if not telegram_store["persistentStoreConfigured"]
                     else "promote this file-backed store only for low-volume previews; use Firestore/Cloud SQL for scale"
+                ),
+            },
+        ),
+        _check(
+            "wallet_provider_external_proof",
+            "ok" if _wallet_provider_external_proof_complete(wallet_provider_proof) else "review",
+            "Live wallet-protection claims need one real extension/window.ethereum proof with a throwaway empty wallet.",
+            {
+                "status": wallet_provider_proof.get("status"),
+                "verified": wallet_provider_proof.get("verified"),
+                "proofMode": wallet_provider_proof.get("proofMode"),
+                "externalDappOrigin": wallet_provider_proof.get("externalDappOrigin"),
+                "windowEthereumPresent": wallet_provider_proof.get("windowEthereumPresent"),
+                "realWalletExtension": wallet_provider_proof.get("realWalletExtension"),
+                "mockProvider": wallet_provider_proof.get("mockProvider"),
+                "throwawayWallet": wallet_provider_proof.get("throwawayWallet"),
+                "walletWasEmpty": wallet_provider_proof.get("walletWasEmpty"),
+                "readForwarded": (
+                    wallet_provider_proof.get("readOnlyRequest") or {}
+                ).get("forwardedToProvider"),
+                "reviewBlockedBeforeWallet": not bool(
+                    (wallet_provider_proof.get("reviewRequest") or {}).get(
+                        "forwardedToProvider"
+                    )
+                )
+                if wallet_provider_proof.get("proofPresent")
+                else False,
+                "denyBlockedBeforeWallet": not bool(
+                    (wallet_provider_proof.get("denyRequest") or {}).get(
+                        "forwardedToProvider"
+                    )
+                )
+                if wallet_provider_proof.get("proofPresent")
+                else False,
+                "rawParamsReturned": (wallet_provider_proof.get("safety") or {}).get(
+                    "rawParamsReturned"
+                ),
+                "privateKeysReturned": (wallet_provider_proof.get("safety") or {}).get(
+                    "privateKeysReturned"
                 ),
             },
         ),
@@ -350,6 +390,7 @@ def _production_gate_payloads() -> dict[str, dict[str, Any]]:
         build_reputation_backfill_status,
     )
     from guard0.storage_upload_manifest import build_storage_upload_manifest
+    from guard0.wallet_provider_guard import build_wallet_provider_external_proof_status
     from guard0.x402_guard import build_x402_settlement_policy, build_x402_wallet_preflight_dry_run
 
     return {
@@ -378,6 +419,10 @@ def _production_gate_payloads() -> dict[str, dict[str, Any]]:
             build_x402_wallet_preflight_dry_run,
         ),
         "x402_policy": _safe_payload("x402_settlement_policy", build_x402_settlement_policy),
+        "wallet_provider_proof": _safe_payload(
+            "wallet_provider_external_proof",
+            build_wallet_provider_external_proof_status,
+        ),
     }
 
 
@@ -467,6 +512,22 @@ def _private_compute_smoke_complete(payload: dict[str, Any]) -> bool:
         safety.get("inferenceExecuted") is True
         and safety.get("paidInferenceEnabled") is True
         and safety.get("promptSafeForInference") is True
+    )
+
+
+def _wallet_provider_external_proof_complete(payload: dict[str, Any]) -> bool:
+    safety = payload.get("safety") or {}
+    return (
+        payload.get("verified") is True
+        and payload.get("realWalletExtension") is True
+        and payload.get("mockProvider") is False
+        and payload.get("throwawayWallet") is True
+        and payload.get("walletWasEmpty") is True
+        and ((payload.get("readOnlyRequest") or {}).get("forwardedToProvider") is True)
+        and ((payload.get("reviewRequest") or {}).get("forwardedToProvider") is False)
+        and ((payload.get("denyRequest") or {}).get("forwardedToProvider") is False)
+        and safety.get("privateKeysReturned") is False
+        and safety.get("rawParamsReturned") is False
     )
 
 

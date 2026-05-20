@@ -74,6 +74,11 @@ deferred, and orders the next production gates.
   performed Base Sepolia payment using only public receipt fields and hashes.
   `scripts/record_x402_base_sepolia_settlement_proof.py` writes the artifact
   only after caps/terms acknowledgement and never stores raw payment headers.
+- Wallet-provider external proof rail: `/api/wallet/provider-proof` verifies a
+  real wallet-extension `window.ethereum` proof when recorded. The recorder
+  keeps only receipt hashes and public metadata from a throwaway empty wallet
+  run; CI's mock-provider smoke remains useful but is not treated as production
+  wallet proof.
 - 0G Private Computer smoke contract: `/api/0g/private-computer/smoke-preview`
   scrubs prompts and refuses paid inference unless server-side gates are set.
 - RV 0G storage node soak: real local snapshot, process running, public storage
@@ -103,6 +108,9 @@ The hard gates are deliberately explicit:
 - x402 paid routes: product manifest, dry-run HTTP-402 route, caps/terms, and
   settlement-proof recorder exist, but no Base Sepolia facilitator proof has
   been recorded in this runtime and no mainnet settlement is enabled.
+- Wallet-provider protection: hosted guard API, SDK wrapper, and external dapp
+  exist, but no real extension/throwaway-wallet proof artifact has been
+  recorded yet.
 - 0G Private Computer: adapter, prompt scrubber, and no-inference smoke
   contract exist, but this runtime has no server-side Router API key or paid
   inference smoke.

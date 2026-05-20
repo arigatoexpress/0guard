@@ -190,6 +190,7 @@ def test_frontend_contract_is_browser_smoke_ready_and_non_mutating(client):
     assert "/api/threat-case-file" in data["apiRoutes"]
     assert "/api/wallet/alert-preview" in data["apiRoutes"]
     assert "/api/wallet/provider-guard" in data["apiRoutes"]
+    assert "/api/wallet/provider-proof" in data["apiRoutes"]
     assert "/api/ton/status" in data["apiRoutes"]
     assert "/api/ton/risk-rules" in data["apiRoutes"]
     assert "/api/ton/wallet-risk-preview" in data["apiRoutes"]
@@ -1828,6 +1829,19 @@ def test_wallet_provider_guard_route_blocks_sensitive_provider_requests(client):
     )
     assert disallowed.status_code == 204
     assert "Access-Control-Allow-Origin" not in disallowed.headers
+
+
+def test_wallet_provider_external_proof_route_is_read_only_and_missing_by_default(client):
+    response = client.get("/api/wallet/provider-proof")
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["schema"] == "0guard.wallet_provider_external_proof_verification.v1"
+    assert payload["status"] == "missing"
+    assert payload["verified"] is False
+    assert payload["safety"]["proofVerificationOnly"] is True
+    assert payload["safety"]["transactionSigningEnabled"] is False
+    assert payload["safety"]["moneyMovementEnabled"] is False
 
 
 def test_telegram_registration_and_mira_preview_are_local_and_redacted(monkeypatch, client):

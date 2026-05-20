@@ -45,6 +45,13 @@ def test_production_gap_matrix_classifies_real_local_pending_and_mock_lanes():
     assert by_id["wallet.provider_guard"]["currentEvidence"]["demoDecision"] == "deny"
     assert by_id["wallet.provider_guard"]["currentEvidence"]["providerCallAllowed"] is False
     assert by_id["wallet.provider_guard"]["currentEvidence"]["rawParamsReturned"] is False
+    assert by_id["wallet.provider_guard"]["currentEvidence"]["externalProofStatus"] in {
+        "missing",
+        "review",
+        "verified",
+    }
+    assert "/api/wallet/provider-proof" in by_id["wallet.provider_guard"]["routes"]
+    assert "real_wallet_extension_proof" in by_id["wallet.provider_guard"]["blockedBy"]
     assert "hosted_route_deploy" not in by_id["wallet.provider_guard"]["blockedBy"]
     assert "/api/wallet/provider-guard" in by_id["wallet.provider_guard"]["routes"]
     assert all("not yet hosted" not in gap for gap in matrix["whyNotProductionReadyYet"])

@@ -53,9 +53,26 @@ base as `https://guard0-miniapp-s77j6bxyra-uc.a.run.app`, and use a throwaway
 empty account. `Read chain` may forward; `Switch chain` and `Unlimited approval`
 should stop before a wallet prompt.
 
+After the manual run, record only public-safe proof metadata:
+
+```bash
+PYTHONPATH=src .venv/bin/python scripts/record_wallet_provider_external_proof.py \
+  --external-dapp-origin http://127.0.0.1:8142 \
+  --guard-base-url https://guard0-miniapp-s77j6bxyra-uc.a.run.app \
+  --wallet-address 0xTHROWAWAY_EMPTY_WALLET_ADDRESS \
+  --read-receipt-hash <sha256-from-eth_chainId-verdict> \
+  --review-receipt-hash <sha256-from-switch-chain-verdict> \
+  --deny-receipt-hash <sha256-from-approval-deny-verdict> \
+  --real-wallet-extension \
+  --window-ethereum-present \
+  --throwaway-empty-wallet \
+  --operator-reviewed
+```
+
 Do not claim production wallet protection until this manual check has been run
 against an actual wallet extension window with an empty throwaway account and
-the denial evidence has been saved.
+the denial evidence has been saved. `/api/wallet/provider-proof` stays
+`missing` until that artifact exists.
 
 ## Safety
 

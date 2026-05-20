@@ -8,13 +8,26 @@ own wrapper decides whether to forward the original request to the wallet.
 
 from __future__ import annotations
 
+import hashlib
+import json
+import re
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
 from guard0.native_preflight import build_native_preflight
 
 WALLET_PROVIDER_GUARD_SCHEMA = "0guard.wallet_provider_guard.v1"
+WALLET_PROVIDER_EXTERNAL_PROOF_SCHEMA = "0guard.wallet_provider_external_proof.v1"
+WALLET_PROVIDER_EXTERNAL_PROOF_VERIFICATION_SCHEMA = (
+    "0guard.wallet_provider_external_proof_verification.v1"
+)
+REPO_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_WALLET_PROVIDER_EXTERNAL_PROOF_PATH = (
+    REPO_ROOT / "docs" / "hackathon-0g" / "wallet-provider-external-proof.json"
+)
+SHA256_RE = re.compile(r"^[a-fA-F0-9]{64}$")
 
 READ_ONLY_PROVIDER_METHODS = frozenset(
     {
@@ -143,6 +156,118 @@ def build_wallet_provider_guard(payload: dict[str, Any] | None = None) -> dict[s
             "transactionBroadcastingEnabled": False,
             "rawParamsReturned": False,
             "moneyMovementEnabled": False,
+        },
+    }
+
+
+def build_wallet_provider_external_proof_status(
+    proof_path: str | Path | None = DEFAULT_WALLET_PROVIDER_EXTERNAL_PROOF_PATH,
+) -> dict[str, Any]:
+    """Return verification status for a real extension/window.ethereum proof."""
+
+    return verify_wallet_provider_external_proof(
+        _load_external_proof(proof_path) if proof_path else None,
+        proof_path=proof_path,
+    )
+
+
+def verify_wallet_provider_external_proof(
+    proof: dict[str, Any] | None,
+    *,
+    proof_path: str | Path | None = None,
+) -> dict[str, Any]:
+    """Validate a public-safe proof from an externally run wallet extension flow."""
+
+    if not isinstance(proof, dict):
+        return _external_proof_status(
+            "missing",
+            "wallet_provider_external_proof_file_missing",
+            proof_path=proof_path,
+        )
+
+    read_check = _scenario_check(
+        proof.get("readOnlyRequest"),
+        expected_method="eth_chainId",
+        expected_decision="allow",
+        expected_forwarded=True,
+    )
+    review_check = _scenario_check(
+        proof.get("reviewRequest"),
+        expected_method="wallet_switchEthereumChain",
+        expected_decision="review",
+        expected_forwarded=False,
+    )
+    deny_check = _scenario_check(
+        proof.get("denyRequest"),
+        expected_method="eth_sendTransaction",
+        expected_decision="deny",
+        expected_forwarded=False,
+    )
+    read_count = _provider_call_count(proof.get("readOnlyRequest"))
+    review_count = _provider_call_count(proof.get("reviewRequest"))
+    deny_count = _provider_call_count(proof.get("denyRequest"))
+    checks = {
+        "schema": proof.get("schema") == WALLET_PROVIDER_EXTERNAL_PROOF_SCHEMA,
+        "proofMode": proof.get("proofMode") == "real_wallet_extension_window_ethereum",
+        "externalDappOrigin": _valid_origin(proof.get("externalDappOrigin")),
+        "guardBaseUrl": _valid_origin(proof.get("guardBaseUrl")),
+        "windowEthereumPresent": proof.get("windowEthereumPresent") is True,
+        "realWalletExtension": proof.get("realWalletExtension") is True,
+        "mockProvider": proof.get("mockProvider") is False,
+        "throwawayWallet": proof.get("throwawayWallet") is True,
+        "walletWasEmpty": proof.get("walletWasEmpty") is True,
+        "walletAddressHash": _valid_sha256(proof.get("walletAddressHash")),
+        "readOnlyRequest": read_check["ok"],
+        "reviewRequest": review_check["ok"],
+        "denyRequest": deny_check["ok"],
+        "reviewDidNotAddProviderCall": read_count is not None and review_count == read_count,
+        "denyDidNotAddProviderCall": read_count is not None and deny_count == read_count,
+        "operatorReviewed": proof.get("operatorReviewed") is True,
+        "rawParamsReturned": proof.get("rawParamsReturned") is False,
+        "providerCallLogRawParamsStored": proof.get("providerCallLogRawParamsStored") is False,
+        "privateKeysReturned": proof.get("privateKeysReturned") is False,
+        "mnemonicsReturned": proof.get("mnemonicsReturned") is False,
+        "transactionSigningByZeroGuard": proof.get("transactionSigningByZeroGuard") is False,
+        "transactionBroadcastingByZeroGuard": proof.get("transactionBroadcastingByZeroGuard")
+        is False,
+        "moneyMovementByZeroGuard": proof.get("moneyMovementByZeroGuard") is False,
+    }
+    verified = all(checks.values())
+    return {
+        "schema": WALLET_PROVIDER_EXTERNAL_PROOF_VERIFICATION_SCHEMA,
+        "generatedAt": _now(),
+        "status": "verified" if verified else "review",
+        "verified": verified,
+        "proofPresent": True,
+        "proofPath": str(proof_path) if proof_path else proof.get("proofPath"),
+        "proofMode": proof.get("proofMode"),
+        "externalDappOrigin": proof.get("externalDappOrigin"),
+        "guardBaseUrl": proof.get("guardBaseUrl"),
+        "walletAddressHash": proof.get("walletAddressHash"),
+        "windowEthereumPresent": proof.get("windowEthereumPresent") is True,
+        "realWalletExtension": proof.get("realWalletExtension") is True,
+        "mockProvider": proof.get("mockProvider") is True,
+        "throwawayWallet": proof.get("throwawayWallet") is True,
+        "walletWasEmpty": proof.get("walletWasEmpty") is True,
+        "readOnlyRequest": read_check,
+        "reviewRequest": review_check,
+        "denyRequest": deny_check,
+        "checks": checks,
+        "safety": {
+            "readOnly": True,
+            "networkCalls": False,
+            "proofVerificationOnly": True,
+            "walletSignaturesRequestedBy0guard": False,
+            "providerForwardingPerformedBy0guard": False,
+            "rawParamsReturned": False,
+            "providerCallLogRawParamsStored": False,
+            "privateKeysReturned": False,
+            "mnemonicsReturned": False,
+            "transactionSigningEnabled": False,
+            "transactionBroadcastingEnabled": False,
+            "moneyMovementEnabled": False,
+            "telegramSendsEnabled": False,
+            "socialPostingEnabled": False,
         },
     }
 
@@ -376,6 +501,99 @@ def _redact_address(value: str) -> str:
     if len(raw) <= 12:
         return raw
     return f"{raw[:6]}...{raw[-4:]}"
+
+
+def _scenario_check(
+    value: Any,
+    *,
+    expected_method: str,
+    expected_decision: str,
+    expected_forwarded: bool,
+) -> dict[str, Any]:
+    scenario = value if isinstance(value, dict) else {}
+    receipt_hash = str(scenario.get("receiptHash") or "").strip()
+    provider_count = _provider_call_count(scenario)
+    ok = (
+        scenario.get("method") == expected_method
+        and scenario.get("decision") == expected_decision
+        and scenario.get("forwardedToProvider") is expected_forwarded
+        and scenario.get("walletPromptShown") is False
+        and provider_count is not None
+        and provider_count >= (1 if expected_forwarded else 0)
+        and _valid_sha256(receipt_hash)
+    )
+    return {
+        "ok": ok,
+        "method": scenario.get("method"),
+        "decision": scenario.get("decision"),
+        "forwardedToProvider": scenario.get("forwardedToProvider"),
+        "walletPromptShown": scenario.get("walletPromptShown"),
+        "providerCallCount": provider_count,
+        "receiptHash": receipt_hash,
+    }
+
+
+def _provider_call_count(value: Any) -> int | None:
+    if not isinstance(value, dict):
+        return None
+    try:
+        count = int(str(value.get("providerCallCount")))
+    except (TypeError, ValueError):
+        return None
+    return count if count >= 0 else None
+
+
+def _load_external_proof(path: str | Path | None) -> dict[str, Any] | None:
+    if not path:
+        return None
+    try:
+        return json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def _external_proof_status(
+    status: str,
+    reason: str,
+    *,
+    proof_path: str | Path | None = None,
+) -> dict[str, Any]:
+    return {
+        "schema": WALLET_PROVIDER_EXTERNAL_PROOF_VERIFICATION_SCHEMA,
+        "generatedAt": _now(),
+        "status": status,
+        "verified": False,
+        "proofPresent": False,
+        "proofPath": str(proof_path) if proof_path else "",
+        "reason": reason,
+        "safety": {
+            "readOnly": True,
+            "networkCalls": False,
+            "proofVerificationOnly": True,
+            "walletSignaturesRequestedBy0guard": False,
+            "providerForwardingPerformedBy0guard": False,
+            "transactionSigningEnabled": False,
+            "transactionBroadcastingEnabled": False,
+            "moneyMovementEnabled": False,
+            "privateKeysReturned": False,
+        },
+    }
+
+
+def _valid_origin(value: Any) -> bool:
+    raw = str(value or "").strip()
+    parsed = urlparse(raw)
+    return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+
+
+def _valid_sha256(value: Any) -> bool:
+    return isinstance(value, str) and bool(SHA256_RE.fullmatch(value.strip()))
+
+
+def wallet_address_hash(address: str) -> str:
+    """Return a stable hash for a throwaway wallet address."""
+
+    return hashlib.sha256(str(address or "").strip().lower().encode("utf-8")).hexdigest()
 
 
 def _now() -> str:

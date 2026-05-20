@@ -27,7 +27,10 @@ from guard0.reputation_backfill import (
 )
 from guard0.storage_upload_manifest import build_storage_upload_manifest
 from guard0.training_data import DEFAULT_INCIDENT_EVAL_PATH
-from guard0.wallet_provider_guard import build_wallet_provider_guard
+from guard0.wallet_provider_guard import (
+    build_wallet_provider_external_proof_status,
+    build_wallet_provider_guard,
+)
 from guard0.x402_guard import build_x402_settlement_policy, build_x402_wallet_preflight_dry_run
 
 PRODUCTION_GAP_MATRIX_SCHEMA = "0guard.production_gap_matrix.v1"
@@ -75,6 +78,7 @@ def build_production_gap_matrix() -> dict[str, Any]:
             ],
         }
     )
+    wallet_provider_proof = build_wallet_provider_external_proof_status()
     summary = incident_summary()
     coverage = detection_coverage()
     model_roadmap = build_model_training_roadmap(
@@ -314,25 +318,36 @@ def build_production_gap_matrix() -> dict[str, Any]:
                     wallet_provider_guard.get("safety") or {}
                 ).get("rawParamsReturned"),
                 "sdkExample": "examples/wallet_provider_guard/providerGuard.ts",
+                "externalProofRoute": "/api/wallet/provider-proof",
+                "externalProofStatus": wallet_provider_proof.get("status"),
+                "externalProofVerified": wallet_provider_proof.get("verified"),
+                "externalProofMode": wallet_provider_proof.get("proofMode"),
+                "realWalletExtension": wallet_provider_proof.get("realWalletExtension"),
+                "mockProvider": wallet_provider_proof.get("mockProvider"),
+                "throwawayWallet": wallet_provider_proof.get("throwawayWallet"),
+                "walletWasEmpty": wallet_provider_proof.get("walletWasEmpty"),
             },
             "Production wallet protection needs a guard in front of real EIP-1193 provider requests before wallet popups appear.",
-            "The hosted API, workbench control, and SDK wrapper exist; they do not protect external users until the wrapper is embedded in a real dapp or extension flow.",
-            "Wrap one MetaMask-compatible provider surface with the TypeScript helper, and prove deny/review requests stop before `provider.request`.",
+            "The hosted API, workbench control, SDK wrapper, external demo dapp, and proof recorder exist; the remaining risk is that no real wallet-extension proof artifact has been recorded yet.",
+            "Run the external dapp in a wallet-enabled browser with a throwaway empty account, then record the reviewed proof without storing raw params or wallet secrets.",
             "ZeroGuard wallet integration lane",
             1,
-            ["dapp_provider_integration", "production_review_ui"],
-            "Embed `examples/wallet_provider_guard/providerGuard.ts` in one demo dapp and verify read-only requests pass while signing/broadcast requests block before the wallet prompt.",
+            _wallet_provider_blockers(wallet_provider_proof),
+            "Use `examples/wallet_provider_guard/external_dapp/` and `scripts/record_wallet_provider_external_proof.py` to capture the first real extension/window.ethereum proof.",
             "Do not ask for private keys, forward denied requests, auto-broadcast transactions, or treat 0guard as wallet custody.",
             [
                 "Hosted `/api/wallet/provider-guard` returns the same schema and safety flags as local tests.",
                 "The wrapper only forwards allow verdicts to the provider.",
                 "Review and deny verdicts show a user-readable receipt before any wallet popup.",
+                "A real wallet-extension proof verifies `window.ethereum` is present, the wallet is throwaway/empty, read-only requests can forward, and review/deny requests add no provider calls.",
                 "Raw params, secrets, signatures, and payment headers are never returned by the guard route.",
             ],
             [
                 "/api/wallet/provider-guard",
+                "/api/wallet/provider-proof",
                 "/api/native-preflight",
                 "examples/wallet_provider_guard/providerGuard.ts",
+                "examples/wallet_provider_guard/external_dapp/",
             ],
         ),
         _gap(
@@ -906,6 +921,12 @@ def _x402_settlement_blockers(policy: dict[str, Any]) -> list[str]:
     if proof.get("verified") is not True:
         blockers.extend(["testnet_facilitator_readback", "settlement_receipt_storage"])
     return blockers
+
+
+def _wallet_provider_blockers(proof: dict[str, Any]) -> list[str]:
+    if proof.get("verified") is True:
+        return []
+    return ["real_wallet_extension_proof", "throwaway_empty_wallet_readback"]
 
 
 def _reputation_backfill_next_step(status: dict[str, Any]) -> str:
