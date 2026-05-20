@@ -22,12 +22,19 @@ X402_SETTLEMENT_PROOF_SCHEMA = "0guard.x402_base_sepolia_settlement_proof.v1"
 X402_SETTLEMENT_PROOF_VERIFICATION_SCHEMA = (
     "0guard.x402_base_sepolia_settlement_proof_verification.v1"
 )
+X402_BASE_SEPOLIA_BUYER_WALLET_STATUS_SCHEMA = (
+    "0guard.x402_base_sepolia_buyer_wallet_status.v1"
+)
 X402_FIXTURE_PAYMENT_HEADER = "fixture-paid-zeroguard-wallet-preflight-v1"
 X402_DOC_URL = "https://docs.cdp.coinbase.com/x402/welcome"
 X402_NETWORK_SUPPORT_URL = "https://docs.cdp.coinbase.com/x402/network-support"
 X402_ORG_URL = "https://www.x402.org/"
 X402_TESTNET_FACILITATOR_URL = "https://x402.org/facilitator"
 CDP_X402_FACILITATOR_URL = "https://api.cdp.coinbase.com/platform/v2/x402"
+BASE_SEPOLIA_NETWORK = "base-sepolia"
+BASE_SEPOLIA_CAIP2 = "eip155:84532"
+BASE_SEPOLIA_RPC_URL = "https://sepolia.base.org"
+BASE_SEPOLIA_USDC_CONTRACT = "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_X402_SETTLEMENT_PROOF_PATH = (
     REPO_ROOT / "docs" / "hackathon-0g" / "x402-base-sepolia-settlement-proof.json"
@@ -273,6 +280,95 @@ def build_x402_settlement_proof_status(
         _load_settlement_proof(proof_path) if proof_path else None,
         proof_path=proof_path,
     )
+
+
+def build_x402_base_sepolia_buyer_wallet_status(
+    *,
+    address: str,
+    eth_balance_wei: int | str | None = None,
+    usdc_balance_atomic: int | str | None = None,
+    rpc_url: str = BASE_SEPOLIA_RPC_URL,
+    usdc_contract: str = BASE_SEPOLIA_USDC_CONTRACT,
+    manifest_path: str | Path | None = None,
+    keychain_service: str = "",
+    network_calls: bool = False,
+) -> dict[str, Any]:
+    """Return public-safe funding readiness for the x402 throwaway buyer wallet.
+
+    The live CLI reads balances and passes them here. The app itself never
+    decrypts keystores, reads private keys, signs payment headers, calls a
+    facilitator, or settles a payment.
+    """
+
+    caps = _spend_caps()
+    required_usdc_atomic = int(caps["perRequestMaxAtomic"])
+    parsed_eth_balance = _parse_nonnegative_int(eth_balance_wei)
+    parsed_usdc_balance = _parse_nonnegative_int(usdc_balance_atomic)
+    address_valid = _valid_evm_address(address)
+    native_gas_ready = parsed_eth_balance is not None and parsed_eth_balance > 0
+    usdc_ready = (
+        parsed_usdc_balance is not None and parsed_usdc_balance >= required_usdc_atomic
+    )
+    blockers: list[str] = []
+    if not address_valid:
+        blockers.append("buyer_address_invalid")
+    if parsed_eth_balance is None:
+        blockers.append("base_sepolia_eth_balance_not_checked")
+    elif not native_gas_ready:
+        blockers.append("base_sepolia_eth_required_for_gas")
+    if parsed_usdc_balance is None:
+        blockers.append("base_sepolia_usdc_balance_not_checked")
+    elif not usdc_ready:
+        blockers.append("base_sepolia_usdc_below_0_01")
+    status = "ready_for_external_x402_settlement_proof" if not blockers else "funding_required"
+    return {
+        "schema": X402_BASE_SEPOLIA_BUYER_WALLET_STATUS_SCHEMA,
+        "generatedAt": _now(),
+        "status": status,
+        "blockers": blockers,
+        "address": address if address_valid else "",
+        "network": BASE_SEPOLIA_NETWORK,
+        "networkCaip2": BASE_SEPOLIA_CAIP2,
+        "rpcUrl": rpc_url,
+        "usdcContract": usdc_contract,
+        "manifestPath": str(manifest_path) if manifest_path else "",
+        "keychainServiceConfigured": bool(keychain_service),
+        "balances": {
+            "baseSepoliaEthWei": (
+                str(parsed_eth_balance) if parsed_eth_balance is not None else ""
+            ),
+            "baseSepoliaEthDisplay": _format_ether(parsed_eth_balance),
+            "baseSepoliaUsdcAtomic": (
+                str(parsed_usdc_balance) if parsed_usdc_balance is not None else ""
+            ),
+            "baseSepoliaUsdcDisplay": _format_usdc(parsed_usdc_balance),
+        },
+        "requiredForFirstProof": {
+            "nativeGas": "any positive Base Sepolia ETH balance for gas",
+            "usdcAtomic": str(required_usdc_atomic),
+            "usdcDisplay": caps["perRequestMaxDisplay"],
+            "facilitator": X402_TESTNET_FACILITATOR_URL,
+        },
+        "nextAction": (
+            "Run the external x402 settlement proof and record only hashes."
+            if not blockers
+            else "Fund the throwaway buyer with Base Sepolia ETH and 0.01 USDC testnet."
+        ),
+        "sources": [
+            X402_NETWORK_SUPPORT_URL,
+            "https://docs.x402.org/core-concepts/network-and-token-support",
+            "https://docs.base.org/tools/network-faucets",
+        ],
+        "safety": {
+            **_safety(),
+            "networkCalls": network_calls,
+            "readOnlyRpcCalls": network_calls,
+            "keystoreRead": False,
+            "privateKeysReturned": False,
+            "facilitatorCalled": False,
+            "settlementByZeroGuardEnabled": False,
+        },
+    }
 
 
 def verify_x402_settlement_proof(
@@ -529,6 +625,26 @@ def _parse_positive_int(value: Any) -> int | None:
     except (TypeError, ValueError):
         return None
     return parsed if parsed > 0 else None
+
+
+def _parse_nonnegative_int(value: Any) -> int | None:
+    try:
+        parsed = int(str(value))
+    except (TypeError, ValueError):
+        return None
+    return parsed if parsed >= 0 else None
+
+
+def _format_ether(wei: int | None) -> str:
+    if wei is None:
+        return ""
+    return f"{wei / 10**18:.18f}".rstrip("0").rstrip(".") or "0"
+
+
+def _format_usdc(atomic: int | None) -> str:
+    if atomic is None:
+        return ""
+    return f"{atomic / 10**6:.6f}".rstrip("0").rstrip(".") or "0"
 
 
 def _hash_text(value: str) -> str:
