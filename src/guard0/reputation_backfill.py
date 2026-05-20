@@ -75,6 +75,7 @@ def build_reputation_backfill_status(
     """Return the latest derived-feature backfill posture with no network calls."""
 
     latest_path = Path(path)
+    schedule_manifest = _schedule_manifest(latest_path)
     base = {
         "schema": REPUTATION_BACKFILL_STATUS_SCHEMA,
         "generatedAt": _now(),
@@ -85,7 +86,9 @@ def build_reputation_backfill_status(
         "feedLink": PHISHDESTROY_ACTIVE_DOMAINS_URL,
         "path": _display_path(latest_path),
         "latestRunExists": latest_path.exists(),
-        "scheduleManifest": _schedule_manifest(latest_path),
+        "scheduleManifest": schedule_manifest,
+        "supervisorInstalled": schedule_manifest.get("supervisorInstalled") is True,
+        "supervisorType": schedule_manifest.get("supervisorType"),
         "rightsPolicy": _rights_policy(),
         "safety": _safety(live_connector_fetch=False, write_local_artifact=False),
     }
@@ -119,16 +122,26 @@ def build_reputation_backfill_status(
     receipt = payload.get("snapshotReceipt") if isinstance(payload.get("snapshotReceipt"), dict) else {}
     derived = payload.get("derivedEvidence") if isinstance(payload.get("derivedEvidence"), list) else []
     generated_at = str(payload.get("generatedAt") or "")
+    latest_age_seconds = _age_seconds(generated_at)
+    ttl_seconds = int(fetch.get("ttlSeconds") or 21600)
+    fresh_within_ttl = _fresh_within_ttl(latest_age_seconds, ttl_seconds)
+    supervised_freshness_ready = (
+        _status_from_payload(payload) == "ready"
+        and fresh_within_ttl is True
+        and schedule_manifest.get("supervisorInstalled") is True
+    )
     return {
         **base,
         "status": _status_from_payload(payload),
         "latestSchema": payload.get("schema"),
         "latestGeneratedAt": generated_at,
-        "latestAgeSeconds": _age_seconds(generated_at),
+        "latestAgeSeconds": latest_age_seconds,
         "derivedEvidenceCount": len(derived),
         "parsedDomainCount": int(fetch.get("parsedDomainCount") or 0),
         "sampledEvidenceCount": int(fetch.get("sampledEvidenceCount") or len(derived)),
-        "ttlSeconds": int(fetch.get("ttlSeconds") or 21600),
+        "ttlSeconds": ttl_seconds,
+        "freshWithinTtl": fresh_within_ttl,
+        "supervisedFreshnessReady": supervised_freshness_ready,
         "feedHash": fetch.get("feedHash") or "",
         "snapshotHash": receipt.get("hash") or "",
         "runHash": (payload.get("runReceipt") or {}).get("hash") or "",
@@ -136,7 +149,7 @@ def build_reputation_backfill_status(
         "liveConnectorFetch": bool((payload.get("safety") or {}).get("liveConnectorFetch")),
         "rawPayloadsReturned": False,
         "rawDomainsReturned": False,
-        "nextAction": "Add a supervisor schedule after this latest derived-only run is stable and source terms remain acceptable.",
+        "nextAction": _status_next_action(supervised_freshness_ready),
     }
 
 
@@ -320,6 +333,18 @@ def _age_seconds(value: str) -> int | None:
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=timezone.utc)
     return max(0, int((_now_dt() - parsed).total_seconds()))
+
+
+def _fresh_within_ttl(age_seconds: int | None, ttl_seconds: int | None) -> bool:
+    if age_seconds is None or ttl_seconds is None:
+        return False
+    return age_seconds <= ttl_seconds
+
+
+def _status_next_action(supervised_freshness_ready: bool) -> str:
+    if supervised_freshness_ready:
+        return "Keep the scheduled derived-only freshness supervisor enabled, then add the next reviewed source family."
+    return "Restore freshness and supervisor readiness before adding credentialed vendor lanes."
 
 
 def _hash_bytes(value: bytes) -> str:

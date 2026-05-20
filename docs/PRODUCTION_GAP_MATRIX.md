@@ -56,6 +56,9 @@ deferred, and orders the next production gates.
 - Reputation freshness supervision: `.github/workflows/reputation-backfill-supervisor.yml`
   runs the derived-only PhishDestroy worker in no-write mode every six hours and
   fails closed if the latest artifact is stale or raw-payload flags regress.
+  `/api/reputation/backfill/status` exposes `freshWithinTtl`,
+  `supervisorInstalled`, and `supervisedFreshnessReady` at the top level so the
+  hosted API can be checked without digging through nested manifests.
 - 0G Storage upload manifest: `/api/0g/storage-upload/manifest` hashes the
   public-safe bundle, exposes the deterministic upload artifact hash, and
   verifies local hash readback without uploading.
@@ -101,7 +104,7 @@ The hard gates are deliberately explicit:
 - Historical feature store: not yet populated beyond the current curated/local
   artifacts and immutable seed exports.
 - Live reputation ingestion: the first open-feed derived artifact and scheduled
-  freshness supervisor exist, but broader production protection still needs
+  freshness supervisor exist; broader production protection still needs
   additional source families and credentialed/vendor lanes only after terms and
   retention review.
 - Sanctions and Web2 vulnerability ingestion: public CISA/NVD/OFAC workers now

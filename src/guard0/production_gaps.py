@@ -131,10 +131,15 @@ def build_production_gap_matrix() -> dict[str, Any]:
                 "firstOpenFeedParsedDomainCount": reputation_backfill.get("parsedDomainCount"),
                 "firstOpenFeedHash": reputation_backfill.get("feedHash"),
                 "firstOpenFeedPath": reputation_backfill.get("path"),
+                "firstOpenFeedFreshWithinTtl": reputation_backfill.get("freshWithinTtl"),
+                "firstOpenFeedSupervisorInstalled": reputation_backfill.get("supervisorInstalled"),
+                "firstOpenFeedSupervisedFreshnessReady": reputation_backfill.get(
+                    "supervisedFreshnessReady"
+                ),
                 "vendorLanes": ["Chainalysis", "TRM", "OFAC", "GoPlus", "Forta", "PhishDestroy"],
             },
             "Production protection needs fresh labels for domains, wallets, contracts, and malicious infrastructure.",
-            "A first open-feed derived artifact is present when the backfill status is ready; the remaining risk is supervision and broader source coverage.",
+            "A first open-feed derived artifact and scheduled freshness supervisor are present when supervisedFreshnessReady is true; the remaining risk is broader source coverage.",
             "Promote one open feed first, then add credentialed TRM/Chainalysis integrations only after terms, retention, and derived-output rules are approved.",
             "ZeroGuard reputation worker",
             1,
@@ -909,7 +914,11 @@ def _mainnet_proof_evidence(readiness: dict[str, Any]) -> dict[str, Any]:
 
 
 def _reputation_backfill_blockers(status: dict[str, Any]) -> list[str]:
-    blockers = ["schedule_supervisor", "credentialed_sources", "vendor_terms"]
+    blockers = ["credentialed_sources", "vendor_terms"]
+    if status.get("supervisorInstalled") is not True:
+        blockers.insert(0, "schedule_supervisor")
+    if status.get("freshWithinTtl") is not True:
+        blockers.insert(0, "freshness_ttl")
     if status.get("status") != "ready":
         return ["first_open_feed_backfill_run", *blockers]
     return blockers
@@ -940,14 +949,18 @@ def _wallet_provider_blockers(proof: dict[str, Any]) -> list[str]:
 
 
 def _reputation_backfill_next_step(status: dict[str, Any]) -> str:
+    if status.get("supervisedFreshnessReady") is True:
+        return "Keep the PhishDestroy freshness supervisor enabled, then add one credentialed vendor after terms review."
     if status.get("status") == "ready":
-        return "Install a supervisor schedule for the derived-only PhishDestroy worker, then add one credentialed vendor after terms review."
+        return "Restore supervised freshness for the derived-only PhishDestroy worker, then add one credentialed vendor after terms review."
     return "Run the PhishDestroy derived-only backfill worker and persist the latest feature artifact without raw feed rows."
 
 
 def _reputation_backfill_build_order(status: dict[str, Any]) -> str:
+    if status.get("supervisedFreshnessReady") is True:
+        return "Expand from the supervised first open reputation feed into one reviewed credentialed source lane."
     if status.get("status") == "ready":
-        return "Install supervision for the first open reputation feed and add freshness alerts around the derived artifact."
+        return "Restore supervision and freshness alerts around the first open reputation artifact."
     return "Promote one open reputation feed into a derived-feature backfill artifact."
 
 

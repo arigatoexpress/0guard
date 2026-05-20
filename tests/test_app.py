@@ -870,6 +870,9 @@ def test_cross_chain_integration_routes_are_read_only(client):
     assert backfill_body["safety"]["networkCalls"] is False
     assert backfill_body["rightsPolicy"]["rawPayloadsReturned"] is False
     assert backfill_body["rawPayloadsReturned"] is False
+    assert "supervisorInstalled" in backfill_body
+    assert "freshWithinTtl" in backfill_body
+    assert "supervisedFreshnessReady" in backfill_body
 
     adapters = client.get("/api/reputation/adapters")
     assert adapters.status_code == 200
