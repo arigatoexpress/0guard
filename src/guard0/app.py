@@ -148,8 +148,11 @@ from guard0.wallet_provider_guard import (
     build_wallet_provider_guard,
 )
 from guard0.x402_guard import (
+    BASE_SEPOLIA_CAIP2,
+    X402_TESTNET_FACILITATOR_URL,
     build_x402_settlement_policy,
     build_x402_settlement_proof_status,
+    build_x402_wallet_preflight_paid_response,
     build_x402_wallet_preflight_dry_run,
 )
 
@@ -967,6 +970,7 @@ def api_frontend_contract():
                 "/api/x402/dry-run/wallet-preflight",
                 "/api/x402/settlement-policy",
                 "/api/x402/settlement-proof",
+                "/x402/v1/wallet-preflight",
                 "/api/wallet/provider-proof",
                 "/api/intelligence/events",
                 "/api/intelligence/detector-candidates",
@@ -1299,6 +1303,40 @@ def api_x402_settlement_policy():
 @app.route("/api/x402/settlement-proof", methods=["GET"])
 def api_x402_settlement_proof():
     return jsonify(build_x402_settlement_proof_status())
+
+
+@app.route("/x402/v1/wallet-preflight", methods=["GET"])
+def x402_live_wallet_preflight():
+    if not app.config.get("ZG_X402_LIVE_SETTLEMENT_MIDDLEWARE"):
+        return (
+            jsonify(
+                {
+                    "schema": "0guard.x402_live_wallet_preflight_disabled.v1",
+                    "status": "settlement_disabled",
+                    "reason": app.config.get("ZG_X402_LIVE_SETTLEMENT_BLOCKER")
+                    or "settlement_middleware_not_active",
+                    "settlementPolicyRoute": "/api/x402/settlement-policy",
+                    "safety": {
+                        "x402SettlementEnabled": False,
+                        "paymentSettlementEnabled": False,
+                        "paymentHeaderStored": False,
+                        "transactionSigningEnabled": False,
+                        "transactionBroadcastingEnabled": False,
+                    },
+                }
+            ),
+            503,
+        )
+    payload = build_x402_wallet_preflight_paid_response(
+        body={
+            "target": request.args.get("target", ""),
+            "url": request.args.get("url", ""),
+            "address": request.args.get("address", ""),
+        }
+    )
+    response = jsonify(payload)
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @app.route("/api/intelligence/events", methods=["GET"])
@@ -2650,6 +2688,63 @@ def _truthy_value(value: object) -> bool:
     if isinstance(value, str):
         return value.lower() in {"1", "true", "yes", "on"}
     return bool(value)
+
+
+def _maybe_install_x402_testnet_middleware() -> None:
+    app.config["ZG_X402_LIVE_SETTLEMENT_MIDDLEWARE"] = False
+    app.config["ZG_X402_LIVE_SETTLEMENT_BLOCKER"] = "settlement_env_gate_disabled"
+    if not _truthy_value(os.environ.get("ZG_X402_ENABLE_SETTLEMENT")):
+        return
+    if _truthy_value(os.environ.get("ZG_X402_ALLOW_MAINNET")):
+        app.config["ZG_X402_LIVE_SETTLEMENT_BLOCKER"] = "mainnet_settlement_not_allowed_here"
+        return
+
+    policy = build_x402_settlement_policy()
+    payment = policy.get("paymentRequirement") or {}
+    pay_to = str(payment.get("payTo") or "").strip()
+    if not payment.get("payToConfigured") or not pay_to:
+        app.config["ZG_X402_LIVE_SETTLEMENT_BLOCKER"] = "pay_to_address_missing"
+        return
+
+    try:
+        from x402 import x402ResourceServerSync
+        from x402.http import (
+            FacilitatorConfig,
+            HTTPFacilitatorClientSync,
+            PaymentOption,
+            RouteConfig,
+        )
+        from x402.http.middleware.flask import payment_middleware
+        from x402.mechanisms.evm.exact import ExactEvmServerScheme
+    except ImportError as exc:
+        app.config["ZG_X402_LIVE_SETTLEMENT_BLOCKER"] = f"x402_dependency_missing:{exc}"
+        return
+
+    facilitator = HTTPFacilitatorClientSync(FacilitatorConfig(url=X402_TESTNET_FACILITATOR_URL))
+    server = x402ResourceServerSync(facilitator)
+    server.register(BASE_SEPOLIA_CAIP2, ExactEvmServerScheme())
+    payment_middleware(
+        app,
+        {
+            "GET /x402/v1/wallet-preflight": RouteConfig(
+                accepts=PaymentOption(
+                    scheme="exact",
+                    pay_to=pay_to,
+                    price="$0.01",
+                    network=BASE_SEPOLIA_CAIP2,
+                ),
+                resource="https://guard0-miniapp-s77j6bxyra-uc.a.run.app/x402/v1/wallet-preflight",
+                description="ZeroGuard wallet preflight verdict packet",
+                mime_type="application/json",
+            )
+        },
+        server,
+    )
+    app.config["ZG_X402_LIVE_SETTLEMENT_MIDDLEWARE"] = True
+    app.config["ZG_X402_LIVE_SETTLEMENT_BLOCKER"] = ""
+
+
+_maybe_install_x402_testnet_middleware()
 
 
 def main() -> None:

@@ -6,6 +6,7 @@ from guard0.x402_guard import (
     X402_FIXTURE_PAYMENT_HEADER,
     X402_SETTLEMENT_PROOF_SCHEMA,
     build_x402_base_sepolia_buyer_wallet_status,
+    build_x402_wallet_preflight_paid_response,
     build_x402_settlement_policy,
     build_x402_settlement_proof_status,
     build_x402_wallet_preflight_dry_run,
@@ -55,6 +56,23 @@ def test_x402_wallet_preflight_rejects_malformed_payment_without_echo():
     encoded = json.dumps(payload)
     assert secretish_header not in encoded
     assert payload["safety"]["paymentSettlementEnabled"] is False
+
+
+def test_x402_wallet_preflight_paid_response_is_derived_and_no_header_echo():
+    payload = build_x402_wallet_preflight_paid_response(
+        body={"target": "0x02228b0afcdbEdf8180D96Fc181Da3AF5DD1d1ab"}
+    )
+
+    assert payload["schema"] == "0guard.x402_wallet_preflight_paid_response.v1"
+    assert payload["status"] == "payment_verified_response_ready_for_settlement"
+    assert payload["productResponse"]["schema"] == "0guard.wallet_preflight_verdict.v1"
+    assert payload["productResponse"]["rawPayloadResaleAllowed"] is False
+    assert payload["productResponse"]["targetHash"]
+    assert payload["paymentReadback"]["paymentHeaderReturned"] is False
+    assert payload["paymentReadback"]["paymentHeaderStored"] is False
+    assert payload["safety"]["x402SettlementEnabled"] is True
+    assert payload["safety"]["paymentHeaderStored"] is False
+    assert payload["safety"]["transactionSigningEnabled"] is False
 
 
 def test_x402_settlement_policy_freezes_caps_terms_and_facilitator_path(monkeypatch):

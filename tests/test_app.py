@@ -177,6 +177,7 @@ def test_frontend_contract_is_browser_smoke_ready_and_non_mutating(client):
     assert "/api/x402/data-products" in data["apiRoutes"]
     assert "/api/x402/dry-run/wallet-preflight" in data["apiRoutes"]
     assert "/api/x402/settlement-policy" in data["apiRoutes"]
+    assert "/x402/v1/wallet-preflight" in data["apiRoutes"]
     assert "/api/intelligence/detector-candidates" in data["apiRoutes"]
     assert "/api/product/brief" in data["apiRoutes"]
     assert "/api/product/strategy-review" in data["apiRoutes"]
@@ -547,6 +548,14 @@ def test_local_inference_x402_and_backfill_routes_are_no_side_effect(client):
     assert x402_fixture_body["status"] == "payment_fixture_accepted_no_settlement"
     assert x402_fixture_body["paymentReadback"]["settlementAttempted"] is False
     assert x402_fixture_body["productResponse"]["rawPayloadResaleAllowed"] is False
+
+    x402_live_disabled = client.get("/x402/v1/wallet-preflight")
+    assert x402_live_disabled.status_code == 503
+    live_disabled_body = x402_live_disabled.get_json()
+    assert live_disabled_body["schema"] == "0guard.x402_live_wallet_preflight_disabled.v1"
+    assert live_disabled_body["status"] == "settlement_disabled"
+    assert live_disabled_body["safety"]["x402SettlementEnabled"] is False
+    assert live_disabled_body["safety"]["paymentHeaderStored"] is False
 
     x402_policy = client.get("/api/x402/settlement-policy")
     assert x402_policy.status_code == 200
