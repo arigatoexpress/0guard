@@ -51,6 +51,8 @@ from CI's mock-provider browser smoke:
 - prove `eth_chainId` can forward to `window.ethereum.request`;
 - prove `wallet_switchEthereumChain` and `eth_sendTransaction` stop before a
   wallet prompt and add no provider calls;
+- use the proof draft panel to hash the throwaway wallet address locally and
+  gather the public-safe recorder arguments;
 - record only hashes and public metadata with
   `scripts/record_wallet_provider_external_proof.py`.
 

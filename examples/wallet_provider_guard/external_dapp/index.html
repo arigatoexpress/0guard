@@ -30,6 +30,18 @@
       <p class="note">Use an empty throwaway wallet for manual testing. The dangerous buttons should stop before the wallet prompt.</p>
     </section>
 
+    <section class="panel proof-panel">
+      <div class="proof-grid">
+        <label>
+          Throwaway wallet address
+          <input id="throwaway-wallet-address" autocomplete="off" spellcheck="false" placeholder="0x...">
+        </label>
+        <button id="build-proof-draft" type="button" class="secondary">Build proof draft</button>
+      </div>
+      <p class="note">The address is hashed in the browser and omitted from the draft.</p>
+      <pre id="proof-output">Run all three requests, then build the proof draft.</pre>
+    </section>
+
     <section class="grid">
       <div class="panel">
         <h2>Guard result</h2>

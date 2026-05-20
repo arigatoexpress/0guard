@@ -90,6 +90,9 @@ def test_wallet_provider_guard_example_is_present_and_blocks_before_prompt():
     assert "WalletGuardBlockedError" in combined
     assert "provider.request<T>(request)" in combined
     assert "window.ethereum" in combined
+    assert "wallet_provider_external_proof_draft" in combined
+    assert "rawWalletAddressStored" in combined
+    assert "record_wallet_provider_external_proof.py" in combined
     assert "review" in combined
     assert "deny" in combined
     assert "private_key" not in combined
