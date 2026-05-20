@@ -12,6 +12,8 @@ curl -s http://127.0.0.1:8109/api/product/strategy-review | python3 -m json.tool
 curl -s http://127.0.0.1:8109/api/model/training-roadmap | python3 -m json.tool
 curl -s 'http://127.0.0.1:8109/api/model/incident-eval-set?limit=3' | python3 -m json.tool
 curl -s http://127.0.0.1:8109/api/reputation/backfill/status | python3 -m json.tool
+PYTHONPATH=src .venv/bin/python scripts/reputation_backfill_supervisor_check.py \
+  --latest data/backfill/reputation_features/phishdestroy/latest.json
 curl -s 'http://127.0.0.1:8109/api/intelligence/cyber-threats?cves=CVE-2024-3094&limit=5' | python3 -m json.tool
 curl -s http://127.0.0.1:8109/api/0g/storage-upload/manifest | python3 -m json.tool
 curl -s -i http://127.0.0.1:8109/api/x402/dry-run/wallet-preflight
@@ -49,6 +51,9 @@ deferred, and orders the next production gates.
   defensive signals.
 - First eval/backfill artifacts: `data/evals/incident_detector_eval.v1.jsonl`
   and `data/backfill/reputation_features/phishdestroy/latest.json`.
+- Reputation freshness supervision: `.github/workflows/reputation-backfill-supervisor.yml`
+  runs the derived-only PhishDestroy worker in no-write mode every six hours and
+  fails closed if the latest artifact is stale or raw-payload flags regress.
 - 0G Storage upload manifest: `/api/0g/storage-upload/manifest` hashes the
   public-safe bundle and verifies local hash readback without uploading.
 - Historical feature store exports: the latest JSONL alias remains available
@@ -71,9 +76,10 @@ The hard gates are deliberately explicit:
 
 - Historical feature store: not yet populated beyond the current curated/local
   artifacts and immutable seed exports.
-- Live reputation ingestion: the first open-feed derived artifact exists, but
-  readiness now requires it to be fresh within TTL and supervised before it is
-  green.
+- Live reputation ingestion: the first open-feed derived artifact and scheduled
+  freshness supervisor exist, but broader production protection still needs
+  additional source families and credentialed/vendor lanes only after terms and
+  retention review.
 - Sanctions and Web2 vulnerability ingestion: public CISA/NVD/OFAC workers now
   exist, but production blocking still requires source freshness supervision,
   dependency/address matching, retention rules, and vendor/legal review before

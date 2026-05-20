@@ -16,6 +16,7 @@ RUN pip install --no-cache-dir -e .
 # Copy app code
 COPY NOTICE ./
 COPY scripts/ ./scripts/
+COPY .github/workflows/reputation-backfill-supervisor.yml ./.github/workflows/reputation-backfill-supervisor.yml
 COPY data/ ./data/
 COPY content/ ./content/
 COPY contracts/ ./contracts/

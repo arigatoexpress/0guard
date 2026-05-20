@@ -73,6 +73,10 @@ def test_reputation_backfill_persists_derived_only_latest(tmp_path):
     assert status["rawPayloadsReturned"] is False
     assert status["rawDomainsReturned"] is False
     assert status["safety"]["networkCalls"] is False
+    assert status["scheduleManifest"]["supervisorInstalled"] is True
+    assert status["scheduleManifest"]["supervisorType"] == (
+        "github_actions_scheduled_freshness_monitor"
+    )
 
 
 def test_reputation_backfill_status_missing_is_safe(tmp_path):

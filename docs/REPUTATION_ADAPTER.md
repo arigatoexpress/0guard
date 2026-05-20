@@ -92,8 +92,14 @@ PYTHONPATH=src .venv/bin/python scripts/reputation_backfill_worker.py \
 
 Expected result: schema `0guard.reputation_backfill_run.v1`, parsed-domain
 count, feed hash, derived evidence hashes, and `rawDomainsReturned=false`.
-The worker is not a scheduler yet; `supervisorInstalled=false` stays visible
-until a launchd/systemd/cron wrapper is reviewed.
+The worker now has a reviewed GitHub Actions freshness supervisor:
+`.github/workflows/reputation-backfill-supervisor.yml`. Every six hours it runs
+the live PhishDestroy worker in `--no-write` mode, then
+`scripts/reputation_backfill_supervisor_check.py` verifies the latest derived
+artifact is fresh within TTL and that the live smoke output still returns no
+raw payloads or raw domains. This is supervision, not broad feed ingestion:
+credentialed vendor lanes still wait for terms, retention, and derived-output
+review.
 
 ## Adapter Normalization Contract
 

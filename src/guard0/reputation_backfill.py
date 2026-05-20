@@ -25,6 +25,12 @@ REPUTATION_BACKFILL_STATUS_SCHEMA = "0guard.reputation_backfill_status.v1"
 DEFAULT_REPUTATION_BACKFILL_PATH = Path(
     "data/backfill/reputation_features/phishdestroy/latest.json"
 )
+REPUTATION_BACKFILL_SUPERVISOR_WORKFLOW_PATH = Path(
+    ".github/workflows/reputation-backfill-supervisor.yml"
+)
+REPUTATION_BACKFILL_SUPERVISOR_CHECK_PATH = Path(
+    "scripts/reputation_backfill_supervisor_check.py"
+)
 
 
 def run_phishdestroy_reputation_backfill(
@@ -228,8 +234,15 @@ def _write_json(path: Path, payload: dict[str, Any]) -> None:
 
 
 def _schedule_manifest(out_path: Path) -> dict[str, Any]:
+    supervisor_installed = _supervisor_installed()
     return {
-        "supervisorInstalled": False,
+        "supervisorInstalled": supervisor_installed,
+        "supervisorType": "github_actions_scheduled_freshness_monitor"
+        if supervisor_installed
+        else "not_installed",
+        "workflowPath": _display_path(REPUTATION_BACKFILL_SUPERVISOR_WORKFLOW_PATH),
+        "checkScriptPath": _display_path(REPUTATION_BACKFILL_SUPERVISOR_CHECK_PATH),
+        "scheduleCronUtc": "17 */6 * * *",
         "recommendedIntervalSeconds": 21600,
         "ttlSeconds": 21600,
         "command": (
@@ -239,6 +252,13 @@ def _schedule_manifest(out_path: Path) -> dict[str, Any]:
         "writesRawPayloads": False,
         "requiresSecret": False,
     }
+
+
+def _supervisor_installed() -> bool:
+    return (
+        REPUTATION_BACKFILL_SUPERVISOR_WORKFLOW_PATH.exists()
+        and REPUTATION_BACKFILL_SUPERVISOR_CHECK_PATH.exists()
+    )
 
 
 def _rights_policy() -> dict[str, Any]:

@@ -1,0 +1,35 @@
+name: Reputation Backfill Supervisor
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  freshness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e '.[dev]'
+      - name: Live derived worker smoke
+        run: |
+          python scripts/reputation_backfill_worker.py \
+            --source phishdestroy_destroylist \
+            --live \
+            --limit 5 \
+            --no-write \
+            > /tmp/phishdestroy-worker-smoke.json
+      - name: Freshness supervisor check
+        run: |
+          python scripts/reputation_backfill_supervisor_check.py \
+            --latest data/backfill/reputation_features/phishdestroy/latest.json \
+            --worker-output /tmp/phishdestroy-worker-smoke.json

@@ -17,9 +17,10 @@ paid inference, upload to 0G Storage, or move funds.
 Goal: falsify the claim "0guard is fully live wallet protection." Inspect
 wallet-provider origin trust, external dapp/window.ethereum proof, x402 dry-run
 vs settlement, 0G Storage manifest vs live upload/readback, 0G Private Computer
-paid smoke gates, reputation freshness/supervision, historical feature-store
-immutability, storage-node/Pi readiness, CISA/NVD/OFAC/MITRE cyber-threat
-repository safety, sanctions-screening legal caveats, and docs overclaims.
+paid smoke gates, reputation freshness/supervision including the scheduled
+no-write PhishDestroy monitor, historical feature-store immutability,
+storage-node/Pi readiness, CISA/NVD/OFAC/MITRE cyber-threat repository safety,
+sanctions-screening legal caveats, and docs overclaims.
 
 Return prioritized findings with file/line refs, one exploit or failure
 scenario per finding, exact safe remediation/tests, and a final verdict for:
