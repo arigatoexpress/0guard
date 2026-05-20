@@ -40,9 +40,12 @@ can verify now from what remains before a production/mainnet launch.
   `/api/0g/storage-node/status`, `/api/0g/node-business`.
 - 0G Private Computer readiness: Router/model/API-key/hot-wallet resources are
   manifest-ready, can read the Router model catalog without authentication,
-  and expose a no-inference prompt-scrub smoke contract.
+  expose a no-inference prompt-scrub smoke contract, and verify a future paid
+  smoke proof without storing raw prompts, raw responses, API keys, private
+  keys, or payment headers.
   Evidence: `/api/0g/private-computer`, `/api/0g/private-computer?live=1`,
   `/api/0g/private-computer/smoke-preview`,
+  `/api/0g/private-computer/smoke-proof`,
   `/api/0g/hot-wallet-resources`, and
   `docs/0G_PRIVATE_COMPUTE_AND_HOT_WALLET_RUNBOOK.md`.
 - Production gap matrix: the repo now exposes a machine-readable real/local/

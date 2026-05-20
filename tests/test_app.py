@@ -152,6 +152,7 @@ def test_frontend_contract_is_browser_smoke_ready_and_non_mutating(client):
     assert "/api/0g/node-business" in data["apiRoutes"]
     assert "/api/0g/private-computer" in data["apiRoutes"]
     assert "/api/0g/private-computer/smoke-preview" in data["apiRoutes"]
+    assert "/api/0g/private-computer/smoke-proof" in data["apiRoutes"]
     assert "/api/local-inference/status" in data["apiRoutes"]
     assert "/api/telegram/local-inference-preview" in data["apiRoutes"]
     assert "/api/0g/hot-wallet-resources" in data["apiRoutes"]
@@ -440,8 +441,22 @@ def test_peer_protection_routes_are_no_send_and_no_broadcast(client):
     assert private_smoke_body["schema"] == "0guard.0g_private_compute_smoke_preview.v1"
     assert private_smoke_body["sampleRequest"]["inferenceExecuted"] is False
     assert private_smoke_body["router"]["apiKeyReturned"] is False
+    assert private_smoke_body["paidSmokeProof"]["status"] == "missing"
     assert private_smoke_body["safety"]["networkCalls"] is False
     assert private_smoke_body["safety"]["transactionSigningEnabled"] is False
+
+    private_smoke_proof = client.get("/api/0g/private-computer/smoke-proof")
+    assert private_smoke_proof.status_code == 200
+    private_smoke_proof_body = private_smoke_proof.get_json()
+    assert (
+        private_smoke_proof_body["schema"]
+        == "0guard.0g_private_compute_paid_smoke_proof_verification.v1"
+    )
+    assert private_smoke_proof_body["status"] == "missing"
+    assert private_smoke_proof_body["verified"] is False
+    assert private_smoke_proof_body["safety"]["proofVerificationOnly"] is True
+    assert private_smoke_proof_body["safety"]["paidInferenceByZeroGuard"] is False
+    assert private_smoke_proof_body["safety"]["apiKeyReturned"] is False
 
     hot_wallets = client.get("/api/0g/hot-wallet-resources")
     assert hot_wallets.status_code == 200

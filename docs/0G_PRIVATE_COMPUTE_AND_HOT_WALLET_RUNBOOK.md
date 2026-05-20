@@ -14,6 +14,7 @@ or broadcast transactions.
 | 0G Compute Router manifest | Prepared | `GET /api/0g/private-computer` |
 | Live model catalog readback | Read-only | `GET /api/0g/private-computer?live=1` |
 | No-inference smoke contract | Prepared | `GET /api/0g/private-computer/smoke-preview` |
+| Paid smoke proof verifier | Prepared | `GET /api/0g/private-computer/smoke-proof` |
 | Hot-wallet resource plan | Prepared | `GET /api/0g/hot-wallet-resources` |
 | 0GM-1.0 use case | Explanation and draft review only | Deterministic ZeroGuard policy remains authority |
 | Router funding | Not executed | Requires wallet UI and final confirmation |
@@ -36,6 +37,28 @@ requests, automatic provider discovery, billing, and failover.
    prompt scrubber, request shape, and blockers without executing inference.
 8. Only then run a tiny controlled server-side inference request after a final
    spend confirmation.
+9. Record only public-safe receipt metadata with
+   `scripts/record_0g_private_compute_paid_smoke.py`; the proof file must store
+   prompt, request, response, and Router receipt hashes, not the raw prompt,
+   raw response, API key, private keys, or payment headers.
+
+Example proof-recording shape after the external smoke:
+
+```bash
+PYTHONPATH=src .venv/bin/python scripts/record_0g_private_compute_paid_smoke.py \
+  --prompt-hash <sha256> \
+  --request-hash <sha256> \
+  --response-hash <sha256> \
+  --router-receipt-hash <sha256> \
+  --budget-usd 0.25 \
+  --cost-usd 0.01 \
+  --operator-reviewed-budget \
+  --prompt-safe-for-inference \
+  --paid-inference-performed-externally \
+  --raw-prompt-not-stored \
+  --raw-response-not-stored \
+  --api-key-not-returned
+```
 
 ## Funding Manifest Template
 

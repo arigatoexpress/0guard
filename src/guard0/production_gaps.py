@@ -488,14 +488,20 @@ def build_production_gap_matrix() -> dict[str, Any]:
                 "smokeInferenceExecuted": (private_compute_smoke.get("safety") or {}).get(
                     "inferenceExecuted"
                 ),
+                "paidSmokeProofStatus": (
+                    private_compute_smoke.get("paidSmokeProof") or {}
+                ).get("status"),
+                "paidSmokeProofVerified": (
+                    private_compute_smoke.get("paidSmokeProof") or {}
+                ).get("verified"),
             },
             "Attested inference lets ZeroGuard summarize sensitive risk packets without trusting an ordinary centralized model host.",
-            "The adapter, prompt scrubber, and no-inference smoke preview are ready, but no server-side Router key or paid smoke is configured in this runtime.",
-            "Create a server-side Router key, deposit a small reviewed budget, and run one prompt-minimized smoke on a deterministic verdict packet.",
+            "The adapter, prompt scrubber, no-inference smoke preview, and paid-smoke proof verifier are ready, but no server-side Router key or paid smoke proof is configured in this runtime.",
+            "Create a server-side Router key, deposit a small reviewed budget, run one prompt-minimized smoke on a deterministic verdict packet, and record only hashes/cost metadata.",
             "ZeroGuard model lane",
             1,
             ["0g_router_api_key", "router_deposit", "paid_inference_env_gate", "inference_smoke_test"],
-            "Use `/api/0g/private-computer/smoke-preview` as the reviewed contract before running the first server-side paid smoke.",
+            "Use `/api/0g/private-computer/smoke-preview` as the reviewed contract before running the first server-side paid smoke, then verify `/api/0g/private-computer/smoke-proof`.",
             "Do not send secrets, raw private chats, private keys, mnemonics, or full paid-feed payloads to any model.",
             [
                 "Inference route is server-side only.",
@@ -506,6 +512,7 @@ def build_production_gap_matrix() -> dict[str, Any]:
             [
                 "/api/0g/private-computer",
                 "/api/0g/private-computer/smoke-preview",
+                "/api/0g/private-computer/smoke-proof",
                 "/api/model/training-roadmap",
             ],
         ),

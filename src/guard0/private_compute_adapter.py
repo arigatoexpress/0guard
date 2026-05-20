@@ -9,14 +9,25 @@ separate operator spend confirmation.
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import re
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from guard0.peer_protection import CHAT_COMPLETIONS_URL, MODEL_ID, ROUTER_BASE_URL
 
 PRIVATE_COMPUTE_SMOKE_PREVIEW_SCHEMA = "0guard.0g_private_compute_smoke_preview.v1"
+PRIVATE_COMPUTE_PAID_SMOKE_PROOF_SCHEMA = "0guard.0g_private_compute_paid_smoke_proof.v1"
+PRIVATE_COMPUTE_PAID_SMOKE_PROOF_VERIFICATION_SCHEMA = (
+    "0guard.0g_private_compute_paid_smoke_proof_verification.v1"
+)
+PRIVATE_COMPUTE_FIRST_SMOKE_MAX_COST_USD = 0.25
+REPO_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_PRIVATE_COMPUTE_PAID_SMOKE_PROOF_PATH = (
+    REPO_ROOT / "docs" / "hackathon-0g" / "0g-private-compute-paid-smoke-proof.json"
+)
 
 SECRET_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("private_key", re.compile(r"\b0x[a-fA-F0-9]{64}\b")),
@@ -33,6 +44,7 @@ def build_private_compute_smoke_preview(
     api_key_configured: bool | None = None,
     paid_inference_allowed: bool | None = None,
     budget_usd: float | None = None,
+    paid_smoke_proof_path: str | Path | None = DEFAULT_PRIVATE_COMPUTE_PAID_SMOKE_PROOF_PATH,
 ) -> dict[str, Any]:
     """Return a no-inference 0G Private Computer smoke contract."""
 
@@ -56,7 +68,15 @@ def build_private_compute_smoke_preview(
     if budget <= 0:
         blockers.append("positive_budget_required")
 
-    status = "ready_for_operator_paid_smoke" if not blockers else "blocked_before_paid_inference"
+    paid_smoke_proof = build_private_compute_paid_smoke_proof_status(paid_smoke_proof_path)
+    paid_smoke_verified = paid_smoke_proof.get("verified") is True
+    status = (
+        "paid_smoke_complete"
+        if paid_smoke_verified
+        else "ready_for_operator_paid_smoke"
+        if not blockers
+        else "blocked_before_paid_inference"
+    )
     return {
         "schema": PRIVATE_COMPUTE_SMOKE_PREVIEW_SCHEMA,
         "generatedAt": _now(),
@@ -79,15 +99,124 @@ def build_private_compute_smoke_preview(
         },
         "promptScrub": scrub,
         "sampleRequest": _sample_request(scrub),
+        "paidSmokeProof": paid_smoke_proof,
         "operatorNext": [
             "Store the Router key server-side only after funding a tiny reviewed Router budget.",
             "Set ZG_ALLOW_PAID_INFERENCE=1 and a positive ZG_0G_INFERENCE_BUDGET_USD only for a controlled smoke.",
-            "Run the first paid smoke from a server-side worker, then store only receipt metadata and the advisory explanation.",
+            "Run the first paid smoke from a server-side worker, then record only prompt/request/response hashes and receipt metadata.",
+            "Use scripts/record_0g_private_compute_paid_smoke.py to create docs/hackathon-0g/0g-private-compute-paid-smoke-proof.json.",
         ],
         "safety": _safety(
             paid_inference_enabled=key_ready and paid_allowed and budget > 0,
             prompt_safe=scrub["safeForInference"],
         ),
+    }
+
+
+def build_private_compute_paid_smoke_proof_status(
+    proof_path: str | Path | None = DEFAULT_PRIVATE_COMPUTE_PAID_SMOKE_PROOF_PATH,
+) -> dict[str, Any]:
+    """Return verification status for an externally performed paid smoke proof."""
+
+    return verify_private_compute_paid_smoke_proof(
+        _load_paid_smoke_proof(proof_path) if proof_path else None,
+        proof_path=proof_path,
+    )
+
+
+def verify_private_compute_paid_smoke_proof(
+    proof: dict[str, Any] | None,
+    *,
+    proof_path: str | Path | None = None,
+) -> dict[str, Any]:
+    """Validate a public-safe receipt for one externally performed paid smoke.
+
+    The live call must happen outside this workbench in a server-side
+    operator-controlled environment. This verifier accepts only hashes,
+    bounded-cost metadata, and explicit no-secret/no-raw-payload flags.
+    """
+
+    if not isinstance(proof, dict):
+        return _paid_smoke_proof_status(
+            "missing",
+            "paid_smoke_proof_file_missing",
+            proof_path=proof_path,
+        )
+
+    budget_usd = _parse_nonnegative_float(proof.get("budgetUsd"))
+    cost_usd = _parse_positive_float(proof.get("costUsd"))
+    max_cost = PRIVATE_COMPUTE_FIRST_SMOKE_MAX_COST_USD
+    checks = {
+        "schema": proof.get("schema") == PRIVATE_COMPUTE_PAID_SMOKE_PROOF_SCHEMA,
+        "model": proof.get("model") == MODEL_ID,
+        "routerBaseUrl": proof.get("routerBaseUrl") == ROUTER_BASE_URL,
+        "chatCompletionsUrl": proof.get("chatCompletionsUrl") == CHAT_COMPLETIONS_URL,
+        "promptHash": _valid_sha256(proof.get("promptHash")),
+        "requestHash": _valid_sha256(proof.get("requestHash")),
+        "responseHash": _valid_sha256(proof.get("responseHash")),
+        "routerReceiptHash": _valid_sha256(proof.get("routerReceiptHash")),
+        "budgetUsdPositive": budget_usd is not None and budget_usd > 0,
+        "costUsdPositive": cost_usd is not None and cost_usd > 0,
+        "costWithinBudget": (
+            budget_usd is not None
+            and cost_usd is not None
+            and cost_usd <= budget_usd
+        ),
+        "costWithinFirstSmokeCap": cost_usd is not None and cost_usd <= max_cost,
+        "operatorReviewedBudget": proof.get("operatorReviewedBudget") is True,
+        "promptSafeForInference": proof.get("promptSafeForInference") is True,
+        "paidInferencePerformedExternally": (
+            proof.get("paidInferencePerformedExternally") is True
+        ),
+        "rawPromptStored": proof.get("rawPromptStored") is False,
+        "rawPromptReturned": proof.get("rawPromptReturned") is False,
+        "rawResponseStored": proof.get("rawResponseStored") is False,
+        "rawResponseReturned": proof.get("rawResponseReturned") is False,
+        "apiKeyReturned": proof.get("apiKeyReturned") is False,
+        "privateKeysReturned": proof.get("privateKeysReturned") is False,
+        "paymentHeadersStored": proof.get("paymentHeadersStored") is False,
+        "transactionSigningByZeroGuard": proof.get("transactionSigningByZeroGuard") is False,
+        "transactionBroadcastingByZeroGuard": (
+            proof.get("transactionBroadcastingByZeroGuard") is False
+        ),
+        "moneyMovementByZeroGuard": proof.get("moneyMovementByZeroGuard") is False,
+    }
+    verified = all(checks.values())
+    return {
+        "schema": PRIVATE_COMPUTE_PAID_SMOKE_PROOF_VERIFICATION_SCHEMA,
+        "generatedAt": _now(),
+        "status": "verified" if verified else "review",
+        "verified": verified,
+        "proofPresent": True,
+        "proofPath": _relative_repo_path(Path(proof_path)) if proof_path else proof.get("proofPath"),
+        "model": proof.get("model"),
+        "promptHash": proof.get("promptHash"),
+        "requestHash": proof.get("requestHash"),
+        "responseHash": proof.get("responseHash"),
+        "routerReceiptHash": proof.get("routerReceiptHash"),
+        "budgetUsd": budget_usd,
+        "costUsd": cost_usd,
+        "maxFirstSmokeCostUsd": max_cost,
+        "paidInferencePerformedExternally": (
+            proof.get("paidInferencePerformedExternally") is True
+        ),
+        "checks": checks,
+        "safety": {
+            **_safety(
+                paid_inference_enabled=False,
+                prompt_safe=proof.get("promptSafeForInference") is True,
+            ),
+            "proofVerificationOnly": True,
+            "paidInferenceByZeroGuard": False,
+            "paidInferencePerformedExternally": (
+                proof.get("paidInferencePerformedExternally") is True
+            ),
+            "rawPromptStored": False,
+            "rawPromptReturned": False,
+            "rawResponseStored": False,
+            "rawResponseReturned": False,
+            "paymentHeadersStored": False,
+        },
     }
 
 
@@ -193,6 +322,73 @@ def _safety(*, paid_inference_enabled: bool, prompt_safe: bool) -> dict[str, boo
         "telegramSendsEnabled": False,
         "paymentSettlementEnabled": False,
     }
+
+
+def _load_paid_smoke_proof(path: str | Path | None) -> dict[str, Any] | None:
+    if not path:
+        return None
+    proof_path = Path(path)
+    if not proof_path.is_absolute():
+        proof_path = REPO_ROOT / proof_path
+    try:
+        payload = json.loads(proof_path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, OSError, json.JSONDecodeError):
+        return None
+    if isinstance(payload, dict):
+        return {**payload, "proofPath": _relative_repo_path(proof_path)}
+    return None
+
+
+def _paid_smoke_proof_status(
+    status: str,
+    reason: str,
+    *,
+    proof_path: str | Path | None = None,
+) -> dict[str, Any]:
+    return {
+        "schema": PRIVATE_COMPUTE_PAID_SMOKE_PROOF_VERIFICATION_SCHEMA,
+        "generatedAt": _now(),
+        "status": status,
+        "verified": False,
+        "proofPresent": False,
+        "proofPath": _relative_repo_path(Path(proof_path)) if proof_path else "",
+        "reason": reason,
+        "safety": {
+            **_safety(paid_inference_enabled=False, prompt_safe=True),
+            "proofVerificationOnly": True,
+            "paidInferenceByZeroGuard": False,
+            "paidInferencePerformedExternally": False,
+            "rawPromptStored": False,
+            "rawPromptReturned": False,
+            "rawResponseStored": False,
+            "rawResponseReturned": False,
+            "paymentHeadersStored": False,
+        },
+    }
+
+
+def _valid_sha256(value: Any) -> bool:
+    return isinstance(value, str) and bool(re.fullmatch(r"[a-fA-F0-9]{64}", value.strip()))
+
+
+def _parse_positive_float(value: Any) -> float | None:
+    parsed = _parse_nonnegative_float(value)
+    return parsed if parsed is not None and parsed > 0 else None
+
+
+def _parse_nonnegative_float(value: Any) -> float | None:
+    try:
+        parsed = float(str(value))
+    except (TypeError, ValueError):
+        return None
+    return parsed if parsed >= 0 else None
+
+
+def _relative_repo_path(path: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(REPO_ROOT))
+    except ValueError:
+        return str(path)
 
 
 def _truthy(value: Any) -> bool:
