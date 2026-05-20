@@ -87,10 +87,12 @@ PYTHONPATH=src .venv/bin/python scripts/x402_base_sepolia_buyer_status.py \
   --update-manifest
 ```
 
-The status should become `ready_for_external_x402_settlement_proof` only after
-the throwaway buyer has a positive Base Sepolia ETH balance for gas and at least
-`10000` atomic USDC (`0.01 USDC`) at
-`0x036CbD53842c5426634e7929541eC2318f3dCF7e`. The script performs read-only RPC
+The status should become `ready_for_external_x402_settlement_proof` after the
+throwaway buyer has at least `10000` atomic USDC (`0.01 USDC`) at
+`0x036CbD53842c5426634e7929541eC2318f3dCF7e`. Base Sepolia USDC x402 uses an
+EIP-3009-style buyer authorization and facilitator-sponsored settlement gas, so
+the buyer does not need native Base Sepolia ETH for this proof path. The script
+still reads the native balance as public context, performs only read-only RPC
 calls, does not read the keystore, does not request the Keychain passphrase, and
 does not call the facilitator.
 

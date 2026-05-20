@@ -147,7 +147,7 @@ def test_x402_settlement_policy_surfaces_verified_proof(monkeypatch, tmp_path):
     assert proof_status["settlementPerformedExternally"] is True
 
 
-def test_x402_base_sepolia_buyer_wallet_status_requires_testnet_funding():
+def test_x402_base_sepolia_buyer_wallet_status_requires_testnet_usdc_funding():
     status = build_x402_base_sepolia_buyer_wallet_status(
         address="0x000000000000000000000000000000000000bEEF",
         eth_balance_wei=0,
@@ -162,25 +162,31 @@ def test_x402_base_sepolia_buyer_wallet_status_requires_testnet_funding():
     assert status["usdcContract"] == "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
     assert status["balances"]["baseSepoliaEthDisplay"] == "0"
     assert status["balances"]["baseSepoliaUsdcDisplay"] == "0"
-    assert "base_sepolia_eth_required_for_gas" in status["blockers"]
+    assert "base_sepolia_eth_required_for_gas" not in status["blockers"]
     assert "base_sepolia_usdc_below_0_01" in status["blockers"]
+    assert status["requiredForFirstProof"]["nativeGasRequiredForBuyer"] is False
+    assert (
+        status["requiredForFirstProof"]["buyerAuthorizationMethod"]
+        == "EIP-3009 transferWithAuthorization"
+    )
     assert status["keychainServiceConfigured"] is True
     assert status["safety"]["privateKeysReturned"] is False
     assert status["safety"]["settlementByZeroGuardEnabled"] is False
 
 
-def test_x402_base_sepolia_buyer_wallet_status_ready_when_funded():
+def test_x402_base_sepolia_buyer_wallet_status_ready_with_gasless_usdc_funding():
     status = build_x402_base_sepolia_buyer_wallet_status(
         address="0x000000000000000000000000000000000000bEEF",
-        eth_balance_wei=1,
+        eth_balance_wei=0,
         usdc_balance_atomic=10000,
     )
 
     assert status["status"] == "ready_for_external_x402_settlement_proof"
     assert status["blockers"] == []
-    assert status["balances"]["baseSepoliaEthDisplay"] == "0.000000000000000001"
+    assert status["balances"]["baseSepoliaEthDisplay"] == "0"
     assert status["balances"]["baseSepoliaUsdcDisplay"] == "0.01"
     assert status["requiredForFirstProof"]["usdcDisplay"] == "0.01 USDC"
+    assert status["requiredForFirstProof"]["settlementGasModel"] == "facilitator_sponsored_settlement_gas"
 
 
 def _valid_x402_proof() -> dict:
