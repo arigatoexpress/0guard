@@ -64,19 +64,19 @@
   "derivedEvidenceCount": 5,
   "feedLink": "https://raw.githubusercontent.com/phishdestroy/destroylist/main/dns/active_domains.json",
   "fetch": {
-    "contentLength": 2304405,
+    "contentLength": 2306418,
     "contentType": "text/plain; charset=utf-8",
-    "etag": "\"b159a9527dfb1d70b38df42715a104bc4f4830344b27a1e2c1aecc8ab32b7a7d\"",
-    "feedHash": "96577b16eccb34858fbeb7053e90e579285360fe4bfe41169b712b32b72af82e",
+    "etag": "\"906b1c601c71ea788d293dad52e507a2db815d9affcd7823a84c54b09dde67d5\"",
+    "feedHash": "9b89e1976cf419dc6d4beacc641beead108b618f191277ea1b0d7923fa7aa1e6",
     "httpStatus": 200,
     "lastModified": null,
-    "latencyMs": 457,
-    "parsedDomainCount": 82416,
+    "latencyMs": 1162,
+    "parsedDomainCount": 82444,
     "sampledEvidenceCount": 5,
     "status": "ok",
     "ttlSeconds": 21600
   },
-  "generatedAt": "2026-05-21T17:45:42+00:00",
+  "generatedAt": "2026-05-21T23:03:15+00:00",
   "input": {
     "limit": 5,
     "live": true,
@@ -125,7 +125,7 @@
   },
   "runReceipt": {
     "algorithm": "sha256_canonical_json",
-    "hash": "6c389a431d7af66b2269e85222319e2183bb5cdaa8b7276c07f970cf6a4079f0",
+    "hash": "f847d8ac90bab7bdff519460d38635ef9a93010358ae2364b40a3d7af6b2f7c1",
     "liveAnchorPerformed": false,
     "liveUploadPerformed": false,
     "zeroGChainReady": true,
@@ -162,7 +162,7 @@
   "schema": "0guard.reputation_backfill_run.v1",
   "snapshotReceipt": {
     "algorithm": "sha256_canonical_json",
-    "hash": "1127105674335cd88f1b6902d49f4a4398e376a93ec9ec3fad4813438192153e",
+    "hash": "1fea2879e9667946406c85b95cce84cbd46d4203c5023e28aab904550695a7ff",
     "liveAnchorPerformed": false,
     "liveUploadPerformed": false,
     "zeroGChainReady": true,
