@@ -2,6 +2,7 @@
 
 from guard0.storage_upload_manifest import (
     STORAGE_LIVE_PROOF_SCHEMA,
+    build_storage_live_upload_preflight,
     build_storage_bundle_payload,
     build_storage_upload_manifest,
     storage_bundle_bytes,
@@ -28,6 +29,15 @@ def test_storage_upload_manifest_hashes_public_safe_bundle(tmp_path):
     assert manifest["bundleArtifactSha256"] == manifest["bundleArtifact"]["artifactSha256"]
     assert manifest["liveProofStatus"] == "missing"
     assert manifest["liveProofVerified"] is False
+    assert manifest["uploadPreflight"]["schema"] == (
+        "0guard.0g_storage_live_upload_preflight.v1"
+    )
+    assert manifest["uploadPreflight"]["status"] == "blocked_before_live_upload"
+    assert "storage_sdk_runtime_not_present" in manifest["uploadPreflight"]["blockers"]
+    assert "operator_signer_not_configured" in manifest["uploadPreflight"]["blockers"]
+    assert manifest["uploadPreflight"]["workbenchCanUpload"] is False
+    assert manifest["uploadPreflight"]["environment"]["operatorSignerConfigured"] is False
+    assert manifest["uploadPlan"]["preflightStatus"] == "blocked_before_live_upload"
     assert manifest["bundle"]["fileCount"] == 2
     assert manifest["bundle"]["bundleRoot"]
     assert manifest["uploadPlan"]["liveUploadPerformed"] is False
@@ -78,6 +88,40 @@ def test_storage_bundle_payload_is_deterministic_public_safe_json(tmp_path):
     assert payload["rightsPolicy"]["rawPayloadResaleAllowed"] is False
     assert first_bytes == second_bytes
     assert len(storage_bundle_sha256([first])) == 64
+
+
+def test_storage_live_upload_preflight_reports_operator_ready_when_gates_are_met(
+    tmp_path,
+    monkeypatch,
+):
+    first = tmp_path / "incident_eval.jsonl"
+    first.write_text('{"caseId":"case-1","rights":{"rawPayloadResaleAllowed":false}}\n')
+    monkeypatch.setenv(
+        "ZG_STORAGE_LIVE_UPLOAD_ENABLE",
+        "I_APPROVE_0G_STORAGE_PUBLIC_BUNDLE_UPLOAD",
+    )
+    monkeypatch.setenv("ZG_STORAGE_PRIVATE_KEY", "configured-but-not-read")
+    monkeypatch.setenv("ZG_STORAGE_CHAIN_RPC", "https://evmrpc-testnet.0g.ai")
+    monkeypatch.setenv("ZG_STORAGE_INDEXER_RPC", "https://indexer-storage-testnet-turbo.0g.ai")
+    monkeypatch.setattr(
+        "guard0.storage_upload_manifest.REPO_ROOT",
+        tmp_path,
+    )
+    artifact_path = tmp_path / "bundle.json"
+    artifact_path.write_bytes(storage_bundle_bytes([first]))
+    sdk_path = tmp_path / "node_modules" / "@0gfoundation" / "0g-storage-ts-sdk"
+    sdk_path.mkdir(parents=True)
+
+    result = build_storage_live_upload_preflight([first], artifact_path=artifact_path)
+
+    assert result["status"] == "operator_upload_ready"
+    assert result["operatorUploadReady"] is True
+    assert result["workbenchCanUpload"] is False
+    assert result["blockers"] == []
+    assert result["bundleArtifactMatches"] is True
+    assert result["environment"]["liveUploadGateEnabled"] is True
+    assert result["environment"]["sdkPackagePresent"] is True
+    assert result["safety"]["transactionSigningEnabled"] is False
 
 
 def test_verified_live_storage_proof_turns_manifest_upload_readback_green(tmp_path):

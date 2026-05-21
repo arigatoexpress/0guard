@@ -11,6 +11,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import os
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -28,6 +29,10 @@ DEFAULT_STORAGE_BUNDLE_PATHS = (
     REPO_ROOT / "docs" / "hackathon-0g" / "mainnet-proof.json",
 )
 DEFAULT_STORAGE_LIVE_PROOF_PATH = REPO_ROOT / "docs" / "hackathon-0g" / "0g-storage-live-proof.json"
+DEFAULT_STORAGE_BUNDLE_ARTIFACT_PATH = (
+    REPO_ROOT / "dist" / "0g-storage" / "zeroguard-public-safe-derived-bundle.json"
+)
+STORAGE_LIVE_UPLOAD_APPROVAL_VALUE = "I_APPROVE_0G_STORAGE_PUBLIC_BUNDLE_UPLOAD"
 HEX_32_RE = re.compile(r"^(0x)?[a-fA-F0-9]{64}$")
 
 
@@ -47,6 +52,10 @@ def build_storage_upload_manifest(
     live_verified = live_proof["verified"] is True
     local_readback["liveStorageGatewayReadback"] = live_verified
     artifact_sha = storage_bundle_sha256(paths)
+    upload_preflight = build_storage_live_upload_preflight(
+        paths,
+        expected_bundle_artifact_sha256=artifact_sha,
+    )
     return {
         "schema": STORAGE_UPLOAD_MANIFEST_SCHEMA,
         "generatedAt": _now(),
@@ -90,6 +99,7 @@ def build_storage_upload_manifest(
             "officialSdk": "https://docs.0g.ai/developer-hub/building-on-0g/storage/sdk",
             "operatorRequired": True,
             "liveUploadPerformed": live_verified,
+            "preflightStatus": upload_preflight["status"],
             "transactionSigningEnabled": False,
             "uploadCommandStatus": (
                 "verified_external_upload_readback"
@@ -113,6 +123,7 @@ def build_storage_upload_manifest(
                 "--operator-approved-public-safe"
             ),
         },
+        "uploadPreflight": upload_preflight,
         "readbackVerifier": local_readback,
         "liveProof": live_proof,
         "rightsPolicy": {
@@ -123,6 +134,114 @@ def build_storage_upload_manifest(
             "containsPaymentHeaders": False,
         },
         "safety": _safety(live_storage_upload=live_verified, live_gateway_readback=live_verified),
+    }
+
+
+def build_storage_live_upload_preflight(
+    paths: list[str | Path] | None = None,
+    *,
+    expected_bundle_artifact_sha256: str | None = None,
+    artifact_path: str | Path = DEFAULT_STORAGE_BUNDLE_ARTIFACT_PATH,
+) -> dict[str, Any]:
+    """Return non-secret readiness gates for an external 0G Storage upload."""
+
+    _, existing_files, bundle_root = _bundle_components(paths)
+    expected_artifact_sha = expected_bundle_artifact_sha256 or storage_bundle_sha256(paths)
+    artifact = Path(artifact_path)
+    if not artifact.is_absolute():
+        artifact = REPO_ROOT / artifact
+    artifact_exists = artifact.exists() and artifact.is_file()
+    artifact_sha = hashlib.sha256(artifact.read_bytes()).hexdigest() if artifact_exists else ""
+    artifact_matches = artifact_exists and artifact_sha == expected_artifact_sha
+
+    env_gate_enabled = os.getenv("ZG_STORAGE_LIVE_UPLOAD_ENABLE") == (
+        STORAGE_LIVE_UPLOAD_APPROVAL_VALUE
+    )
+    signer_configured = any(
+        bool(os.getenv(name))
+        for name in (
+            "ZG_STORAGE_PRIVATE_KEY",
+            "ZEROGUARD_STORAGE_PRIVATE_KEY",
+            "ZG_STORAGE_KEYSTORE_PATH",
+        )
+    )
+    chain_rpc_configured = bool(os.getenv("ZG_STORAGE_CHAIN_RPC"))
+    indexer_rpc_configured = bool(os.getenv("ZG_STORAGE_INDEXER_RPC"))
+    sdk_package_present = (REPO_ROOT / "node_modules" / "@0gfoundation" / "0g-storage-ts-sdk").exists()
+
+    blockers = []
+    if not existing_files:
+        blockers.append("public_safe_bundle_files_missing")
+    if not artifact_matches:
+        blockers.append("bundle_artifact_not_built_or_stale")
+    if not sdk_package_present:
+        blockers.append("storage_sdk_runtime_not_present")
+    if not chain_rpc_configured:
+        blockers.append("chain_rpc_not_configured")
+    if not indexer_rpc_configured:
+        blockers.append("indexer_rpc_not_configured")
+    if not signer_configured:
+        blockers.append("operator_signer_not_configured")
+    if not env_gate_enabled:
+        blockers.append("live_upload_env_gate_disabled")
+
+    operator_ready = not blockers
+    return {
+        "schema": "0guard.0g_storage_live_upload_preflight.v1",
+        "generatedAt": _now(),
+        "status": "operator_upload_ready" if operator_ready else "blocked_before_live_upload",
+        "operatorUploadReady": operator_ready,
+        "workbenchCanUpload": False,
+        "blockers": blockers,
+        "bundleRoot": bundle_root,
+        "bundleFileCount": len(existing_files),
+        "bundleArtifactPath": _relative_repo_path(artifact),
+        "bundleArtifactExists": artifact_exists,
+        "bundleArtifactSha256": artifact_sha,
+        "expectedBundleArtifactSha256": expected_artifact_sha,
+        "bundleArtifactMatches": artifact_matches,
+        "officialSdk": "https://docs.0g.ai/developer-hub/building-on-0g/storage/sdk",
+        "recommendedNetwork": "testnet",
+        "networkProfiles": {
+            "testnet": {
+                "chainRpcEnv": "ZG_STORAGE_CHAIN_RPC",
+                "indexerRpcEnv": "ZG_STORAGE_INDEXER_RPC",
+                "chainRpcDefault": "https://evmrpc-testnet.0g.ai",
+                "indexerRpcDefault": "https://indexer-storage-testnet-turbo.0g.ai",
+            },
+            "mainnet": {
+                "chainRpcEnv": "ZG_STORAGE_CHAIN_RPC",
+                "indexerRpcEnv": "ZG_STORAGE_INDEXER_RPC",
+                "chainRpcDefault": "https://evmrpc.0g.ai",
+                "indexerRpcDefault": "https://indexer-storage-turbo.0g.ai",
+            },
+        },
+        "environment": {
+            "liveUploadGateEnv": "ZG_STORAGE_LIVE_UPLOAD_ENABLE",
+            "liveUploadGateExpectedValue": STORAGE_LIVE_UPLOAD_APPROVAL_VALUE,
+            "liveUploadGateEnabled": env_gate_enabled,
+            "chainRpcConfigured": chain_rpc_configured,
+            "indexerRpcConfigured": indexer_rpc_configured,
+            "operatorSignerConfigured": signer_configured,
+            "sdkPackagePresent": sdk_package_present,
+        },
+        "nextCommands": {
+            "buildBundle": (
+                "PYTHONPATH=src .venv/bin/python scripts/build_0g_storage_bundle.py "
+                "--out dist/0g-storage/zeroguard-public-safe-derived-bundle.json"
+            ),
+            "recordProofAfterExternalUpload": (
+                "PYTHONPATH=src .venv/bin/python scripts/record_0g_storage_live_proof.py "
+                "--bundle-file dist/0g-storage/zeroguard-public-safe-derived-bundle.json "
+                "--downloaded-file <downloaded-readback.json> "
+                "--root-hash <0g-storage-root-hash> "
+                "--tx-hash <upload-transaction-hash> "
+                "--indexer-url <0g-storage-indexer-url> "
+                "--gateway-url <download-readback-url> "
+                "--operator-approved-public-safe"
+            ),
+        },
+        "safety": _safety(),
     }
 
 
