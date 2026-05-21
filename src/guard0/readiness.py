@@ -121,6 +121,17 @@ def production_readiness() -> dict[str, Any]:
             {
                 "status": wallet_provider_proof.get("status"),
                 "verified": wallet_provider_proof.get("verified"),
+                "suggestedExternalProofUrl": wallet_provider_proof.get(
+                    "suggestedExternalProofUrl"
+                )
+                or wallet_provider_proof.get("externalDappSuggestedUrl"),
+                "requiresRealWalletExtension": wallet_provider_proof.get(
+                    "requiresRealWalletExtension"
+                ),
+                "requiresWindowEthereum": wallet_provider_proof.get("requiresWindowEthereum"),
+                "requiresThrowawayEmptyWallet": wallet_provider_proof.get(
+                    "requiresThrowawayEmptyWallet"
+                ),
                 "proofMode": wallet_provider_proof.get("proofMode"),
                 "externalDappOrigin": wallet_provider_proof.get("externalDappOrigin"),
                 "windowEthereumPresent": wallet_provider_proof.get("windowEthereumPresent"),

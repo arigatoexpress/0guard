@@ -31,6 +31,19 @@ def test_production_readiness_is_honest_and_non_mutating(monkeypatch):
     assert checks["storage_node_funded_soak"]["status"] == "review"
     assert checks["wallet_provider_external_proof"]["status"] == "review"
     assert checks["wallet_provider_external_proof"]["detail"]["verified"] is False
+    assert (
+        checks["wallet_provider_external_proof"]["detail"]["suggestedExternalProofUrl"]
+        == "https://arigatoexpress.github.io/0guard/wallet-provider-proof/"
+    )
+    assert (
+        checks["wallet_provider_external_proof"]["detail"]["requiresRealWalletExtension"]
+        is True
+    )
+    assert checks["wallet_provider_external_proof"]["detail"]["requiresWindowEthereum"] is True
+    assert (
+        checks["wallet_provider_external_proof"]["detail"]["requiresThrowawayEmptyWallet"]
+        is True
+    )
     assert checks["wallet_provider_external_proof"]["detail"]["realWalletExtension"] is True
     assert checks["wallet_provider_external_proof"]["detail"]["mockProvider"] is False
     assert checks["telegram_live_identity"]["status"] == "review"
@@ -318,6 +331,10 @@ def _green_gate_payloads() -> dict:
             "status": "verified",
             "verified": True,
             "proofPresent": True,
+            "suggestedExternalProofUrl": "https://arigatoexpress.github.io/0guard/wallet-provider-proof/",
+            "requiresRealWalletExtension": True,
+            "requiresWindowEthereum": True,
+            "requiresThrowawayEmptyWallet": True,
             "proofMode": "real_wallet_extension_window_ethereum",
             "externalDappOrigin": "http://127.0.0.1:8142",
             "windowEthereumPresent": True,
