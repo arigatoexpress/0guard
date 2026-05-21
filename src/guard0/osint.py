@@ -178,6 +178,7 @@ def osint_readiness(*, live: bool = False, timeout_seconds: float = 3.0) -> dict
     return {
         "schema": OSINT_READINESS_SCHEMA,
         "generatedAt": _now(),
+        "rawPayloadsReturned": False,
         "live": live,
         "sourceCount": len(rows),
         "enabledByDefaultCount": sum(1 for row in rows if row["enabledByDefault"]),

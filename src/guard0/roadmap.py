@@ -196,6 +196,7 @@ def intelligence_stream_plan() -> dict[str, Any]:
     return {
         "schema": INTELLIGENCE_STREAM_PLAN_SCHEMA,
         "generatedAt": _now(),
+        "rawPayloadsReturned": False,
         "streamCount": len(streams),
         "streams": streams,
         "buyFirst": [
