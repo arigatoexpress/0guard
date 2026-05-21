@@ -70,6 +70,7 @@ def test_docker_image_includes_repo_professionalization_artifacts():
     assert "COPY docs/hackathon-0g/hackquest-submission-proof.json" in dockerfile
     assert "COPY docs/hackathon-0g/node-pi-readiness-proof.json" in dockerfile
     assert "COPY docs/hackathon-0g/veo3-flow-production-prompt.md" in dockerfile
+    assert "RUN python scripts/build_0g_storage_bundle.py" in dockerfile
     assert "RUN mkdir -p ./content" in dockerfile
     assert "COPY content/" not in dockerfile
 

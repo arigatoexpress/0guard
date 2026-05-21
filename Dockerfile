@@ -29,6 +29,7 @@ COPY docs/hackathon-0g/mainnet-proof.json ./docs/hackathon-0g/mainnet-proof.json
 COPY docs/hackathon-0g/node-pi-readiness-proof.json ./docs/hackathon-0g/node-pi-readiness-proof.json
 COPY docs/hackathon-0g/x402-base-sepolia-settlement-proof.json ./docs/hackathon-0g/x402-base-sepolia-settlement-proof.json
 COPY docs/hackathon-0g/veo3-flow-production-prompt.md ./docs/hackathon-0g/veo3-flow-production-prompt.md
+RUN python scripts/build_0g_storage_bundle.py > /tmp/0g-storage-bundle-build.json
 
 # Expose Flask port
 EXPOSE 8109
