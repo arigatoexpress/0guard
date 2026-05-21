@@ -111,7 +111,18 @@ def test_wallet_provider_external_proof_status_is_missing_without_artifact(tmp_p
     assert result["proofDraftAssistant"]["externalDappSuggestedUrl"] == (
         "https://arigatoexpress.github.io/0guard/wallet-provider-proof/"
     )
+    assert (
+        result["suggestedExternalProofUrl"]
+        == "https://arigatoexpress.github.io/0guard/wallet-provider-proof/"
+    )
+    assert result["requiresRealWalletExtension"] is True
+    assert result["requiresWindowEthereum"] is True
+    assert result["requiresThrowawayEmptyWallet"] is True
     assert result["proofDraftAssistant"]["rawWalletAddressRequired"] is False
+    assert result["privateKeysReturned"] is False
+    assert result["rawParamsReturned"] is False
+    assert result["transactionSigningEnabled"] is False
+    assert result["transactionBroadcastingEnabled"] is False
     assert result["safety"]["transactionSigningEnabled"] is False
 
 
@@ -124,6 +135,13 @@ def test_wallet_provider_external_proof_accepts_real_extension_flow():
     assert result["realWalletExtension"] is True
     assert result["mockProvider"] is False
     assert result["throwawayWallet"] is True
+    assert (
+        result["suggestedExternalProofUrl"]
+        == "https://arigatoexpress.github.io/0guard/wallet-provider-proof/"
+    )
+    assert result["privateKeysReturned"] is False
+    assert result["rawParamsReturned"] is False
+    assert result["transactionSigningEnabled"] is False
     assert result["readOnlyRequest"]["forwardedToProvider"] is True
     assert result["reviewRequest"]["forwardedToProvider"] is False
     assert result["denyRequest"]["forwardedToProvider"] is False
