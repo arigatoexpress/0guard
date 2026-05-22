@@ -1917,6 +1917,13 @@ def test_wallet_provider_external_proof_route_is_read_only_and_missing_by_defaul
     ]
     assert payload["blockers"] == payload["proofBlockers"]
     assert "record_wallet_provider_external_proof.py" in payload["recordProofCommandTemplate"]
+    assert payload["operatorProofPath"] == "docs/hackathon-0g/wallet-provider-external-proof.json"
+    assert "--out docs/hackathon-0g/wallet-provider-external-proof.json" in (
+        payload["recordProofCommandTemplate"]
+    )
+    assert "/app/docs/hackathon-0g/wallet-provider-external-proof.json" not in (
+        payload["recordProofCommandTemplate"]
+    )
     assert (
         payload["suggestedExternalProofUrl"]
         == "https://arigatoexpress.github.io/0guard/wallet-provider-proof/"
