@@ -66,6 +66,7 @@ PYTHONPATH=src .venv/bin/python scripts/record_wallet_provider_external_proof.py
   --read-receipt-hash <sha256-from-eth_chainId-verdict> \
   --review-receipt-hash <sha256-from-switch-chain-verdict> \
   --deny-receipt-hash <sha256-from-approval-deny-verdict> \
+  --out docs/hackathon-0g/wallet-provider-external-proof.json \
   --real-wallet-extension \
   --window-ethereum-present \
   --throwaway-empty-wallet \
