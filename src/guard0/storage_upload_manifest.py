@@ -257,6 +257,10 @@ def build_storage_live_upload_preflight(
         },
         "nextCommands": {
             "installStorageSdk": "npm install @0gfoundation/0g-storage-ts-sdk ethers",
+            "checkStorageEndpoints": (
+                "PYTHONPATH=src .venv/bin/python "
+                "scripts/check_0g_storage_endpoint_preflight.py"
+            ),
             "buildBundle": (
                 "PYTHONPATH=src .venv/bin/python scripts/build_0g_storage_bundle.py "
                 "--out dist/0g-storage/zeroguard-public-safe-derived-bundle.json"

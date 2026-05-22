@@ -244,6 +244,10 @@ def build_production_gap_matrix() -> dict[str, Any]:
                     ((storage_upload_manifest.get("uploadPreflight") or {}).get("nextCommands") or {})
                     .get("recordProofAfterExternalUpload")
                 ),
+                "endpointPreflightCommandTemplate": (
+                    ((storage_upload_manifest.get("uploadPreflight") or {}).get("nextCommands") or {})
+                    .get("checkStorageEndpoints")
+                ),
                 "bundleArtifactSha256": (
                     storage_upload_manifest.get("bundleArtifact") or {}
                 ).get("artifactSha256"),
