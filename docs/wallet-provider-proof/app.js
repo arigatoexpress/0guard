@@ -1,4 +1,5 @@
 const GUARD_BASE_DEFAULT = 'https://guard0-miniapp-s77j6bxyra-uc.a.run.app';
+const PROOF_OUTPUT_PATH = 'docs/hackathon-0g/wallet-provider-external-proof.json';
 
 const scenarios = {
   read: {
@@ -214,6 +215,7 @@ async function buildProofDraft() {
     guardBaseUrl,
     windowEthereumPresent: Boolean(provider()?.request),
     walletAddressHash,
+    proofOutputPath: PROOF_OUTPUT_PATH,
     rawWalletAddressStored: false,
     rawParamsStored: false,
     recorderCommand: [
@@ -224,6 +226,7 @@ async function buildProofDraft() {
       `--read-receipt-hash ${proofScenarios.read.receiptHash}`,
       `--review-receipt-hash ${proofScenarios.switch.receiptHash}`,
       `--deny-receipt-hash ${proofScenarios.approval.receiptHash}`,
+      `--out ${shellQuote(PROOF_OUTPUT_PATH)}`,
       '--real-wallet-extension',
       '--window-ethereum-present',
       '--throwaway-empty-wallet',
