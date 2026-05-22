@@ -134,6 +134,19 @@ def test_wallet_provider_external_proof_status_is_missing_without_artifact(tmp_p
     assert result["safety"]["transactionSigningEnabled"] is False
 
 
+def test_wallet_provider_external_proof_command_uses_repo_relative_default_path():
+    result = build_wallet_provider_external_proof_status()
+
+    assert result["proofPath"].endswith("docs/hackathon-0g/wallet-provider-external-proof.json")
+    assert result["operatorProofPath"] == "docs/hackathon-0g/wallet-provider-external-proof.json"
+    assert "--out docs/hackathon-0g/wallet-provider-external-proof.json" in (
+        result["recordProofCommandTemplate"]
+    )
+    assert "/app/docs/hackathon-0g/wallet-provider-external-proof.json" not in (
+        result["recordProofCommandTemplate"]
+    )
+
+
 def test_wallet_provider_external_proof_accepts_real_extension_flow():
     proof = _valid_external_proof()
 

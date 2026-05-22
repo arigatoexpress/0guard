@@ -243,6 +243,7 @@ def verify_wallet_provider_external_proof(
         "verified": verified,
         "proofPresent": True,
         "proofPath": proof_path_str,
+        "operatorProofPath": operator_packet["proofPath"],
         "blockers": blockers,
         "proofBlockers": blockers,
         "suggestedExternalProofUrl": operator_packet["externalDappSuggestedUrl"],
@@ -586,6 +587,7 @@ def _external_proof_status(
         "verified": False,
         "proofPresent": False,
         "proofPath": proof_path_str,
+        "operatorProofPath": operator_packet["proofPath"],
         "blockers": proof_blockers,
         "proofBlockers": proof_blockers,
         "suggestedExternalProofUrl": operator_packet["externalDappSuggestedUrl"],
@@ -642,7 +644,7 @@ def _external_proof_check_blockers(checks: dict[str, bool]) -> list[str]:
 
 
 def _external_operator_proof_packet(proof_path: str) -> dict[str, Any]:
-    proof_file = proof_path or "docs/hackathon-0g/wallet-provider-external-proof.json"
+    proof_file = _operator_proof_path(proof_path)
     suggested_origin = "https://arigatoexpress.github.io"
     suggested_url = "https://arigatoexpress.github.io/0guard/wallet-provider-proof/"
     command = " ".join(
@@ -688,6 +690,18 @@ def _external_operator_proof_packet(proof_path: str) -> dict[str, Any]:
         "broadcastingByZeroGuardEnabled": False,
         "moneyMovementByZeroGuardEnabled": False,
     }
+
+
+def _operator_proof_path(proof_path: str) -> str:
+    if not proof_path:
+        return "docs/hackathon-0g/wallet-provider-external-proof.json"
+    try:
+        path = Path(proof_path)
+        if path.is_absolute():
+            return path.relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        return proof_path
+    return proof_path
 
 
 def _valid_origin(value: Any) -> bool:
