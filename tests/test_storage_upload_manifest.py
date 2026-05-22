@@ -69,6 +69,10 @@ def test_storage_upload_manifest_hashes_public_safe_bundle(tmp_path):
     assert manifest["uploadPreflight"]["nextCommands"]["installStorageSdk"] == (
         "npm install @0gfoundation/0g-storage-ts-sdk ethers"
     )
+    assert (
+        "scripts/check_0g_storage_endpoint_preflight.py"
+        in manifest["uploadPreflight"]["nextCommands"]["checkStorageEndpoints"]
+    )
     assert manifest["uploadPlan"]["preflightStatus"] == "blocked_before_live_upload"
     assert manifest["bundle"]["fileCount"] == 2
     assert manifest["bundle"]["bundleRoot"]
