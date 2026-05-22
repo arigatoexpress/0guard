@@ -47,12 +47,29 @@ def test_production_gap_matrix_classifies_real_local_pending_and_mock_lanes():
     assert "live_proof_file_missing" in (
         by_id["onchain.0g_storage_upload_readback"]["currentEvidence"]["proofBlockers"]
     )
-    assert "storage_sdk_runtime_not_present" in (
-        by_id["onchain.0g_storage_upload_readback"]["currentEvidence"]["preflightBlockers"]
+    storage_gap = by_id["onchain.0g_storage_upload_readback"]
+    expected_storage_blockers = list(
+        dict.fromkeys(
+            [
+                *storage_gap["currentEvidence"]["proofBlockers"],
+                *storage_gap["currentEvidence"]["preflightBlockers"],
+            ]
+        )
+    )
+    assert storage_gap["blockedBy"] == expected_storage_blockers
+    assert "live_proof_file_missing" in storage_gap["blockedBy"]
+    assert any(
+        blocker in storage_gap["blockedBy"]
+        for blocker in ("storage_sdk_runtime_not_present", "operator_signer_not_configured")
     )
     assert "record_0g_storage_live_proof.py" in (
         by_id["onchain.0g_storage_upload_readback"]["currentEvidence"][
             "recordProofCommandTemplate"
+        ]
+    )
+    assert "check_0g_storage_endpoint_preflight.py" in (
+        by_id["onchain.0g_storage_upload_readback"]["currentEvidence"][
+            "endpointPreflightCommandTemplate"
         ]
     )
     assert "/api/0g/storage-upload/manifest" in by_id["onchain.0g_storage_upload_readback"]["routes"]
@@ -110,6 +127,14 @@ def test_production_gap_matrix_classifies_real_local_pending_and_mock_lanes():
     assert "paid_smoke_proof_file_missing" in (
         by_id["model.0g_private_computer"]["currentEvidence"]["blockers"]
     )
+    assert by_id["model.0g_private_computer"]["blockedBy"] == list(
+        dict.fromkeys(
+            [
+                *by_id["model.0g_private_computer"]["currentEvidence"]["proofBlockers"],
+                *by_id["model.0g_private_computer"]["currentEvidence"]["preflightBlockers"],
+            ]
+        )
+    )
     assert "router_api_key_missing" in (
         by_id["model.0g_private_computer"]["currentEvidence"]["preflightBlockers"]
     )
@@ -133,6 +158,10 @@ def test_production_gap_matrix_classifies_real_local_pending_and_mock_lanes():
         by_id["model.0g_private_computer"]["currentEvidence"]["recordProofCommandTemplate"]
     )
     assert by_id["mock.demo_fixtures"]["currentStatus"] == "mock_fixture_only"
+    assert "wallet_provider_external_proof" in matrix["readinessHardGates"]
+    assert "storage_upload_readback" in matrix["readinessHardGates"]
+    assert "window.ethereum proof" in matrix["safeBuildOrder"][0]
+    assert "live upload/readback" in matrix["safeBuildOrder"][1]
 
 
 def test_model_training_roadmap_preserves_authority_and_source_rights():

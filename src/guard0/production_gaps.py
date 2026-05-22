@@ -81,6 +81,9 @@ def build_production_gap_matrix() -> dict[str, Any]:
         }
     )
     wallet_provider_proof = build_wallet_provider_external_proof_status()
+    wallet_provider_blockers = _wallet_provider_blockers(wallet_provider_proof)
+    storage_upload_blockers = _storage_upload_blockers(storage_upload_manifest)
+    private_compute_blockers = _private_compute_blockers(private_compute_smoke)
     summary = incident_summary()
     coverage = detection_coverage()
     model_roadmap = build_model_training_roadmap(
@@ -257,8 +260,8 @@ def build_production_gap_matrix() -> dict[str, Any]:
             "Use the 0G TypeScript or Go SDK to upload the deterministic public-safe bundle, then record root, tx, and downloaded hash proof before public claims.",
             "ZeroGuard storage adapter",
             1,
-            ["storage_sdk_live_adapter", "operator_signer", "upload_budget", "gateway_readback"],
-            "Use `/api/0g/storage-upload/manifest` to review the public-safe bundle before a live SDK upload/readback.",
+            storage_upload_blockers,
+            _storage_upload_next_step(storage_upload_manifest),
             "Do not upload secrets, raw paid feeds, or private operational logs.",
             [
                 "A public-safe bundle uploads successfully.",
@@ -364,7 +367,7 @@ def build_production_gap_matrix() -> dict[str, Any]:
             "Run the external dapp in a wallet-enabled browser with a throwaway empty account, then record the reviewed proof without storing raw params or wallet secrets.",
             "ZeroGuard wallet integration lane",
             1,
-            _wallet_provider_blockers(wallet_provider_proof),
+            wallet_provider_blockers,
             "Use `examples/wallet_provider_guard/external_dapp/` and `scripts/record_wallet_provider_external_proof.py` to capture the first real extension/window.ethereum proof.",
             "Do not ask for private keys, forward denied requests, auto-broadcast transactions, or treat 0guard as wallet custody.",
             [
@@ -567,7 +570,7 @@ def build_production_gap_matrix() -> dict[str, Any]:
             "Create a server-side Router key, deposit a small reviewed budget, run one prompt-minimized smoke on a deterministic verdict packet, and record only hashes/cost metadata.",
             "ZeroGuard model lane",
             1,
-            ["0g_router_api_key", "router_deposit", "paid_inference_env_gate", "inference_smoke_test"],
+            private_compute_blockers,
             "Use `/api/0g/private-computer/smoke-preview` as the reviewed contract before running the first server-side paid smoke, then verify `/api/0g/private-computer/smoke-proof`.",
             "Do not send secrets, raw private chats, private keys, mnemonics, or full paid-feed payloads to any model.",
             [
@@ -669,7 +672,7 @@ def build_production_gap_matrix() -> dict[str, Any]:
         "rawPayloadsReturned": False,
         "whyNotProductionReadyYet": [
             "Historical feature store has a seed API/export from current curated/local artifacts, but not the wider scheduled 2020-present backfill and query index.",
-            "0G Storage bundle/readback plus x402 dry-run/caps/terms routes are prepared, but live upload/settlement are not enabled.",
+            "0G Storage SDK/runtime/RPC/indexer preflight is prepared, but live upload/readback still requires reviewed signer custody, the explicit live-upload env gate, and a recorded proof.",
             "Wallet-provider protection is hosted and implemented, but it still needs a real dapp/provider integration proof before production claims.",
             "0G Private Computer has no server-side Router key or paid inference smoke in this runtime.",
             "Telegram live identity/webhook proof is not loaded in the current local process.",
@@ -686,15 +689,15 @@ def build_production_gap_matrix() -> dict[str, Any]:
             "Rights-aware source registry and connector manifests.",
         ],
         "classificationSummary": _classification_summary(gaps),
+        "readinessHardGates": readiness.get("hardGates") or [],
         "topHardGates": _top_hard_gates(gaps),
         "safeBuildOrder": [
-            "Freeze the production gap matrix route and docs so every claim is inspectable.",
-            "Deploy and embed the EIP-1193 provider guard in a demo dapp before claiming live wallet protection.",
-            "Schedule and expand the append-only historical feature store beyond the current seed run.",
+            "Capture and review the real external dapp/window.ethereum proof with a throwaway empty wallet.",
+            "Review 0G Storage signer custody and the explicit live-upload env gate, then run live upload/readback and record proof.",
+            "Configure 0G Private Computer Router key, positive budget, and paid-inference gate only for one reviewed paid smoke.",
+            "Clear storage-node funded-soak and Pi mesh blockers before any larger node or funding claims.",
             _reputation_backfill_build_order(reputation_backfill),
-            "Configure Router funding/key only after reviewing the disabled 0G Private Computer smoke contract.",
-            "Promote the dry-run x402 route to testnet facilitator readback after pay-to review without enabling mainnet settlement.",
-            "Wait for storage-node peer/sync blockers to clear before any larger 0G funding.",
+            "Schedule and expand the append-only historical feature store beyond the current seed run.",
         ],
         "gaps": gaps,
         "modelTrainingRoadmap": model_roadmap,
@@ -1021,6 +1024,50 @@ def _wallet_provider_blockers(proof: dict[str, Any]) -> list[str]:
     if proof.get("verified") is True:
         return []
     return ["real_wallet_extension_proof", "throwaway_empty_wallet_readback"]
+
+
+def _storage_upload_blockers(manifest: dict[str, Any]) -> list[str]:
+    return _dedupe_blockers(
+        [
+            *(manifest.get("proofBlockers") or []),
+            *(manifest.get("preflightBlockers") or []),
+        ]
+    )
+
+
+def _storage_upload_next_step(manifest: dict[str, Any]) -> str:
+    blockers = set(_storage_upload_blockers(manifest))
+    if "storage_sdk_runtime_not_present" in blockers:
+        return "Install the locked 0G Storage SDK runtime, then rerun the read-only endpoint preflight before signer review."
+    if "chain_rpc_not_configured" in blockers or "indexer_rpc_not_configured" in blockers:
+        return "Configure reviewed 0G Storage RPC/indexer endpoints, then run the read-only endpoint preflight."
+    if "operator_signer_not_configured" in blockers or "live_upload_env_gate_disabled" in blockers:
+        return "Review signer custody and the explicit live-upload env gate, then run the read-only endpoint preflight before any upload."
+    if "live_proof_file_missing" in blockers:
+        return "Run the reviewed external 0G Storage upload/readback and record the live proof artifact."
+    return "Keep the verified live upload/readback proof fresh and source-linked."
+
+
+def _private_compute_blockers(smoke: dict[str, Any]) -> list[str]:
+    paid_proof = smoke.get("paidSmokeProof") if isinstance(smoke.get("paidSmokeProof"), dict) else {}
+    return _dedupe_blockers(
+        [
+            *(paid_proof.get("proofBlockers") or []),
+            *(paid_proof.get("preflightBlockers") or smoke.get("blockers") or []),
+        ]
+    )
+
+
+def _dedupe_blockers(blockers: list[Any]) -> list[str]:
+    seen: set[str] = set()
+    deduped: list[str] = []
+    for blocker in blockers:
+        name = str(blocker)
+        if not name or name in seen:
+            continue
+        seen.add(name)
+        deduped.append(name)
+    return deduped
 
 
 def _reputation_backfill_next_step(status: dict[str, Any]) -> str:
