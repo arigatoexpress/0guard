@@ -43,22 +43,31 @@ def test_storage_upload_manifest_hashes_public_safe_bundle(tmp_path):
     assert "operator_signer_not_configured" in manifest["uploadPreflight"]["blockers"]
     assert manifest["uploadPreflight"]["workbenchCanUpload"] is False
     assert manifest["uploadPreflight"]["environment"]["operatorSignerConfigured"] is False
-    assert manifest["uploadPreflight"]["environment"]["sdkPackageName"] == "@0gfoundation/0g-ts-sdk"
-    assert manifest["uploadPreflight"]["sdkRuntime"]["packageName"] == "@0gfoundation/0g-ts-sdk"
+    assert (
+        manifest["uploadPreflight"]["environment"]["sdkPackageName"]
+        == "@0gfoundation/0g-storage-ts-sdk"
+    )
+    assert (
+        manifest["uploadPreflight"]["sdkRuntime"]["packageName"]
+        == "@0gfoundation/0g-storage-ts-sdk"
+    )
+    assert "@0gfoundation/0g-ts-sdk" in (
+        manifest["uploadPreflight"]["sdkRuntime"]["legacyPackageNames"]
+    )
     assert manifest["uploadPreflight"]["sdkRuntime"]["installCommand"] == (
-        "npm install @0gfoundation/0g-ts-sdk ethers"
+        "npm install @0gfoundation/0g-storage-ts-sdk ethers"
     )
     assert "ethers" in manifest["uploadPreflight"]["sdkRuntime"]["peerDependencies"]
     assert (
-        'import { ZgFile, Indexer } from "@0gfoundation/0g-ts-sdk";'
+        'import { ZgFile, Indexer } from "@0gfoundation/0g-storage-ts-sdk";'
         in manifest["uploadPreflight"]["sdkRuntime"]["typescriptImports"]
     )
     assert any(
-        path.endswith("node_modules/@0gfoundation/0g-ts-sdk")
+        path.endswith("node_modules/@0gfoundation/0g-storage-ts-sdk")
         for path in manifest["uploadPreflight"]["sdkRuntime"]["checkedNodeModulePaths"]
     )
     assert manifest["uploadPreflight"]["nextCommands"]["installStorageSdk"] == (
-        "npm install @0gfoundation/0g-ts-sdk ethers"
+        "npm install @0gfoundation/0g-storage-ts-sdk ethers"
     )
     assert manifest["uploadPlan"]["preflightStatus"] == "blocked_before_live_upload"
     assert manifest["bundle"]["fileCount"] == 2
@@ -134,7 +143,7 @@ def test_storage_live_upload_preflight_reports_operator_ready_when_gates_are_met
     )
     artifact_path = tmp_path / "bundle.json"
     artifact_path.write_bytes(storage_bundle_bytes([first]))
-    sdk_path = tmp_path / "node_modules" / "@0gfoundation" / "0g-ts-sdk"
+    sdk_path = tmp_path / "node_modules" / "@0gfoundation" / "0g-storage-ts-sdk"
     sdk_path.mkdir(parents=True)
 
     result = build_storage_live_upload_preflight([first], artifact_path=artifact_path)
@@ -147,7 +156,7 @@ def test_storage_live_upload_preflight_reports_operator_ready_when_gates_are_met
     assert result["environment"]["liveUploadGateEnabled"] is True
     assert result["environment"]["sdkPackagePresent"] is True
     assert result["sdkRuntime"]["packagePresent"] is True
-    assert result["sdkRuntime"]["packageName"] == "@0gfoundation/0g-ts-sdk"
+    assert result["sdkRuntime"]["packageName"] == "@0gfoundation/0g-storage-ts-sdk"
     assert result["safety"]["transactionSigningEnabled"] is False
 
 
