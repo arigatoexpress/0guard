@@ -1948,11 +1948,17 @@ def test_wallet_provider_external_proof_route_is_read_only_and_missing_by_defaul
     )
     assert payload["requiresRealWalletExtension"] is True
     assert payload["requiresWindowEthereum"] is True
+    assert "repeated-character placeholder hashes are rejected" in payload[
+        "receiptHashPolicy"
+    ]
+    assert payload["placeholderReceiptHashesRejected"] is True
     assert payload["privateKeysReturned"] is False
     assert payload["transactionSigningEnabled"] is False
     assert payload["transactionBroadcastingEnabled"] is False
     assert payload["proofDraftAssistant"]["status"] == "ready_for_external_window_ethereum_proof"
     assert payload["proofDraftAssistant"]["rawWalletAddressRequired"] is False
+    assert payload["proofDraftAssistant"]["receiptHashPolicy"] == payload["receiptHashPolicy"]
+    assert payload["proofDraftAssistant"]["placeholderReceiptHashesRejected"] is True
     assert payload["safety"]["proofVerificationOnly"] is True
     assert payload["safety"]["transactionSigningEnabled"] is False
     assert payload["safety"]["moneyMovementEnabled"] is False

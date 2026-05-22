@@ -135,6 +135,10 @@ def production_readiness() -> dict[str, Any]:
                 "requiresThrowawayEmptyWallet": wallet_provider_proof.get(
                     "requiresThrowawayEmptyWallet"
                 ),
+                "receiptHashPolicy": wallet_provider_proof.get("receiptHashPolicy"),
+                "placeholderReceiptHashesRejected": wallet_provider_proof.get(
+                    "placeholderReceiptHashesRejected"
+                ),
                 "proofMode": wallet_provider_proof.get("proofMode"),
                 "externalDappOrigin": wallet_provider_proof.get("externalDappOrigin"),
                 "windowEthereumPresent": wallet_provider_proof.get("windowEthereumPresent"),

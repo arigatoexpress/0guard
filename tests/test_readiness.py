@@ -50,6 +50,13 @@ def test_production_readiness_is_honest_and_non_mutating(monkeypatch):
         checks["wallet_provider_external_proof"]["detail"]["requiresThrowawayEmptyWallet"]
         is True
     )
+    assert "repeated-character placeholder hashes are rejected" in (
+        checks["wallet_provider_external_proof"]["detail"]["receiptHashPolicy"]
+    )
+    assert (
+        checks["wallet_provider_external_proof"]["detail"]["placeholderReceiptHashesRejected"]
+        is True
+    )
     assert checks["wallet_provider_external_proof"]["detail"]["realWalletExtension"] is True
     assert checks["wallet_provider_external_proof"]["detail"]["mockProvider"] is False
     assert checks["telegram_live_identity"]["status"] == "review"
@@ -435,6 +442,11 @@ def _green_gate_payloads() -> dict:
             "requiresRealWalletExtension": True,
             "requiresWindowEthereum": True,
             "requiresThrowawayEmptyWallet": True,
+            "receiptHashPolicy": (
+                "Each receipt hash must be a real 64-hex SHA-256 verdict hash from the "
+                "hosted capture flow; repeated-character placeholder hashes are rejected."
+            ),
+            "placeholderReceiptHashesRejected": True,
             "blockers": [],
             "proofBlockers": [],
             "proofMode": "real_wallet_extension_window_ethereum",
