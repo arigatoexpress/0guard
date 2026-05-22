@@ -62,6 +62,10 @@ def test_notice_and_policy_keep_source_rights_clear():
 def test_docker_image_includes_repo_professionalization_artifacts():
     dockerfile = (REPO_ROOT / "Dockerfile").read_text(encoding="utf-8")
 
+    assert "COPY package.json package-lock.json ./" in dockerfile
+    assert "npm ci --omit=dev --ignore-scripts" in dockerfile
+    assert "npm audit --omit=dev --audit-level=high" in dockerfile
+    assert "@0gfoundation/0g-storage-ts-sdk" in dockerfile
     assert "COPY NOTICE ./" in dockerfile
     assert "COPY foundry/src/" in dockerfile
     assert "COPY docs/LEGAL_AND_ASSET_POLICY.md" in dockerfile
@@ -73,6 +77,21 @@ def test_docker_image_includes_repo_professionalization_artifacts():
     assert "RUN python scripts/build_0g_storage_bundle.py" in dockerfile
     assert "RUN mkdir -p ./content" in dockerfile
     assert "COPY content/" not in dockerfile
+
+
+def test_storage_sdk_runtime_package_is_locked_and_private():
+    package = json.loads((REPO_ROOT / "package.json").read_text(encoding="utf-8"))
+    lock = json.loads((REPO_ROOT / "package-lock.json").read_text(encoding="utf-8"))
+
+    assert package["private"] is True
+    assert package["dependencies"]["@0gfoundation/0g-storage-ts-sdk"] == "1.2.9"
+    assert package["dependencies"]["ethers"] == "6.13.1"
+    assert package["overrides"]["axios"].startswith("^1.")
+    assert package["overrides"]["ws"] == "^8.20.1"
+    root_lock = lock["packages"][""]
+    assert root_lock["dependencies"]["@0gfoundation/0g-storage-ts-sdk"] == "1.2.9"
+    assert lock["packages"]["node_modules/axios"]["version"].startswith("1.")
+    assert lock["packages"]["node_modules/ws"]["version"] == "8.20.1"
 
 
 def test_public_asset_registry_covers_tracked_media():

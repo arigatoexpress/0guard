@@ -6,7 +6,15 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     curl \
+    nodejs \
+    npm \
     && rm -rf /var/lib/apt/lists/*
+
+# Install the locked 0G Storage SDK runtime for read-only preflight checks.
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts \
+    && npm audit --omit=dev --audit-level=high \
+    && node -e "import('@0gfoundation/0g-storage-ts-sdk').then((m) => { if (!m.ZgFile || !m.Indexer) throw new Error('0G Storage SDK exports missing'); })"
 
 # Copy and install Python deps
 COPY pyproject.toml README.md LICENSE ./

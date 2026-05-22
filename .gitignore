@@ -10,6 +10,7 @@ build/
 .coverage
 coverage.xml
 .DS_Store
+node_modules/
 cache/
 content/x_authenticated_timeline_manifest*.json
 content/x_public_profile_observation*.json
