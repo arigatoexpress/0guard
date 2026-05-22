@@ -76,6 +76,11 @@ def test_production_gap_matrix_classifies_real_local_pending_and_mock_lanes():
     assert "record_wallet_provider_external_proof.py" in (
         by_id["wallet.provider_guard"]["currentEvidence"]["recordProofCommandTemplate"]
     )
+    assert "--draft-file /tmp/0guard-wallet-provider-proof-draft.json" in (
+        by_id["wallet.provider_guard"]["currentEvidence"][
+            "draftFileRecorderCommandTemplate"
+        ]
+    )
     assert (
         by_id["wallet.provider_guard"]["currentEvidence"]["suggestedExternalProofUrl"]
         == "https://arigatoexpress.github.io/0guard/wallet-provider-proof/"

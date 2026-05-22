@@ -347,6 +347,9 @@ def build_production_gap_matrix() -> dict[str, Any]:
                 "recordProofCommandTemplate": wallet_provider_proof.get(
                     "recordProofCommandTemplate"
                 ),
+                "draftFileRecorderCommandTemplate": wallet_provider_proof.get(
+                    "draftFileRecorderCommandTemplate"
+                ),
                 "realWalletExtension": wallet_provider_proof.get("realWalletExtension"),
                 "mockProvider": wallet_provider_proof.get("mockProvider"),
                 "throwawayWallet": wallet_provider_proof.get("throwawayWallet"),

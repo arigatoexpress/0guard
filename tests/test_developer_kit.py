@@ -105,6 +105,8 @@ def test_wallet_provider_guard_example_is_present_and_blocks_before_prompt():
     assert "wallet_provider_external_proof_draft" in combined
     assert "rawWalletAddressStored" in combined
     assert "proofOutputPath" in combined
+    assert "draftFileRecorderCommandTemplate" in combined
+    assert "--draft-file /tmp/0guard-wallet-provider-proof-draft.json" in combined
     assert "--out docs/hackathon-0g/wallet-provider-external-proof.json" in combined
     assert "record_wallet_provider_external_proof.py" in combined
     assert "unexpected_allow_refused_by_capture_page" in combined

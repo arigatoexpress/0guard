@@ -232,6 +232,15 @@ async function buildProofDraft() {
       '--throwaway-empty-wallet',
       '--operator-reviewed'
     ].join(' \\\n  '),
+    draftFileRecorderCommandTemplate: [
+      'PYTHONPATH=src .venv/bin/python scripts/record_wallet_provider_external_proof.py',
+      '--draft-file /tmp/0guard-wallet-provider-proof-draft.json',
+      `--out ${shellQuote(PROOF_OUTPUT_PATH)}`,
+      '--real-wallet-extension',
+      '--window-ethereum-present',
+      '--throwaway-empty-wallet',
+      '--operator-reviewed'
+    ].join(' \\\n  '),
     scenarioEvidence: {
       readOnlyRequest: proofScenarios.read,
       reviewRequest: proofScenarios.switch,

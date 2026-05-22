@@ -110,6 +110,9 @@ def test_wallet_provider_external_proof_status_is_missing_without_artifact(tmp_p
     ]
     assert result["blockers"] == result["proofBlockers"]
     assert "record_wallet_provider_external_proof.py" in result["recordProofCommandTemplate"]
+    assert "--draft-file /tmp/0guard-wallet-provider-proof-draft.json" in (
+        result["draftFileRecorderCommandTemplate"]
+    )
     assert "--external-dapp-origin https://arigatoexpress.github.io" in (
         result["recordProofCommandTemplate"]
     )
@@ -127,6 +130,10 @@ def test_wallet_provider_external_proof_status_is_missing_without_artifact(tmp_p
     assert result["requiresWindowEthereum"] is True
     assert result["requiresThrowawayEmptyWallet"] is True
     assert result["proofDraftAssistant"]["rawWalletAddressRequired"] is False
+    assert result["proofDraftAssistant"]["proofDraftFileSupported"] is True
+    assert "--draft-file /tmp/0guard-wallet-provider-proof-draft.json" in (
+        result["proofDraftAssistant"]["draftFileRecorderCommandTemplate"]
+    )
     assert result["privateKeysReturned"] is False
     assert result["rawParamsReturned"] is False
     assert result["transactionSigningEnabled"] is False
@@ -144,6 +151,12 @@ def test_wallet_provider_external_proof_command_uses_repo_relative_default_path(
     )
     assert "/app/docs/hackathon-0g/wallet-provider-external-proof.json" not in (
         result["recordProofCommandTemplate"]
+    )
+    assert "--out docs/hackathon-0g/wallet-provider-external-proof.json" in (
+        result["draftFileRecorderCommandTemplate"]
+    )
+    assert "/app/docs/hackathon-0g/wallet-provider-external-proof.json" not in (
+        result["draftFileRecorderCommandTemplate"]
     )
 
 
