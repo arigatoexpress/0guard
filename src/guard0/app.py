@@ -978,6 +978,7 @@ def api_frontend_contract():
                 "/api/product/strategy-review",
                 "/api/deployment/readiness",
                 "/api/production/gaps",
+                "/api/production-gaps",
                 "/api/model/training-roadmap",
                 "/api/model/incident-eval-set",
                 "/api/readyz",
@@ -1378,6 +1379,7 @@ def api_product_strategy_review():
 
 
 @app.route("/api/production/gaps", methods=["GET"])
+@app.route("/api/production-gaps", methods=["GET"])
 def api_production_gaps():
     return jsonify(build_production_gap_matrix())
 

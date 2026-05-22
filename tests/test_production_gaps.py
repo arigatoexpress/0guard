@@ -43,6 +43,17 @@ def test_production_gap_matrix_classifies_real_local_pending_and_mock_lanes():
         "source_ready_live_pending"
     )
     assert by_id["onchain.0g_storage_upload_readback"]["currentEvidence"]["bundleFileCount"] >= 1
+    assert "live_proof_file_missing" in (
+        by_id["onchain.0g_storage_upload_readback"]["currentEvidence"]["proofBlockers"]
+    )
+    assert "storage_sdk_runtime_not_present" in (
+        by_id["onchain.0g_storage_upload_readback"]["currentEvidence"]["preflightBlockers"]
+    )
+    assert "record_0g_storage_live_proof.py" in (
+        by_id["onchain.0g_storage_upload_readback"]["currentEvidence"][
+            "recordProofCommandTemplate"
+        ]
+    )
     assert "/api/0g/storage-upload/manifest" in by_id["onchain.0g_storage_upload_readback"]["routes"]
     assert by_id["onchain.x402_settlement"]["currentEvidence"]["dryRunHttpStatus"] == 402
     assert by_id["onchain.x402_settlement"]["currentEvidence"]["spendCapsConfigured"] is True
@@ -59,6 +70,16 @@ def test_production_gap_matrix_classifies_real_local_pending_and_mock_lanes():
         "review",
         "verified",
     }
+    assert "wallet_provider_external_proof_file_missing" in (
+        by_id["wallet.provider_guard"]["currentEvidence"]["externalProofBlockers"]
+    )
+    assert "record_wallet_provider_external_proof.py" in (
+        by_id["wallet.provider_guard"]["currentEvidence"]["recordProofCommandTemplate"]
+    )
+    assert (
+        by_id["wallet.provider_guard"]["currentEvidence"]["suggestedExternalProofUrl"]
+        == "https://arigatoexpress.github.io/0guard/wallet-provider-proof/"
+    )
     assert "/api/wallet/provider-proof" in by_id["wallet.provider_guard"]["routes"]
     assert "real_wallet_extension_proof" in by_id["wallet.provider_guard"]["blockedBy"]
     assert "hosted_route_deploy" not in by_id["wallet.provider_guard"]["blockedBy"]
@@ -79,6 +100,15 @@ def test_production_gap_matrix_classifies_real_local_pending_and_mock_lanes():
     assert (
         by_id["model.0g_private_computer"]["currentEvidence"]["paidSmokeProofVerified"]
         is False
+    )
+    assert "paid_smoke_proof_file_missing" in (
+        by_id["model.0g_private_computer"]["currentEvidence"]["blockers"]
+    )
+    assert "router_api_key_missing" in (
+        by_id["model.0g_private_computer"]["currentEvidence"]["preflightBlockers"]
+    )
+    assert "record_0g_private_compute_paid_smoke.py" in (
+        by_id["model.0g_private_computer"]["currentEvidence"]["recordProofCommandTemplate"]
     )
     assert by_id["mock.demo_fixtures"]["currentStatus"] == "mock_fixture_only"
 

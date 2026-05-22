@@ -235,6 +235,15 @@ def build_production_gap_matrix() -> dict[str, Any]:
                 "liveProofVerified": (storage_upload_manifest.get("liveProof") or {}).get(
                     "verified"
                 ),
+                "liveProofBlockers": (
+                    storage_upload_manifest.get("liveProof") or {}
+                ).get("blockers"),
+                "proofBlockers": storage_upload_manifest.get("proofBlockers"),
+                "preflightBlockers": storage_upload_manifest.get("preflightBlockers"),
+                "recordProofCommandTemplate": (
+                    ((storage_upload_manifest.get("uploadPreflight") or {}).get("nextCommands") or {})
+                    .get("recordProofAfterExternalUpload")
+                ),
                 "bundleArtifactSha256": (
                     storage_upload_manifest.get("bundleArtifact") or {}
                 ).get("artifactSha256"),
@@ -328,7 +337,16 @@ def build_production_gap_matrix() -> dict[str, Any]:
                 "externalProofRoute": "/api/wallet/provider-proof",
                 "externalProofStatus": wallet_provider_proof.get("status"),
                 "externalProofVerified": wallet_provider_proof.get("verified"),
+                "externalProofBlockers": wallet_provider_proof.get("blockers"),
+                "externalProofProofBlockers": wallet_provider_proof.get("proofBlockers"),
                 "externalProofMode": wallet_provider_proof.get("proofMode"),
+                "suggestedExternalProofUrl": wallet_provider_proof.get(
+                    "suggestedExternalProofUrl"
+                )
+                or wallet_provider_proof.get("externalDappSuggestedUrl"),
+                "recordProofCommandTemplate": wallet_provider_proof.get(
+                    "recordProofCommandTemplate"
+                ),
                 "realWalletExtension": wallet_provider_proof.get("realWalletExtension"),
                 "mockProvider": wallet_provider_proof.get("mockProvider"),
                 "throwawayWallet": wallet_provider_proof.get("throwawayWallet"),
@@ -494,6 +512,22 @@ def build_production_gap_matrix() -> dict[str, Any]:
                 "paidSmokeProofVerified": (
                     private_compute_smoke.get("paidSmokeProof") or {}
                 ).get("verified"),
+                "blockers": (
+                    (private_compute_smoke.get("paidSmokeProof") or {}).get("blockers")
+                    or private_compute_smoke.get("blockers")
+                ),
+                "proofBlockers": (
+                    (private_compute_smoke.get("paidSmokeProof") or {}).get("proofBlockers")
+                ),
+                "preflightBlockers": (
+                    (private_compute_smoke.get("paidSmokeProof") or {}).get(
+                        "preflightBlockers"
+                    )
+                    or private_compute_smoke.get("blockers")
+                ),
+                "recordProofCommandTemplate": private_compute_smoke.get(
+                    "recordProofCommandTemplate"
+                ),
             },
             "Attested inference lets ZeroGuard summarize sensitive risk packets without trusting an ordinary centralized model host.",
             "The adapter, prompt scrubber, no-inference smoke preview, and paid-smoke proof verifier are ready, but no server-side Router key or paid smoke proof is configured in this runtime.",

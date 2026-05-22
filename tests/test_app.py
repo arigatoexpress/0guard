@@ -183,6 +183,7 @@ def test_frontend_contract_is_browser_smoke_ready_and_non_mutating(client):
     assert "/api/product/strategy-review" in data["apiRoutes"]
     assert "/api/deployment/readiness" in data["apiRoutes"]
     assert "/api/production/gaps" in data["apiRoutes"]
+    assert "/api/production-gaps" in data["apiRoutes"]
     assert "/api/model/training-roadmap" in data["apiRoutes"]
     assert "/api/model/incident-eval-set" in data["apiRoutes"]
     assert "/api/readyz" in data["apiRoutes"]
@@ -600,6 +601,10 @@ def test_local_inference_x402_and_backfill_routes_are_no_side_effect(client):
     assert any(item["id"] == "model.0g_private_computer" for item in gaps_body["gaps"])
     assert gaps_body["safety"]["x402SettlementEnabled"] is False
     assert gaps_body["safety"]["paidInferenceEnabled"] is False
+
+    gaps_alias = client.get("/api/production-gaps")
+    assert gaps_alias.status_code == 200
+    assert gaps_alias.get_json()["schema"] == "0guard.production_gap_matrix.v1"
 
     strategy = client.get("/api/product/strategy-review")
     assert strategy.status_code == 200
