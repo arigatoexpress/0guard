@@ -73,6 +73,20 @@ PYTHONPATH=src .venv/bin/python scripts/record_wallet_provider_external_proof.py
   --operator-reviewed
 ```
 
+Or save the proof draft JSON emitted by the page and let the recorder extract
+the origin, guard URL, receipt hashes, provider call counts, and wallet-address
+hash from that public-safe draft:
+
+```bash
+PYTHONPATH=src .venv/bin/python scripts/record_wallet_provider_external_proof.py \
+  --draft-file /tmp/0guard-wallet-provider-proof-draft.json \
+  --out docs/hackathon-0g/wallet-provider-external-proof.json \
+  --real-wallet-extension \
+  --window-ethereum-present \
+  --throwaway-empty-wallet \
+  --operator-reviewed
+```
+
 Do not claim production wallet protection until this manual check has been run
 against an actual wallet extension window with an empty throwaway account and
 the denial evidence has been saved. `/api/wallet/provider-proof` stays

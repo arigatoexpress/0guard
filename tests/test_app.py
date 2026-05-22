@@ -1917,12 +1917,18 @@ def test_wallet_provider_external_proof_route_is_read_only_and_missing_by_defaul
     ]
     assert payload["blockers"] == payload["proofBlockers"]
     assert "record_wallet_provider_external_proof.py" in payload["recordProofCommandTemplate"]
+    assert "--draft-file /tmp/0guard-wallet-provider-proof-draft.json" in (
+        payload["draftFileRecorderCommandTemplate"]
+    )
     assert payload["operatorProofPath"] == "docs/hackathon-0g/wallet-provider-external-proof.json"
     assert "--out docs/hackathon-0g/wallet-provider-external-proof.json" in (
         payload["recordProofCommandTemplate"]
     )
     assert "/app/docs/hackathon-0g/wallet-provider-external-proof.json" not in (
         payload["recordProofCommandTemplate"]
+    )
+    assert "/app/docs/hackathon-0g/wallet-provider-external-proof.json" not in (
+        payload["draftFileRecorderCommandTemplate"]
     )
     assert (
         payload["suggestedExternalProofUrl"]

@@ -248,6 +248,10 @@ def verify_wallet_provider_external_proof(
         "proofBlockers": blockers,
         "suggestedExternalProofUrl": operator_packet["externalDappSuggestedUrl"],
         "externalDappSuggestedUrl": operator_packet["externalDappSuggestedUrl"],
+        "recordProofCommandTemplate": operator_packet["recordProofCommandTemplate"],
+        "draftFileRecorderCommandTemplate": operator_packet[
+            "draftFileRecorderCommandTemplate"
+        ],
         "requiredExternalDappOrigin": "https://arigatoexpress.github.io",
         "requiresRealWalletExtension": True,
         "requiresWindowEthereum": True,
@@ -610,6 +614,9 @@ def _external_proof_status(
         "moneyMovementEnabled": False,
         "reason": reason,
         "recordProofCommandTemplate": operator_packet["recordProofCommandTemplate"],
+        "draftFileRecorderCommandTemplate": operator_packet[
+            "draftFileRecorderCommandTemplate"
+        ],
         "proofDraftAssistant": operator_packet,
         "safety": {
             "readOnly": True,
@@ -664,14 +671,29 @@ def _external_operator_proof_packet(proof_path: str) -> dict[str, Any]:
             "--operator-reviewed",
         ]
     )
+    draft_file_command = " ".join(
+        [
+            "PYTHONPATH=src .venv/bin/python",
+            "scripts/record_wallet_provider_external_proof.py",
+            "--draft-file /tmp/0guard-wallet-provider-proof-draft.json",
+            f"--out {proof_file}",
+            "--real-wallet-extension",
+            "--window-ethereum-present",
+            "--throwaway-empty-wallet",
+            "--operator-reviewed",
+        ]
+    )
     return {
         "schema": "0guard.wallet_provider_external_operator_proof_packet.v1",
         "status": "ready_for_external_window_ethereum_proof",
         "proofPath": proof_file,
         "recordProofCommandTemplate": command,
+        "draftFileRecorderCommandTemplate": draft_file_command,
         "externalDappSuggestedUrl": suggested_url,
         "externalDappOriginRequired": True,
         "guardBaseUrlRequired": True,
+        "proofDraftFileSupported": True,
+        "proofDraftFileTemplate": "/tmp/0guard-wallet-provider-proof-draft.json",
         "walletAddressHashRequired": True,
         "rawWalletAddressRequired": False,
         "receiptHashesRequired": [

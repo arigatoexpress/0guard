@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -24,20 +25,25 @@ from guard0.wallet_provider_guard import (
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Record a public-safe wallet-provider proof")
-    parser.add_argument("--external-dapp-origin", required=True)
-    parser.add_argument("--guard-base-url", required=True)
+    parser.add_argument(
+        "--draft-file",
+        default="",
+        help="Optional public-safe proof draft JSON emitted by the hosted capture page; use '-' for stdin",
+    )
+    parser.add_argument("--external-dapp-origin", default="")
+    parser.add_argument("--guard-base-url", default="")
     parser.add_argument(
         "--wallet-address",
         default="",
         help="Optional throwaway address; hashed before storage and never written raw",
     )
     parser.add_argument("--wallet-address-hash", default="", help="sha256 of throwaway wallet address")
-    parser.add_argument("--read-receipt-hash", required=True)
-    parser.add_argument("--review-receipt-hash", required=True)
-    parser.add_argument("--deny-receipt-hash", required=True)
-    parser.add_argument("--provider-call-count-after-read", type=int, default=1)
-    parser.add_argument("--provider-call-count-after-review", type=int, default=1)
-    parser.add_argument("--provider-call-count-after-deny", type=int, default=1)
+    parser.add_argument("--read-receipt-hash", default="")
+    parser.add_argument("--review-receipt-hash", default="")
+    parser.add_argument("--deny-receipt-hash", default="")
+    parser.add_argument("--provider-call-count-after-read", type=int)
+    parser.add_argument("--provider-call-count-after-review", type=int)
+    parser.add_argument("--provider-call-count-after-deny", type=int)
     parser.add_argument(
         "--out",
         default="docs/hackathon-0g/wallet-provider-external-proof.json",
@@ -58,18 +64,49 @@ def main() -> int:
     if not args.operator_reviewed:
         raise SystemExit("--operator-reviewed is required")
 
+    draft = _load_draft(args.draft_file)
+    if draft is not None:
+        _validate_public_safe_draft(draft)
+
     address_hash = args.wallet_address_hash.strip()
     if args.wallet_address.strip():
         address_hash = wallet_address_hash(args.wallet_address)
+    if not address_hash and draft is not None:
+        address_hash = str(draft.get("walletAddressHash") or "").strip()
     if not address_hash:
-        raise SystemExit("--wallet-address or --wallet-address-hash is required")
+        raise SystemExit("--wallet-address, --wallet-address-hash, or --draft-file is required")
+
+    external_dapp_origin = args.external_dapp_origin.strip() or _draft_str(
+        draft, "externalDappOrigin"
+    )
+    if not external_dapp_origin:
+        raise SystemExit("--external-dapp-origin or --draft-file is required")
+    guard_base_url = args.guard_base_url.strip() or _draft_str(draft, "guardBaseUrl")
+    if not guard_base_url:
+        raise SystemExit("--guard-base-url or --draft-file is required")
+
+    read_receipt_hash = args.read_receipt_hash.strip() or _draft_receipt_hash(
+        draft, "readOnlyRequest"
+    )
+    review_receipt_hash = args.review_receipt_hash.strip() or _draft_receipt_hash(
+        draft, "reviewRequest"
+    )
+    deny_receipt_hash = args.deny_receipt_hash.strip() or _draft_receipt_hash(
+        draft, "denyRequest"
+    )
+    if not read_receipt_hash:
+        raise SystemExit("--read-receipt-hash or --draft-file is required")
+    if not review_receipt_hash:
+        raise SystemExit("--review-receipt-hash or --draft-file is required")
+    if not deny_receipt_hash:
+        raise SystemExit("--deny-receipt-hash or --draft-file is required")
 
     proof: dict[str, Any] = {
         "schema": WALLET_PROVIDER_EXTERNAL_PROOF_SCHEMA,
         "recordedAt": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
         "proofMode": "real_wallet_extension_window_ethereum",
-        "externalDappOrigin": args.external_dapp_origin,
-        "guardBaseUrl": args.guard_base_url.rstrip("/"),
+        "externalDappOrigin": external_dapp_origin,
+        "guardBaseUrl": guard_base_url.rstrip("/"),
         "windowEthereumPresent": True,
         "realWalletExtension": True,
         "mockProvider": False,
@@ -81,24 +118,30 @@ def main() -> int:
             "decision": "allow",
             "forwardedToProvider": True,
             "walletPromptShown": False,
-            "providerCallCount": args.provider_call_count_after_read,
-            "receiptHash": args.read_receipt_hash,
+            "providerCallCount": _provider_count(
+                args.provider_call_count_after_read, draft, "readOnlyRequest"
+            ),
+            "receiptHash": read_receipt_hash,
         },
         "reviewRequest": {
             "method": "wallet_switchEthereumChain",
             "decision": "review",
             "forwardedToProvider": False,
             "walletPromptShown": False,
-            "providerCallCount": args.provider_call_count_after_review,
-            "receiptHash": args.review_receipt_hash,
+            "providerCallCount": _provider_count(
+                args.provider_call_count_after_review, draft, "reviewRequest"
+            ),
+            "receiptHash": review_receipt_hash,
         },
         "denyRequest": {
             "method": "eth_sendTransaction",
             "decision": "deny",
             "forwardedToProvider": False,
             "walletPromptShown": False,
-            "providerCallCount": args.provider_call_count_after_deny,
-            "receiptHash": args.deny_receipt_hash,
+            "providerCallCount": _provider_count(
+                args.provider_call_count_after_deny, draft, "denyRequest"
+            ),
+            "receiptHash": deny_receipt_hash,
         },
         "operatorReviewed": True,
         "rawParamsReturned": False,
@@ -139,6 +182,68 @@ def main() -> int:
         )
     )
     return 0
+
+
+def _load_draft(path: str) -> dict[str, Any] | None:
+    if not path:
+        return None
+    try:
+        if path == "-":
+            payload = json.loads(sys.stdin.read())
+        else:
+            payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SystemExit(f"could not read proof draft: {type(exc).__name__}: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise SystemExit("proof draft must be a JSON object")
+    return payload
+
+
+def _validate_public_safe_draft(draft: dict[str, Any]) -> None:
+    if draft.get("schema") != "0guard.wallet_provider_external_proof_draft.v1":
+        raise SystemExit("proof draft schema mismatch")
+    if draft.get("status") != "ready_for_operator_review":
+        raise SystemExit("proof draft must be ready_for_operator_review")
+    if draft.get("windowEthereumPresent") is not True:
+        raise SystemExit("proof draft did not observe window.ethereum")
+    if draft.get("rawWalletAddressStored") is not False:
+        raise SystemExit("proof draft must not store a raw wallet address")
+    if draft.get("rawParamsStored") is not False:
+        raise SystemExit("proof draft must not store raw wallet params")
+
+
+def _draft_str(draft: dict[str, Any] | None, key: str) -> str:
+    if draft is None:
+        return ""
+    return str(draft.get(key) or "").strip()
+
+
+def _draft_scenario(draft: dict[str, Any] | None, name: str) -> dict[str, Any]:
+    if draft is None:
+        return {}
+    scenarios = draft.get("scenarioEvidence")
+    if not isinstance(scenarios, dict):
+        return {}
+    scenario = scenarios.get(name)
+    return scenario if isinstance(scenario, dict) else {}
+
+
+def _draft_receipt_hash(draft: dict[str, Any] | None, name: str) -> str:
+    return str(_draft_scenario(draft, name).get("receiptHash") or "").strip()
+
+
+def _provider_count(
+    explicit: int | None,
+    draft: dict[str, Any] | None,
+    name: str,
+) -> int:
+    if explicit is not None:
+        return explicit
+    value = _draft_scenario(draft, name).get("providerCallCount")
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 1
 
 
 if __name__ == "__main__":
