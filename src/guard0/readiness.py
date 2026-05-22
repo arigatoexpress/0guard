@@ -121,6 +121,9 @@ def production_readiness() -> dict[str, Any]:
             {
                 "status": wallet_provider_proof.get("status"),
                 "verified": wallet_provider_proof.get("verified"),
+                "blockers": wallet_provider_proof.get("blockers"),
+                "proofBlockers": wallet_provider_proof.get("proofBlockers"),
+                "proofPresent": wallet_provider_proof.get("proofPresent"),
                 "suggestedExternalProofUrl": wallet_provider_proof.get(
                     "suggestedExternalProofUrl"
                 )
@@ -218,6 +221,9 @@ def production_readiness() -> dict[str, Any]:
             "0G Storage claims need live upload and download/readback proof, not only local hashes.",
             {
                 "manifestSchema": storage_upload.get("schema"),
+                "blockers": storage_upload.get("blockers"),
+                "proofBlockers": storage_upload.get("proofBlockers"),
+                "preflightBlockers": storage_upload.get("preflightBlockers"),
                 "bundleFileCount": (storage_upload.get("bundle") or {}).get("fileCount"),
                 "localReadbackAllMatched": (
                     storage_upload.get("readbackVerifier") or {}
@@ -230,6 +236,7 @@ def production_readiness() -> dict[str, Any]:
                 ),
                 "liveProofStatus": (storage_upload.get("liveProof") or {}).get("status"),
                 "liveProofVerified": (storage_upload.get("liveProof") or {}).get("verified"),
+                "liveProofBlockers": (storage_upload.get("liveProof") or {}).get("blockers"),
                 "bundleArtifactSha256": (storage_upload.get("bundleArtifact") or {}).get(
                     "artifactSha256"
                 ),
@@ -251,6 +258,15 @@ def production_readiness() -> dict[str, Any]:
                 "paidSmokeProofVerified": (
                     private_compute_smoke.get("paidSmokeProof") or {}
                 ).get("verified"),
+                "paidSmokeProofBlockers": (
+                    private_compute_smoke.get("paidSmokeProof") or {}
+                ).get("blockers"),
+                "paidSmokeProofProofBlockers": (
+                    private_compute_smoke.get("paidSmokeProof") or {}
+                ).get("proofBlockers"),
+                "paidSmokePreflightBlockers": (
+                    private_compute_smoke.get("paidSmokeProof") or {}
+                ).get("preflightBlockers"),
                 "paidInferencePerformedExternally": (
                     private_compute_smoke.get("paidSmokeProof") or {}
                 ).get("paidInferencePerformedExternally"),
