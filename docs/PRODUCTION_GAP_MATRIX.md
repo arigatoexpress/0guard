@@ -201,6 +201,17 @@ OpenAI-compatible Router endpoint; 0G Storage SDKs support upload/download and
 proof verification. ZeroGuard should use those surfaces only behind the
 operator gates above.
 
+For the 0G Storage upload/readback gate, the TypeScript SDK runtime preflight
+tracks the official package and peer dependency:
+
+```bash
+npm install @0gfoundation/0g-ts-sdk ethers
+```
+
+The upload must still happen in a reviewed signer-owned environment; the
+ZeroGuard workbench only builds the public-safe bundle and records the external
+readback proof.
+
 ## Sources
 
 - https://0g.ai/blog/0gm-1-0-35b-a3b

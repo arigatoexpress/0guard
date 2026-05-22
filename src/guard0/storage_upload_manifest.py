@@ -22,6 +22,12 @@ STORAGE_BUNDLE_ARTIFACT_SCHEMA = "0guard.0g_storage_public_bundle.v1"
 STORAGE_LIVE_PROOF_SCHEMA = "0guard.0g_storage_live_upload_proof.v1"
 STORAGE_LIVE_PROOF_VERIFICATION_SCHEMA = "0guard.0g_storage_live_upload_proof_verification.v1"
 REPO_ROOT = Path(__file__).resolve().parents[2]
+STORAGE_SDK_PACKAGE_NAME = "@0gfoundation/0g-ts-sdk"
+STORAGE_SDK_PEER_DEPENDENCIES = ("ethers",)
+STORAGE_SDK_NODE_MODULE_PATHS = (
+    Path("node_modules") / "@0gfoundation" / "0g-ts-sdk",
+    Path("node_modules") / "@0gfoundation" / "0g-storage-ts-sdk",
+)
 DEFAULT_STORAGE_BUNDLE_PATHS = (
     REPO_ROOT / "data" / "evals" / "incident_detector_eval.v1.jsonl",
     REPO_ROOT / "data" / "backfill" / "reputation_features" / "phishdestroy" / "latest.json",
@@ -174,7 +180,8 @@ def build_storage_live_upload_preflight(
     )
     chain_rpc_configured = bool(os.getenv("ZG_STORAGE_CHAIN_RPC"))
     indexer_rpc_configured = bool(os.getenv("ZG_STORAGE_INDEXER_RPC"))
-    sdk_package_present = (REPO_ROOT / "node_modules" / "@0gfoundation" / "0g-storage-ts-sdk").exists()
+    sdk_package_paths = [REPO_ROOT / path for path in STORAGE_SDK_NODE_MODULE_PATHS]
+    sdk_package_present = any(path.exists() for path in sdk_package_paths)
 
     blockers = []
     if not existing_files:
@@ -208,6 +215,19 @@ def build_storage_live_upload_preflight(
         "expectedBundleArtifactSha256": expected_artifact_sha,
         "bundleArtifactMatches": artifact_matches,
         "officialSdk": "https://docs.0g.ai/developer-hub/building-on-0g/storage/sdk",
+        "sdkRuntime": {
+            "packageName": STORAGE_SDK_PACKAGE_NAME,
+            "peerDependencies": list(STORAGE_SDK_PEER_DEPENDENCIES),
+            "installCommand": "npm install @0gfoundation/0g-ts-sdk ethers",
+            "typescriptImports": [
+                'import { ZgFile, Indexer } from "@0gfoundation/0g-ts-sdk";',
+                'import { ethers } from "ethers";',
+            ],
+            "checkedNodeModulePaths": [
+                _relative_repo_path(path) for path in sdk_package_paths
+            ],
+            "packagePresent": sdk_package_present,
+        },
         "recommendedNetwork": "testnet",
         "networkProfiles": {
             "testnet": {
@@ -231,8 +251,10 @@ def build_storage_live_upload_preflight(
             "indexerRpcConfigured": indexer_rpc_configured,
             "operatorSignerConfigured": signer_configured,
             "sdkPackagePresent": sdk_package_present,
+            "sdkPackageName": STORAGE_SDK_PACKAGE_NAME,
         },
         "nextCommands": {
+            "installStorageSdk": "npm install @0gfoundation/0g-ts-sdk ethers",
             "buildBundle": (
                 "PYTHONPATH=src .venv/bin/python scripts/build_0g_storage_bundle.py "
                 "--out dist/0g-storage/zeroguard-public-safe-derived-bundle.json"
