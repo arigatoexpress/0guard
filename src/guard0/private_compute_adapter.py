@@ -16,7 +16,18 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from guard0.peer_protection import CHAT_COMPLETIONS_URL, MODEL_ID, ROUTER_BASE_URL
+from guard0.peer_protection import (
+    API_REFERENCE_URL,
+    CHAT_COMPLETIONS_URL,
+    MODEL_ID,
+    PAYMENT_LAYER_MAINNET,
+    PAYMENT_LAYER_TESTNET,
+    ROUTER_AUTH_URL,
+    ROUTER_BASE_URL,
+    ROUTER_BILLING_URL,
+    ROUTER_MODELS_DOC_URL,
+    ROUTER_MODELS_URL,
+)
 
 PRIVATE_COMPUTE_SMOKE_PREVIEW_SCHEMA = "0guard.0g_private_compute_smoke_preview.v1"
 PRIVATE_COMPUTE_PAID_SMOKE_PROOF_SCHEMA = "0guard.0g_private_compute_paid_smoke_proof.v1"
@@ -26,7 +37,11 @@ PRIVATE_COMPUTE_PAID_SMOKE_PROOF_VERIFICATION_SCHEMA = (
 PRIVATE_COMPUTE_PAID_SMOKE_OPERATOR_PACKET_SCHEMA = (
     "0guard.0g_private_compute_paid_smoke_operator_proof_packet.v1"
 )
+PRIVATE_COMPUTE_ROUTER_CONTRACT_SCHEMA = "0guard.0g_private_compute_router_contract.v1"
 PRIVATE_COMPUTE_FIRST_SMOKE_MAX_COST_USD = 0.25
+ROUTER_API_KEY_ENV_NAMES = ("ZG_0G_ROUTER_API_KEY", "ZG_0G_PC_API_KEY", "ZERO_G_API_KEY")
+PAID_INFERENCE_GATE_ENV = "ZG_ALLOW_PAID_INFERENCE"
+INFERENCE_BUDGET_ENV = "ZG_0G_INFERENCE_BUDGET_USD"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_PRIVATE_COMPUTE_PAID_SMOKE_PROOF_PATH = (
     REPO_ROOT / "docs" / "hackathon-0g" / "0g-private-compute-paid-smoke-proof.json"
@@ -94,12 +109,22 @@ def build_private_compute_smoke_preview(
         "router": {
             "baseUrl": ROUTER_BASE_URL,
             "chatCompletionsUrl": CHAT_COMPLETIONS_URL,
+            "modelsUrl": ROUTER_MODELS_URL,
+            "openAiCompatible": True,
             "apiKeyConfigured": key_ready,
             "apiKeyReturned": False,
+            "apiKeyEnvNames": list(ROUTER_API_KEY_ENV_NAMES),
+            "paidInferenceGateEnv": PAID_INFERENCE_GATE_ENV,
+            "budgetEnv": INFERENCE_BUDGET_ENV,
             "budgetUsd": budget,
             "paidInferenceAllowedByEnv": paid_allowed,
             "networkCalls": False,
         },
+        "routerContract": _router_contract(
+            api_key_configured=key_ready,
+            paid_inference_allowed=paid_allowed,
+            budget_usd=budget,
+        ),
         "promptScrub": scrub,
         "sampleRequest": _sample_request(scrub),
         "paidSmokeProof": paid_smoke_proof,
@@ -202,6 +227,11 @@ def verify_private_compute_paid_smoke_proof(
         "budgetUsd": budget_usd,
         "costUsd": cost_usd,
         "maxFirstSmokeCostUsd": max_cost,
+        "routerContract": _router_contract(
+            api_key_configured=_api_key_configured(),
+            paid_inference_allowed=_truthy(os.getenv(PAID_INFERENCE_GATE_ENV)),
+            budget_usd=_budget_usd(),
+        ),
         "paidInferencePerformedExternally": (
             proof.get("paidInferencePerformedExternally") is True
         ),
@@ -257,6 +287,7 @@ def scrub_private_compute_prompt(prompt: str) -> dict[str, Any]:
 def _sample_request(scrub: dict[str, Any]) -> dict[str, Any]:
     return {
         "method": "POST",
+        "openAiCompatible": True,
         "url": CHAT_COMPLETIONS_URL,
         "headers": {
             "Authorization": "Bearer ${ZG_0G_ROUTER_API_KEY}",
@@ -297,16 +328,12 @@ def _default_prompt() -> str:
 
 
 def _api_key_configured() -> bool:
-    return bool(
-        os.getenv("ZG_0G_ROUTER_API_KEY")
-        or os.getenv("ZG_0G_PC_API_KEY")
-        or os.getenv("ZERO_G_API_KEY")
-    )
+    return any(bool(os.getenv(env_name)) for env_name in ROUTER_API_KEY_ENV_NAMES)
 
 
 def _budget_usd() -> float:
     try:
-        return float(os.getenv("ZG_0G_INFERENCE_BUDGET_USD", "0") or 0)
+        return float(os.getenv(INFERENCE_BUDGET_ENV, "0") or 0)
     except ValueError:
         return 0.0
 
@@ -391,12 +418,24 @@ def _paid_smoke_proof_status(
         "proofBlockers": [reason],
         "preflightBlockers": preflight_blockers,
         "router": {
+            "baseUrl": ROUTER_BASE_URL,
+            "chatCompletionsUrl": CHAT_COMPLETIONS_URL,
+            "modelsUrl": ROUTER_MODELS_URL,
+            "openAiCompatible": True,
             "apiKeyConfigured": api_key_configured,
             "apiKeyReturned": False,
+            "apiKeyEnvNames": list(ROUTER_API_KEY_ENV_NAMES),
+            "paidInferenceGateEnv": PAID_INFERENCE_GATE_ENV,
+            "budgetEnv": INFERENCE_BUDGET_ENV,
             "paidInferenceAllowedByEnv": paid_inference_allowed,
             "budgetUsd": budget_usd,
             "networkCalls": False,
         },
+        "routerContract": _router_contract(
+            api_key_configured=api_key_configured,
+            paid_inference_allowed=paid_inference_allowed,
+            budget_usd=budget_usd,
+        ),
         "recordProofCommandTemplate": operator_packet["recordProofCommandTemplate"],
         "operatorProofPacket": operator_packet,
         "safety": {
@@ -446,6 +485,11 @@ def _paid_smoke_operator_packet(proof_path: str | Path | None) -> dict[str, Any]
         "model": MODEL_ID,
         "routerBaseUrl": ROUTER_BASE_URL,
         "chatCompletionsUrl": CHAT_COMPLETIONS_URL,
+        "routerContract": _router_contract(
+            api_key_configured=False,
+            paid_inference_allowed=False,
+            budget_usd=0.0,
+        ),
         "maxFirstSmokeCostUsd": PRIVATE_COMPUTE_FIRST_SMOKE_MAX_COST_USD,
         "promptHashRequired": True,
         "requestHashRequired": True,
@@ -463,6 +507,93 @@ def _paid_smoke_operator_packet(proof_path: str | Path | None) -> dict[str, Any]
         "transactionSigningByZeroGuardEnabled": False,
         "transactionBroadcastingByZeroGuardEnabled": False,
         "moneyMovementByZeroGuardEnabled": False,
+    }
+
+
+def _router_contract(
+    *,
+    api_key_configured: bool,
+    paid_inference_allowed: bool,
+    budget_usd: float,
+) -> dict[str, Any]:
+    return {
+        "schema": PRIVATE_COMPUTE_ROUTER_CONTRACT_SCHEMA,
+        "source": "official_0g_router_docs_and_live_catalog_contract",
+        "openAiCompatible": True,
+        "httpMethod": "POST",
+        "baseUrl": ROUTER_BASE_URL,
+        "chatCompletionsPath": "/chat/completions",
+        "chatCompletionsUrl": CHAT_COMPLETIONS_URL,
+        "modelsPath": "/models",
+        "modelsUrl": ROUTER_MODELS_URL,
+        "auth": {
+            "header": "Authorization",
+            "scheme": "Bearer",
+            "headerTemplate": "Authorization: Bearer ${ZG_0G_ROUTER_API_KEY}",
+            "apiKeyEnvNames": list(ROUTER_API_KEY_ENV_NAMES),
+            "apiKeyConfigured": api_key_configured,
+            "apiKeyReturned": False,
+            "browserUseAllowed": False,
+            "serverSideOnly": True,
+            "keyCanSpendDeposited0g": True,
+        },
+        "budgetGate": {
+            "paidInferenceGateEnv": PAID_INFERENCE_GATE_ENV,
+            "paidInferenceAllowedByEnv": paid_inference_allowed,
+            "budgetEnv": INFERENCE_BUDGET_ENV,
+            "budgetUsd": budget_usd,
+            "requiresPositiveBudget": True,
+            "requiresOperatorReviewedBudget": True,
+            "maxFirstSmokeCostUsd": PRIVATE_COMPUTE_FIRST_SMOKE_MAX_COST_USD,
+        },
+        "modelRequest": {
+            "model": MODEL_ID,
+            "catalogShouldBeCheckedBeforePaidSmoke": True,
+            "disableThinkingParameter": {
+                "chat_template_kwargs": {"enable_thinking": False},
+            },
+            "stream": False,
+            "maxTokens": 512,
+        },
+        "billing": {
+            "unit": "neuron_per_token",
+            "routerTraceField": "x_0g_trace.billing.total_cost",
+            "accountBalancePath": "/account/balance",
+            "usageStatsPath": "/account/usage/stats",
+            "usageHistoryPath": "/account/usage/history",
+            "paymentLayerContracts": {
+                "mainnet": PAYMENT_LAYER_MAINNET,
+                "testnet": PAYMENT_LAYER_TESTNET,
+            },
+        },
+        "proofRequirements": {
+            "paidInferencePerformedExternally": True,
+            "recordPromptHash": True,
+            "recordRequestHash": True,
+            "recordResponseHash": True,
+            "recordRouterReceiptHash": True,
+            "recordCostUsd": True,
+            "recordRawPrompt": False,
+            "recordRawResponse": False,
+            "recordApiKey": False,
+            "recordPaymentHeaders": False,
+        },
+        "docs": {
+            "quickstartUrl": API_REFERENCE_URL,
+            "authUrl": ROUTER_AUTH_URL,
+            "modelsUrl": ROUTER_MODELS_DOC_URL,
+            "billingUrl": ROUTER_BILLING_URL,
+        },
+        "safety": {
+            "readOnly": True,
+            "networkCalls": False,
+            "inferenceExecuted": False,
+            "apiKeyReturned": False,
+            "privateKeysReturned": False,
+            "transactionSigningEnabled": False,
+            "transactionBroadcastingEnabled": False,
+            "moneyMovementEnabled": False,
+        },
     }
 
 

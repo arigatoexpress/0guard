@@ -112,6 +112,22 @@ def test_production_gap_matrix_classifies_real_local_pending_and_mock_lanes():
     assert "router_api_key_missing" in (
         by_id["model.0g_private_computer"]["currentEvidence"]["preflightBlockers"]
     )
+    assert (
+        by_id["model.0g_private_computer"]["currentEvidence"]["routerContractSchema"]
+        == "0guard.0g_private_compute_router_contract.v1"
+    )
+    assert (
+        by_id["model.0g_private_computer"]["currentEvidence"]["routerAuthHeaderTemplate"]
+        == "Authorization: Bearer ${ZG_0G_ROUTER_API_KEY}"
+    )
+    assert (
+        by_id["model.0g_private_computer"]["currentEvidence"]["paidInferenceGateEnv"]
+        == "ZG_ALLOW_PAID_INFERENCE"
+    )
+    assert (
+        by_id["model.0g_private_computer"]["currentEvidence"]["inferenceBudgetEnv"]
+        == "ZG_0G_INFERENCE_BUDGET_USD"
+    )
     assert "record_0g_private_compute_paid_smoke.py" in (
         by_id["model.0g_private_computer"]["currentEvidence"]["recordProofCommandTemplate"]
     )

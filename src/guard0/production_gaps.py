@@ -528,6 +528,32 @@ def build_production_gap_matrix() -> dict[str, Any]:
                     )
                     or private_compute_smoke.get("blockers")
                 ),
+                "routerContractSchema": (
+                    private_compute_smoke.get("routerContract") or {}
+                ).get("schema"),
+                "routerChatCompletionsUrl": (
+                    private_compute_smoke.get("routerContract") or {}
+                ).get("chatCompletionsUrl"),
+                "routerAuthHeaderTemplate": (
+                    (private_compute_smoke.get("routerContract") or {}).get("auth")
+                    or {}
+                ).get("headerTemplate"),
+                "paidInferenceGateEnv": (
+                    (private_compute_smoke.get("routerContract") or {}).get(
+                        "budgetGate"
+                    )
+                    or {}
+                ).get("paidInferenceGateEnv"),
+                "inferenceBudgetEnv": (
+                    (private_compute_smoke.get("routerContract") or {}).get(
+                        "budgetGate"
+                    )
+                    or {}
+                ).get("budgetEnv"),
+                "routerTraceField": (
+                    (private_compute_smoke.get("routerContract") or {}).get("billing")
+                    or {}
+                ).get("routerTraceField"),
                 "recordProofCommandTemplate": private_compute_smoke.get(
                     "recordProofCommandTemplate"
                 ),

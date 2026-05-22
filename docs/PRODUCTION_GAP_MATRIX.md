@@ -93,6 +93,12 @@ deferred, and orders the next production gates.
   no-secret/no-raw-payload flags. The recorder
   `scripts/record_0g_private_compute_paid_smoke.py` writes the proof artifact
   only after budget, prompt-safety, and external-inference acknowledgements.
+  Both routes expose the official Router contract: OpenAI-compatible
+  `POST https://router-api.0g.ai/v1/chat/completions`, `Authorization: Bearer`
+  server-side auth, `ZG_ALLOW_PAID_INFERENCE`, `ZG_0G_INFERENCE_BUDGET_USD`,
+  first-smoke cap `0.25` USD, and Router billing proof via
+  `x_0g_trace.billing.total_cost`. The API never returns the key, raw prompt,
+  raw response, payment headers, or wallet secrets.
 - RV 0G storage node soak: real local snapshot, process running, public storage
   and DA relay sockets restored, only the small 0.25 0G test funding observed,
   and no 100 0G transfer sent.
