@@ -130,6 +130,11 @@ def test_wallet_provider_external_proof_status_is_missing_without_artifact(tmp_p
     assert result["requiresRealWalletExtension"] is True
     assert result["requiresWindowEthereum"] is True
     assert result["requiresThrowawayEmptyWallet"] is True
+    assert result["placeholderReceiptHashesRejected"] is True
+    assert result["proofDraftAssistant"]["placeholderReceiptHashesRejected"] is True
+    assert "repeated-character placeholder hashes are rejected" in result[
+        "receiptHashPolicy"
+    ]
     assert result["proofDraftAssistant"]["rawWalletAddressRequired"] is False
     assert result["proofDraftAssistant"]["proofDraftFileSupported"] is True
     assert "--draft-file /tmp/0guard-wallet-provider-proof-draft.json" in (
@@ -172,6 +177,10 @@ def test_wallet_provider_external_proof_accepts_real_extension_flow():
     assert result["realWalletExtension"] is True
     assert result["mockProvider"] is False
     assert result["throwawayWallet"] is True
+    assert result["placeholderReceiptHashesRejected"] is True
+    assert "repeated-character placeholder hashes are rejected" in result[
+        "receiptHashPolicy"
+    ]
     assert (
         result["suggestedExternalProofUrl"]
         == "https://arigatoexpress.github.io/0guard/wallet-provider-proof/"
