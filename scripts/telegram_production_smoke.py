@@ -82,6 +82,18 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="HTTP timeout for route probe GETs (default: 12s when --skip-telegram-api else 25s).",
     )
+    parser.add_argument(
+        "--budget-seconds",
+        type=float,
+        default=None,
+        help="Overall time budget for all checks (default: 20s when --skip-telegram-api else unlimited).",
+    )
+    parser.add_argument(
+        "--route-budget-seconds",
+        type=float,
+        default=None,
+        help="Time budget for route probes (default: 10s when --skip-telegram-api else unlimited).",
+    )
     parser.add_argument("--format", choices=("json", "markdown"), default="markdown")
     args = parser.parse_args(argv)
 
@@ -91,14 +103,22 @@ def main(argv: list[str] | None = None) -> int:
         if args.route_timeout_seconds is not None
         else (12.0 if args.skip_telegram_api else 25.0)
     )
+    overall_budget = args.budget_seconds if args.budget_seconds is not None else (45.0 if args.skip_telegram_api else None)
+    route_budget = (
+        args.route_budget_seconds
+        if args.route_budget_seconds is not None
+        else (25.0 if args.skip_telegram_api else None)
+    )
+    deadline = (time.monotonic() + overall_budget) if overall_budget else None
+    route_deadline = (time.monotonic() + route_budget) if route_budget else None
 
     token = "" if args.skip_telegram_api else _load_secret(args.bot_token_env, args.bot_token_secret, args.gcloud_project)
     webhook_secret = "" if args.skip_telegram_api else _load_secret("", args.webhook_secret, args.gcloud_project)
     requested_base_url = args.base_url.rstrip("/")
     candidates = _base_url_candidates(requested_base_url)
     try:
-        base_url = _select_base_url(requested_base_url, timeout=http_timeout)
-    except requests.RequestException as exc:
+        base_url = _select_base_url(requested_base_url, timeout=http_timeout, deadline=deadline)
+    except (requests.RequestException, TimeoutError) as exc:
         payload: dict[str, Any] = {
             "baseUrl": requested_base_url,
             "baseUrlSelection": {"ok": False, "tried": candidates, "error": str(exc)},
@@ -113,9 +133,24 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     checks: list[Check] = []
-    payload: dict[str, Any] = {"baseUrl": base_url, "baseUrlSelection": {"ok": True, "tried": candidates}, "tokenPrinted": False}
+    payload: dict[str, Any] = {
+        "baseUrl": base_url,
+        "baseUrlSelection": {"ok": True, "tried": candidates},
+        "tokenPrinted": False,
+        "timedOut": False,
+    }
 
-    health_path, health = _load_health(base_url, timeout=http_timeout)
+    timed_out = False
+    try:
+        health_path, health = _load_health(base_url, timeout=http_timeout, deadline=deadline)
+    except TimeoutError as exc:
+        timed_out = True
+        payload["timedOut"] = True
+        payload["error"] = str(exc)
+        payload["checks"] = []
+        payload["ok"] = False
+        _emit(payload, args.format)
+        return 1
     safety_flags = health.get("safety_flags") or {}
     payload["health"] = {
         "path": health_path,
@@ -135,7 +170,11 @@ def main(argv: list[str] | None = None) -> int:
         ]
     )
 
-    status = _get_json(f"{base_url}/api/telegram/status", timeout=http_timeout)
+    try:
+        status = _get_json(f"{base_url}/api/telegram/status", timeout=http_timeout, deadline=deadline)
+    except TimeoutError:
+        timed_out = True
+        status = {}
     payload["telegramStatus"] = _status_summary(status)
     checks.extend(
         [
@@ -146,7 +185,16 @@ def main(argv: list[str] | None = None) -> int:
         ]
     )
 
-    session = _post_json(f"{base_url}/api/telegram/miniapp/session", {}, timeout=http_timeout)
+    try:
+        session = _post_json(
+            f"{base_url}/api/telegram/miniapp/session",
+            {},
+            timeout=http_timeout,
+            deadline=deadline,
+        )
+    except TimeoutError:
+        timed_out = True
+        session = {}
     payload["browserPreviewSession"] = {
         "schema": session.get("schema"),
         "mode": session.get("mode"),
@@ -160,6 +208,7 @@ def main(argv: list[str] | None = None) -> int:
             f"{base_url}/api/telegram/miniapp/session",
             {"initData": _signed_demo_init_data(token)},
             timeout=http_timeout,
+            deadline=deadline,
         )
         auth = signed_session.get("auth") or {}
         payload["signedTelegramSession"] = {
@@ -171,19 +220,24 @@ def main(argv: list[str] | None = None) -> int:
         }
         checks.append(Check("signed_init_data_validates", auth.get("validated") is True, str(auth.get("validated"))))
 
-    preview = _post_json(
-        f"{base_url}/api/telegram/miniapp/preview",
-        {
-            "address": PROOF_WALLET,
-            "intent": {
-                "action": "approve",
-                "mode": "live_transaction",
-                "requires_signature": True,
-                "calldata": APPROVAL_CALLDATA,
+    try:
+        preview = _post_json(
+            f"{base_url}/api/telegram/miniapp/preview",
+            {
+                "address": PROOF_WALLET,
+                "intent": {
+                    "action": "approve",
+                    "mode": "live_transaction",
+                    "requires_signature": True,
+                    "calldata": APPROVAL_CALLDATA,
+                },
             },
-        },
-        timeout=http_timeout,
-    )
+            timeout=http_timeout,
+            deadline=deadline,
+        )
+    except TimeoutError:
+        timed_out = True
+        preview = {}
     payload["miniAppPreview"] = {
         "schema": preview.get("schema"),
         "walletDecision": ((preview.get("walletAlert") or {}).get("decision") or {}).get("decision"),
@@ -201,7 +255,7 @@ def main(argv: list[str] | None = None) -> int:
         ]
     )
 
-    payload["routeProbes"] = _route_probes(base_url, timeout=route_timeout)
+    payload["routeProbes"] = _route_probes(base_url, timeout=route_timeout, deadline=route_deadline)
 
     if token:
         bot = _telegram_readbacks(token, timeout=http_timeout)
@@ -227,6 +281,7 @@ def main(argv: list[str] | None = None) -> int:
             },
             headers={"X-Telegram-Bot-Api-Secret-Token": webhook_secret},
             timeout=http_timeout,
+            deadline=deadline,
         )
         payload["webhookRoute"] = {
             "schema": webhook_route.get("schema"),
@@ -242,23 +297,29 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     payload["checks"] = [check.__dict__ for check in checks]
+    if timed_out:
+        payload["timedOut"] = True
     payload["ok"] = all(check.ok for check in checks)
-    if args.format == "json":
-        print(json.dumps(payload, indent=2, sort_keys=True))
-    else:
-        print(_markdown(payload))
+    _emit(payload, args.format)
     return 0 if payload["ok"] else 1
 
 
-def _select_base_url(requested: str, *, timeout: float) -> str:
+def _emit(payload: dict[str, Any], fmt: str) -> None:
+    if fmt == "json":
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        return
+    print(_markdown(payload))
+
+
+def _select_base_url(requested: str, *, timeout: float, deadline: float | None = None) -> str:
     candidates = _base_url_candidates(requested)
     last_error: Exception | None = None
     for candidate in candidates:
         try:
-            _load_health(candidate, timeout=timeout)
-            if not _has_required_api_surface(candidate, timeout=timeout):
+            _load_health(candidate, timeout=timeout, deadline=deadline)
+            if not _has_required_api_surface(candidate, timeout=timeout, deadline=deadline):
                 continue
-        except requests.RequestException as exc:
+        except (requests.RequestException, TimeoutError) as exc:
             last_error = exc
             continue
         return candidate
@@ -277,11 +338,14 @@ def _base_url_candidates(requested: str) -> list[str]:
     return candidates
 
 
-def _has_required_api_surface(base_url: str, *, timeout: float) -> bool:
+def _has_required_api_surface(base_url: str, *, timeout: float, deadline: float | None = None) -> bool:
     for path in REQUIRED_API_SURFACE:
         try:
-            response = requests.get(f"{base_url}{path}", timeout=timeout)
-        except requests.RequestException:
+            response = requests.get(
+                f"{base_url}{path}",
+                timeout=_bounded_timeout(timeout, deadline),
+            )
+        except (requests.RequestException, TimeoutError):
             return False
         if response.status_code == 404:
             return False
@@ -312,8 +376,8 @@ def _load_secret(env_name: str, secret_name: str, project: str) -> str:
     return result.stdout.strip()
 
 
-def _get_json(url: str, *, timeout: float) -> dict[str, Any]:
-    response = requests.get(url, timeout=timeout)
+def _get_json(url: str, *, timeout: float, deadline: float | None = None) -> dict[str, Any]:
+    response = requests.get(url, timeout=_bounded_timeout(timeout, deadline))
     response.raise_for_status()
     return response.json()
 
@@ -324,33 +388,51 @@ def _post_json(
     headers: dict[str, str] | None = None,
     *,
     timeout: float,
+    deadline: float | None = None,
 ) -> dict[str, Any]:
-    response = requests.post(url, json=payload, headers=headers or {}, timeout=timeout)
+    response = requests.post(
+        url,
+        json=payload,
+        headers=headers or {},
+        timeout=_bounded_timeout(timeout, deadline),
+    )
     response.raise_for_status()
     return response.json()
 
 
-def _route_probes(base_url: str, *, timeout: float) -> list[dict[str, Any]]:
+def _route_probes(base_url: str, *, timeout: float, deadline: float | None = None) -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
     for name, path in ROUTE_PROBES:
+        if deadline is not None and time.monotonic() >= deadline:
+            results.append({"name": "route_probe_budget", "path": "", "status": None, "error": "time budget exhausted"})
+            break
         url = f"{base_url}{path}"
         try:
             start = time.monotonic()
-            resp = requests.get(url, timeout=timeout)
+            resp = requests.get(url, timeout=_bounded_timeout(timeout, deadline))
             elapsed_ms = int((time.monotonic() - start) * 1000)
             results.append({"name": name, "path": path, "status": resp.status_code, "elapsedMs": elapsed_ms})
-        except requests.RequestException as exc:
+        except (requests.RequestException, TimeoutError) as exc:
             results.append({"name": name, "path": path, "status": None, "error": str(exc)})
     return results
 
 
-def _load_health(base_url: str, *, timeout: float) -> tuple[str, dict[str, Any]]:
+def _load_health(base_url: str, *, timeout: float, deadline: float | None = None) -> tuple[str, dict[str, Any]]:
     try:
-        return "/api/healthz", _get_json(f"{base_url}/api/healthz", timeout=timeout)
+        return "/api/healthz", _get_json(f"{base_url}/api/healthz", timeout=timeout, deadline=deadline)
     except requests.HTTPError as exc:
         if exc.response is None or exc.response.status_code != 404:
             raise
-    return "/api/health", _get_json(f"{base_url}/api/health", timeout=timeout)
+    return "/api/health", _get_json(f"{base_url}/api/health", timeout=timeout, deadline=deadline)
+
+
+def _bounded_timeout(timeout: float, deadline: float | None) -> float:
+    if deadline is None:
+        return timeout
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        raise TimeoutError("time budget exhausted")
+    return max(0.5, min(timeout, remaining))
 
 
 def _signed_demo_init_data(bot_token: str) -> str:
@@ -423,6 +505,8 @@ def _markdown(payload: dict[str, Any]) -> str:
         f"Base URL: {payload['baseUrl']}",
         f"Overall: {'ok' if payload['ok'] else 'failed'}",
         "Token printed: false",
+        *(["Timed out: true"] if payload.get("timedOut") is True else []),
+        *(["", f"Error: {payload['error']}"] if payload.get("error") else []),
         "",
         "## Checks",
     ]
