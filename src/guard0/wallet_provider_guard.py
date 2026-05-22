@@ -261,6 +261,10 @@ def verify_wallet_provider_external_proof(
         "requiresWindowEthereum": True,
         "requiresThrowawayEmptyWallet": True,
         "requiresOperatorReview": True,
+        "receiptHashPolicy": operator_packet["receiptHashPolicy"],
+        "placeholderReceiptHashesRejected": operator_packet[
+            "placeholderReceiptHashesRejected"
+        ],
         "proofMode": proof.get("proofMode"),
         "externalDappOrigin": proof.get("externalDappOrigin"),
         "guardBaseUrl": proof.get("guardBaseUrl"),
@@ -605,6 +609,10 @@ def _external_proof_status(
         "requiresWindowEthereum": True,
         "requiresThrowawayEmptyWallet": True,
         "requiresOperatorReview": True,
+        "receiptHashPolicy": operator_packet["receiptHashPolicy"],
+        "placeholderReceiptHashesRejected": operator_packet[
+            "placeholderReceiptHashesRejected"
+        ],
         "windowEthereumPresent": None,
         "realWalletExtension": None,
         "mockProvider": None,
@@ -705,6 +713,11 @@ def _external_operator_proof_packet(proof_path: str) -> dict[str, Any]:
             "review-receipt-hash",
             "deny-receipt-hash",
         ],
+        "receiptHashPolicy": (
+            "Each receipt hash must be a real 64-hex SHA-256 verdict hash from the hosted "
+            "capture flow; repeated-character placeholder hashes are rejected."
+        ),
+        "placeholderReceiptHashesRejected": True,
         "realWalletExtensionRequired": True,
         "windowEthereumRequired": True,
         "throwawayEmptyWalletRequired": True,
