@@ -25,6 +25,24 @@ def test_private_compute_smoke_preview_blocks_until_gates_are_present():
     assert "paid_inference_env_gate_disabled" in preview["blockers"]
     assert "positive_budget_required" in preview["blockers"]
     assert preview["router"]["apiKeyReturned"] is False
+    assert preview["router"]["openAiCompatible"] is True
+    assert preview["router"]["apiKeyEnvNames"] == [
+        "ZG_0G_ROUTER_API_KEY",
+        "ZG_0G_PC_API_KEY",
+        "ZERO_G_API_KEY",
+    ]
+    assert preview["router"]["paidInferenceGateEnv"] == "ZG_ALLOW_PAID_INFERENCE"
+    assert preview["router"]["budgetEnv"] == "ZG_0G_INFERENCE_BUDGET_USD"
+    assert preview["routerContract"]["schema"] == (
+        "0guard.0g_private_compute_router_contract.v1"
+    )
+    assert preview["routerContract"]["chatCompletionsPath"] == "/chat/completions"
+    assert preview["routerContract"]["auth"]["headerTemplate"] == (
+        "Authorization: Bearer ${ZG_0G_ROUTER_API_KEY}"
+    )
+    assert preview["routerContract"]["auth"]["browserUseAllowed"] is False
+    assert preview["routerContract"]["budgetGate"]["maxFirstSmokeCostUsd"] == 0.25
+    assert preview["routerContract"]["proofRequirements"]["recordRawPrompt"] is False
     assert preview["paidSmokeProof"]["status"] == "missing"
     assert preview["paidSmokeProof"]["verified"] is False
     assert preview["operatorProofPacket"]["schema"] == (
@@ -51,6 +69,13 @@ def test_private_compute_smoke_preview_can_be_ready_without_executing():
     assert preview["promptScrub"]["safeForInference"] is True
     assert preview["sampleRequest"]["paidInferenceCallPrepared"] is True
     assert preview["sampleRequest"]["inferenceExecuted"] is False
+    assert preview["sampleRequest"]["openAiCompatible"] is True
+    assert preview["sampleRequest"]["body"]["chat_template_kwargs"] == {
+        "enable_thinking": False
+    }
+    assert preview["routerContract"]["auth"]["apiKeyConfigured"] is True
+    assert preview["routerContract"]["budgetGate"]["paidInferenceAllowedByEnv"] is True
+    assert preview["routerContract"]["budgetGate"]["budgetUsd"] == 0.25
     assert preview["paidSmokeProof"]["status"] == "missing"
     assert preview["operatorProofPacket"]["status"] == "ready_for_external_paid_smoke_proof"
     assert preview["operatorProofPacket"]["maxFirstSmokeCostUsd"] == 0.25
@@ -89,6 +114,10 @@ def test_private_compute_paid_smoke_proof_accepts_public_safe_receipt():
     assert result["status"] == "verified"
     assert result["verified"] is True
     assert result["costUsd"] == 0.01
+    assert result["routerContract"]["billing"]["routerTraceField"] == (
+        "x_0g_trace.billing.total_cost"
+    )
+    assert result["routerContract"]["proofRequirements"]["recordRouterReceiptHash"] is True
     assert result["checks"]["costWithinFirstSmokeCap"] is True
     assert result["safety"]["paidInferenceByZeroGuard"] is False
     assert result["safety"]["rawPromptReturned"] is False
@@ -138,6 +167,14 @@ def test_private_compute_paid_smoke_missing_status_exposes_operator_packet(
     assert result["router"]["apiKeyConfigured"] is False
     assert result["router"]["apiKeyReturned"] is False
     assert result["router"]["networkCalls"] is False
+    assert result["routerContract"]["openAiCompatible"] is True
+    assert result["routerContract"]["auth"]["apiKeyEnvNames"] == [
+        "ZG_0G_ROUTER_API_KEY",
+        "ZG_0G_PC_API_KEY",
+        "ZERO_G_API_KEY",
+    ]
+    assert result["routerContract"]["auth"]["apiKeyReturned"] is False
+    assert result["routerContract"]["proofRequirements"]["recordApiKey"] is False
     assert "record_0g_private_compute_paid_smoke.py" in result["recordProofCommandTemplate"]
     assert result["operatorProofPacket"]["schema"] == (
         "0guard.0g_private_compute_paid_smoke_operator_proof_packet.v1"

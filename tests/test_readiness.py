@@ -74,6 +74,22 @@ def test_production_readiness_is_honest_and_non_mutating(monkeypatch):
     assert "router_api_key_missing" in (
         checks["private_compute_paid_smoke"]["detail"]["paidSmokePreflightBlockers"]
     )
+    assert (
+        checks["private_compute_paid_smoke"]["detail"]["routerContractSchema"]
+        == "0guard.0g_private_compute_router_contract.v1"
+    )
+    assert (
+        checks["private_compute_paid_smoke"]["detail"]["paidInferenceGateEnv"]
+        == "ZG_ALLOW_PAID_INFERENCE"
+    )
+    assert (
+        checks["private_compute_paid_smoke"]["detail"]["inferenceBudgetEnv"]
+        == "ZG_0G_INFERENCE_BUDGET_USD"
+    )
+    assert (
+        checks["private_compute_paid_smoke"]["detail"]["routerTraceField"]
+        == "x_0g_trace.billing.total_cost"
+    )
     assert checks["x402_settlement_path"]["status"] == "review"
     assert checks["x402_settlement_path"]["detail"]["spendCapsConfigured"] is True
     assert checks["x402_settlement_path"]["detail"]["termsConfigured"] is True
@@ -366,6 +382,15 @@ def _green_gate_payloads() -> dict:
                 "apiKeyConfigured": True,
                 "paidInferenceAllowedByEnv": True,
                 "budgetUsd": 1.0,
+            },
+            "routerContract": {
+                "schema": "0guard.0g_private_compute_router_contract.v1",
+                "chatCompletionsUrl": "https://router-api.0g.ai/v1/chat/completions",
+                "budgetGate": {
+                    "paidInferenceGateEnv": "ZG_ALLOW_PAID_INFERENCE",
+                    "budgetEnv": "ZG_0G_INFERENCE_BUDGET_USD",
+                },
+                "billing": {"routerTraceField": "x_0g_trace.billing.total_cost"},
             },
             "safety": {
                 "inferenceExecuted": True,

@@ -280,6 +280,28 @@ def production_readiness() -> dict[str, Any]:
                     private_compute_smoke.get("router") or {}
                 ).get("paidInferenceAllowedByEnv"),
                 "budgetUsd": (private_compute_smoke.get("router") or {}).get("budgetUsd"),
+                "routerContractSchema": (
+                    private_compute_smoke.get("routerContract") or {}
+                ).get("schema"),
+                "routerChatCompletionsUrl": (
+                    private_compute_smoke.get("routerContract") or {}
+                ).get("chatCompletionsUrl"),
+                "paidInferenceGateEnv": (
+                    (private_compute_smoke.get("routerContract") or {}).get(
+                        "budgetGate"
+                    )
+                    or {}
+                ).get("paidInferenceGateEnv"),
+                "inferenceBudgetEnv": (
+                    (private_compute_smoke.get("routerContract") or {}).get(
+                        "budgetGate"
+                    )
+                    or {}
+                ).get("budgetEnv"),
+                "routerTraceField": (
+                    (private_compute_smoke.get("routerContract") or {}).get("billing")
+                    or {}
+                ).get("routerTraceField"),
                 "inferenceExecuted": (private_compute_smoke.get("safety") or {}).get(
                     "inferenceExecuted"
                 ),

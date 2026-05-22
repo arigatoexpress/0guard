@@ -26,6 +26,27 @@ Use the 0G Compute Router first. Official docs describe it as the simplest
 server-side path: one API key, one unified on-chain balance, OpenAI-compatible
 requests, automatic provider discovery, billing, and failover.
 
+## Router Contract
+
+The public smoke routes now expose a `routerContract` object so the first paid
+smoke can be reviewed from the API response before any network call. The
+contract mirrors the current official Router docs:
+
+| Field | Contract |
+| --- | --- |
+| API shape | OpenAI-compatible `POST https://router-api.0g.ai/v1/chat/completions` |
+| Auth | `Authorization: Bearer ${ZG_0G_ROUTER_API_KEY}` |
+| Server-side envs | `ZG_0G_ROUTER_API_KEY`, `ZG_0G_PC_API_KEY`, or `ZERO_G_API_KEY` |
+| Paid gate | `ZG_ALLOW_PAID_INFERENCE=1` |
+| Budget gate | Positive `ZG_0G_INFERENCE_BUDGET_USD`, capped at `0.25` USD for the first smoke |
+| Billing evidence | Router response `x_0g_trace.billing.total_cost`, hashed before storage |
+| Proof storage | Prompt, request, response, and Router receipt hashes only |
+
+The contract intentionally does not expose API keys, raw prompts, raw
+responses, private keys, payment headers, or wallet transaction data. It also
+keeps `networkCalls`, `transactionSigningEnabled`, `transactionBroadcastingEnabled`,
+and `moneyMovementEnabled` false in the workbench preview.
+
 1. Open `https://pc.0g.ai` with the funded ZeroGuard wallet.
 2. Deposit a small mainnet budget into the Router payment contract.
 3. Create one API key for this deployment in Dashboard -> API Keys.

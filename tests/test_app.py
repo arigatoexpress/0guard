@@ -448,6 +448,12 @@ def test_peer_protection_routes_are_no_send_and_no_broadcast(client):
     assert private_smoke_body["schema"] == "0guard.0g_private_compute_smoke_preview.v1"
     assert private_smoke_body["sampleRequest"]["inferenceExecuted"] is False
     assert private_smoke_body["router"]["apiKeyReturned"] is False
+    assert private_smoke_body["routerContract"]["openAiCompatible"] is True
+    assert private_smoke_body["routerContract"]["auth"]["apiKeyReturned"] is False
+    assert private_smoke_body["routerContract"]["auth"]["serverSideOnly"] is True
+    assert private_smoke_body["routerContract"]["budgetGate"]["budgetEnv"] == (
+        "ZG_0G_INFERENCE_BUDGET_USD"
+    )
     assert private_smoke_body["paidSmokeProof"]["status"] == "missing"
     assert private_smoke_body["operatorProofPacket"]["status"] == (
         "ready_for_external_paid_smoke_proof"
@@ -468,6 +474,11 @@ def test_peer_protection_routes_are_no_send_and_no_broadcast(client):
     assert (
         "record_0g_private_compute_paid_smoke.py"
         in private_smoke_proof_body["recordProofCommandTemplate"]
+    )
+    assert private_smoke_proof_body["routerContract"]["auth"]["browserUseAllowed"] is False
+    assert (
+        private_smoke_proof_body["routerContract"]["proofRequirements"]["recordResponseHash"]
+        is True
     )
     assert private_smoke_proof_body["operatorProofPacket"]["rawPromptRequired"] is False
     assert private_smoke_proof_body["safety"]["proofVerificationOnly"] is True
