@@ -1,0 +1,15 @@
+{
+  "name": "0guard-storage-sdk-runtime",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Locked 0G Storage SDK runtime dependency layer for ZeroGuard upload preflight checks.",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@0gfoundation/0g-storage-ts-sdk": "1.2.9",
+    "ethers": "6.13.1"
+  },
+  "overrides": {
+    "axios": "^1.13.2",
+    "ws": "^8.20.1"
+  }
+}
