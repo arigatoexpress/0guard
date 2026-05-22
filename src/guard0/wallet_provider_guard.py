@@ -23,6 +23,7 @@ WALLET_PROVIDER_EXTERNAL_PROOF_SCHEMA = "0guard.wallet_provider_external_proof.v
 WALLET_PROVIDER_EXTERNAL_PROOF_VERIFICATION_SCHEMA = (
     "0guard.wallet_provider_external_proof_verification.v1"
 )
+REQUIRED_WALLET_PROVIDER_EXTERNAL_DAPP_ORIGIN = "https://arigatoexpress.github.io"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_WALLET_PROVIDER_EXTERNAL_PROOF_PATH = (
     REPO_ROOT / "docs" / "hackathon-0g" / "wallet-provider-external-proof.json"
@@ -209,7 +210,10 @@ def verify_wallet_provider_external_proof(
     checks = {
         "schema": proof.get("schema") == WALLET_PROVIDER_EXTERNAL_PROOF_SCHEMA,
         "proofMode": proof.get("proofMode") == "real_wallet_extension_window_ethereum",
-        "externalDappOrigin": _valid_origin(proof.get("externalDappOrigin")),
+        "externalDappOrigin": _required_origin(
+            proof.get("externalDappOrigin"),
+            REQUIRED_WALLET_PROVIDER_EXTERNAL_DAPP_ORIGIN,
+        ),
         "guardBaseUrl": _valid_origin(proof.get("guardBaseUrl")),
         "windowEthereumPresent": proof.get("windowEthereumPresent") is True,
         "realWalletExtension": proof.get("realWalletExtension") is True,
@@ -252,7 +256,7 @@ def verify_wallet_provider_external_proof(
         "draftFileRecorderCommandTemplate": operator_packet[
             "draftFileRecorderCommandTemplate"
         ],
-        "requiredExternalDappOrigin": "https://arigatoexpress.github.io",
+        "requiredExternalDappOrigin": REQUIRED_WALLET_PROVIDER_EXTERNAL_DAPP_ORIGIN,
         "requiresRealWalletExtension": True,
         "requiresWindowEthereum": True,
         "requiresThrowawayEmptyWallet": True,
@@ -543,7 +547,7 @@ def _scenario_check(
         and scenario.get("walletPromptShown") is False
         and provider_count is not None
         and provider_count >= (1 if expected_forwarded else 0)
-        and _valid_sha256(receipt_hash)
+        and _valid_receipt_hash(receipt_hash)
     )
     return {
         "ok": ok,
@@ -596,7 +600,7 @@ def _external_proof_status(
         "proofBlockers": proof_blockers,
         "suggestedExternalProofUrl": operator_packet["externalDappSuggestedUrl"],
         "externalDappSuggestedUrl": operator_packet["externalDappSuggestedUrl"],
-        "requiredExternalDappOrigin": "https://arigatoexpress.github.io",
+        "requiredExternalDappOrigin": REQUIRED_WALLET_PROVIDER_EXTERNAL_DAPP_ORIGIN,
         "requiresRealWalletExtension": True,
         "requiresWindowEthereum": True,
         "requiresThrowawayEmptyWallet": True,
@@ -652,7 +656,7 @@ def _external_proof_check_blockers(checks: dict[str, bool]) -> list[str]:
 
 def _external_operator_proof_packet(proof_path: str) -> dict[str, Any]:
     proof_file = _operator_proof_path(proof_path)
-    suggested_origin = "https://arigatoexpress.github.io"
+    suggested_origin = REQUIRED_WALLET_PROVIDER_EXTERNAL_DAPP_ORIGIN
     suggested_url = "https://arigatoexpress.github.io/0guard/wallet-provider-proof/"
     command = " ".join(
         [
@@ -732,8 +736,29 @@ def _valid_origin(value: Any) -> bool:
     return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
 
 
+def _required_origin(value: Any, required: str) -> bool:
+    raw = str(value or "").strip().rstrip("/")
+    parsed = urlparse(raw)
+    expected = urlparse(required)
+    return (
+        parsed.scheme == expected.scheme
+        and parsed.netloc.lower() == expected.netloc.lower()
+        and parsed.path in {"", "/"}
+        and not parsed.params
+        and not parsed.query
+        and not parsed.fragment
+    )
+
+
 def _valid_sha256(value: Any) -> bool:
     return isinstance(value, str) and bool(SHA256_RE.fullmatch(value.strip()))
+
+
+def _valid_receipt_hash(value: Any) -> bool:
+    if not _valid_sha256(value):
+        return False
+    normalized = str(value).strip().lower()
+    return len(set(normalized)) > 1
 
 
 def wallet_address_hash(address: str) -> str:
