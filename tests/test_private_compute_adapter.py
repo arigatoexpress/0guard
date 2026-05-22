@@ -108,13 +108,36 @@ def test_private_compute_paid_smoke_proof_rejects_over_cap_or_raw_storage():
     assert result["safety"]["paidInferenceByZeroGuard"] is False
 
 
-def test_private_compute_paid_smoke_missing_status_exposes_operator_packet(tmp_path):
+def test_private_compute_paid_smoke_missing_status_exposes_operator_packet(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.delenv("ZG_0G_ROUTER_API_KEY", raising=False)
+    monkeypatch.delenv("ZG_0G_PC_API_KEY", raising=False)
+    monkeypatch.delenv("ZERO_G_API_KEY", raising=False)
+    monkeypatch.delenv("ZG_ALLOW_PAID_INFERENCE", raising=False)
+    monkeypatch.setenv("ZG_0G_INFERENCE_BUDGET_USD", "0")
     proof_path = tmp_path / "missing-proof.json"
 
     result = build_private_compute_paid_smoke_proof_status(proof_path)
 
     assert result["status"] == "missing"
     assert result["verified"] is False
+    assert result["proofBlockers"] == ["paid_smoke_proof_file_missing"]
+    assert result["preflightBlockers"] == [
+        "router_api_key_missing",
+        "paid_inference_env_gate_disabled",
+        "positive_budget_required",
+    ]
+    assert result["blockers"] == [
+        "paid_smoke_proof_file_missing",
+        "router_api_key_missing",
+        "paid_inference_env_gate_disabled",
+        "positive_budget_required",
+    ]
+    assert result["router"]["apiKeyConfigured"] is False
+    assert result["router"]["apiKeyReturned"] is False
+    assert result["router"]["networkCalls"] is False
     assert "record_0g_private_compute_paid_smoke.py" in result["recordProofCommandTemplate"]
     assert result["operatorProofPacket"]["schema"] == (
         "0guard.0g_private_compute_paid_smoke_operator_proof_packet.v1"
