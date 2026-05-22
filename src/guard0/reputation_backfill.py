@@ -62,8 +62,10 @@ def run_phishdestroy_reputation_backfill(
         out_path=path,
         write_requested=write,
     )
+    run["persistence"]["payloadHash"] = _payload_hash(run)
     if write:
         run["persistence"]["written"] = True
+        run["persistence"]["payloadHash"] = _payload_hash(run)
         _write_json(path, run)
         run["persistence"]["fileHash"] = _hash_bytes(path.read_bytes())
     return run
@@ -120,11 +122,13 @@ def build_reputation_backfill_status(
 
     fetch = payload.get("fetch") if isinstance(payload.get("fetch"), dict) else {}
     receipt = payload.get("snapshotReceipt") if isinstance(payload.get("snapshotReceipt"), dict) else {}
+    persistence = payload.get("persistence") if isinstance(payload.get("persistence"), dict) else {}
     derived = payload.get("derivedEvidence") if isinstance(payload.get("derivedEvidence"), list) else []
     generated_at = str(payload.get("generatedAt") or "")
     latest_age_seconds = _age_seconds(generated_at)
     ttl_seconds = int(fetch.get("ttlSeconds") or 21600)
     fresh_within_ttl = _fresh_within_ttl(latest_age_seconds, ttl_seconds)
+    payload_hash = str(persistence.get("payloadHash") or "")
     supervised_freshness_ready = (
         _status_from_payload(payload) == "ready"
         and fresh_within_ttl is True
@@ -146,6 +150,10 @@ def build_reputation_backfill_status(
         "snapshotHash": receipt.get("hash") or "",
         "runHash": (payload.get("runReceipt") or {}).get("hash") or "",
         "fileHash": _hash_bytes(latest_path.read_bytes()),
+        "payloadHash": payload_hash,
+        "payloadHashVerified": _payload_hash_verified(payload, payload_hash)
+        if payload_hash
+        else None,
         "liveConnectorFetch": bool((payload.get("safety") or {}).get("liveConnectorFetch")),
         "rawPayloadsReturned": False,
         "rawDomainsReturned": False,
@@ -213,6 +221,8 @@ def _build_run(
             "written": False,
             "path": _display_path(out_path),
             "fileHash": "",
+            "payloadHash": "",
+            "payloadHashAlgorithm": "sha256_canonical_json_without_persistence_hashes",
         },
     }
     run["runReceipt"] = {
@@ -354,6 +364,21 @@ def _hash_bytes(value: bytes) -> str:
 def _hash_json(value: Any) -> str:
     encoded = json.dumps(value, sort_keys=True, separators=(",", ":"), default=str).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
+
+
+def _payload_hash(payload: dict[str, Any]) -> str:
+    """Hash the persisted payload without self-referential persistence hashes."""
+
+    normalized = json.loads(json.dumps(payload, sort_keys=True, default=str))
+    persistence = normalized.get("persistence")
+    if isinstance(persistence, dict):
+        persistence["fileHash"] = ""
+        persistence["payloadHash"] = ""
+    return _hash_json(normalized)
+
+
+def _payload_hash_verified(payload: dict[str, Any], expected_hash: str) -> bool:
+    return bool(expected_hash) and _payload_hash(payload) == expected_hash
 
 
 def _now() -> str:
