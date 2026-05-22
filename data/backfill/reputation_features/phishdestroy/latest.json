@@ -64,19 +64,19 @@
   "derivedEvidenceCount": 5,
   "feedLink": "https://raw.githubusercontent.com/phishdestroy/destroylist/main/dns/active_domains.json",
   "fetch": {
-    "contentLength": 2306418,
+    "contentLength": 2307783,
     "contentType": "text/plain; charset=utf-8",
-    "etag": "\"906b1c601c71ea788d293dad52e507a2db815d9affcd7823a84c54b09dde67d5\"",
-    "feedHash": "9b89e1976cf419dc6d4beacc641beead108b618f191277ea1b0d7923fa7aa1e6",
+    "etag": "\"9fede4ef26978a0efcedf0483f10295d08ec21aba994b97f43f7170321e2e95c\"",
+    "feedHash": "2c4fa9a8173910febd5d3f86296f31b14a48df778b5b8e7629d5d984f2dccbf4",
     "httpStatus": 200,
     "lastModified": null,
-    "latencyMs": 1242,
-    "parsedDomainCount": 82444,
+    "latencyMs": 660,
+    "parsedDomainCount": 82489,
     "sampledEvidenceCount": 5,
     "status": "ok",
     "ttlSeconds": 21600
   },
-  "generatedAt": "2026-05-22T05:26:44+00:00",
+  "generatedAt": "2026-05-22T13:31:19+00:00",
   "input": {
     "limit": 5,
     "live": true,
@@ -87,6 +87,8 @@
   "persistence": {
     "fileHash": "",
     "path": "data/backfill/reputation_features/phishdestroy/latest.json",
+    "payloadHash": "f5bc71231c4f48cfd6c7a085f51b6d6263b76a6b9cc653413f1880acf7bd4053",
+    "payloadHashAlgorithm": "sha256_canonical_json_without_persistence_hashes",
     "written": true
   },
   "reputationPreview": {
@@ -125,7 +127,7 @@
   },
   "runReceipt": {
     "algorithm": "sha256_canonical_json",
-    "hash": "e0ad409fff30c796e16560479ef937b41a0db0811df07cfbe8eca783f6761f34",
+    "hash": "ba25b4c3ae3773ce7e88fce5f8bcba272a8295961544348d2412ca6afd862603",
     "liveAnchorPerformed": false,
     "liveUploadPerformed": false,
     "zeroGChainReady": true,
@@ -162,7 +164,7 @@
   "schema": "0guard.reputation_backfill_run.v1",
   "snapshotReceipt": {
     "algorithm": "sha256_canonical_json",
-    "hash": "1fea2879e9667946406c85b95cce84cbd46d4203c5023e28aab904550695a7ff",
+    "hash": "504b36a657828a2f8788a655aed694761ee5f21f779e15e2b187cb4d39ea49d2",
     "liveAnchorPerformed": false,
     "liveUploadPerformed": false,
     "zeroGChainReady": true,

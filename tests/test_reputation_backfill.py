@@ -1,5 +1,7 @@
 """Tests for derived-only reputation backfill artifacts."""
 
+import json
+
 from guard0.reputation_backfill import (
     build_reputation_backfill_status,
     run_phishdestroy_reputation_backfill,
@@ -56,6 +58,7 @@ def test_reputation_backfill_persists_derived_only_latest(tmp_path):
     assert run["fetch"]["parsedDomainCount"] == 2
     assert run["persistence"]["written"] is True
     assert run["persistence"]["fileHash"]
+    assert run["persistence"]["payloadHash"]
     assert run["rightsPolicy"]["rawPayloadResaleAllowed"] is False
     assert run["safety"]["transactionSigningEnabled"] is False
     assert run["runReceipt"]["liveAnchorPerformed"] is False
@@ -63,6 +66,12 @@ def test_reputation_backfill_persists_derived_only_latest(tmp_path):
     raw_text = latest.read_text(encoding="utf-8")
     assert "docs.0g.ai.evil.example" not in raw_text
     assert '"rawDomains": [' not in raw_text
+    persisted = json.loads(raw_text)
+    assert persisted["persistence"]["fileHash"] == ""
+    assert persisted["persistence"]["payloadHash"] == run["persistence"]["payloadHash"]
+    assert persisted["persistence"]["payloadHashAlgorithm"] == (
+        "sha256_canonical_json_without_persistence_hashes"
+    )
 
     status = build_reputation_backfill_status(latest)
     assert status["schema"] == "0guard.reputation_backfill_status.v1"
@@ -73,6 +82,9 @@ def test_reputation_backfill_persists_derived_only_latest(tmp_path):
     assert status["rawPayloadsReturned"] is False
     assert status["rawDomainsReturned"] is False
     assert status["freshWithinTtl"] is True
+    assert status["fileHash"] == run["persistence"]["fileHash"]
+    assert status["payloadHash"] == run["persistence"]["payloadHash"]
+    assert status["payloadHashVerified"] is True
     assert status["supervisorInstalled"] is True
     assert status["supervisedFreshnessReady"] is True
     assert status["safety"]["networkCalls"] is False
