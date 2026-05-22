@@ -61,15 +61,12 @@ def build_private_compute_smoke_preview(
         else paid_inference_allowed
     )
     budget = _budget_usd() if budget_usd is None else float(budget_usd)
-    blockers = []
-    if not scrub["safeForInference"]:
-        blockers.append("prompt_safety_violation")
-    if not key_ready:
-        blockers.append("router_api_key_missing")
-    if not paid_allowed:
-        blockers.append("paid_inference_env_gate_disabled")
-    if budget <= 0:
-        blockers.append("positive_budget_required")
+    blockers = _private_compute_smoke_blockers(
+        prompt_safe=scrub["safeForInference"],
+        api_key_configured=key_ready,
+        paid_inference_allowed=paid_allowed,
+        budget_usd=budget,
+    )
 
     paid_smoke_proof = build_private_compute_paid_smoke_proof_status(paid_smoke_proof_path)
     paid_smoke_verified = paid_smoke_proof.get("verified") is True
@@ -314,6 +311,25 @@ def _budget_usd() -> float:
         return 0.0
 
 
+def _private_compute_smoke_blockers(
+    *,
+    prompt_safe: bool,
+    api_key_configured: bool,
+    paid_inference_allowed: bool,
+    budget_usd: float,
+) -> list[str]:
+    blockers = []
+    if not prompt_safe:
+        blockers.append("prompt_safety_violation")
+    if not api_key_configured:
+        blockers.append("router_api_key_missing")
+    if not paid_inference_allowed:
+        blockers.append("paid_inference_env_gate_disabled")
+    if budget_usd <= 0:
+        blockers.append("positive_budget_required")
+    return blockers
+
+
 def _safety(*, paid_inference_enabled: bool, prompt_safe: bool) -> dict[str, bool]:
     return {
         "readOnly": True,
@@ -354,6 +370,15 @@ def _paid_smoke_proof_status(
     proof_path: str | Path | None = None,
 ) -> dict[str, Any]:
     operator_packet = _paid_smoke_operator_packet(proof_path)
+    api_key_configured = _api_key_configured()
+    paid_inference_allowed = _truthy(os.getenv("ZG_ALLOW_PAID_INFERENCE"))
+    budget_usd = _budget_usd()
+    preflight_blockers = _private_compute_smoke_blockers(
+        prompt_safe=True,
+        api_key_configured=api_key_configured,
+        paid_inference_allowed=paid_inference_allowed,
+        budget_usd=budget_usd,
+    )
     return {
         "schema": PRIVATE_COMPUTE_PAID_SMOKE_PROOF_VERIFICATION_SCHEMA,
         "generatedAt": _now(),
@@ -362,6 +387,16 @@ def _paid_smoke_proof_status(
         "proofPresent": False,
         "proofPath": _relative_repo_path(Path(proof_path)) if proof_path else "",
         "reason": reason,
+        "blockers": [reason, *preflight_blockers],
+        "proofBlockers": [reason],
+        "preflightBlockers": preflight_blockers,
+        "router": {
+            "apiKeyConfigured": api_key_configured,
+            "apiKeyReturned": False,
+            "paidInferenceAllowedByEnv": paid_inference_allowed,
+            "budgetUsd": budget_usd,
+            "networkCalls": False,
+        },
         "recordProofCommandTemplate": operator_packet["recordProofCommandTemplate"],
         "operatorProofPacket": operator_packet,
         "safety": {
