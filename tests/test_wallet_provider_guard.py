@@ -1,5 +1,6 @@
 """Tests for the EIP-1193 wallet-provider guard contract."""
 
+import hashlib
 import json
 
 import pytest
@@ -201,6 +202,22 @@ def test_wallet_provider_external_proof_rejects_mock_or_wallet_prompt():
     assert result["safety"]["providerForwardingPerformedBy0guard"] is False
 
 
+def test_wallet_provider_external_proof_rejects_localhost_and_placeholder_hashes():
+    proof = _valid_external_proof()
+    proof["externalDappOrigin"] = "http://127.0.0.1:8142"
+    proof["readOnlyRequest"]["receiptHash"] = "a" * 64
+    proof["reviewRequest"]["receiptHash"] = "b" * 64
+    proof["denyRequest"]["receiptHash"] = "c" * 64
+
+    result = verify_wallet_provider_external_proof(proof)
+
+    assert result["verified"] is False
+    assert "proof_check_failed:externalDappOrigin" in result["blockers"]
+    assert "proof_check_failed:readOnlyRequest" in result["proofBlockers"]
+    assert "proof_check_failed:reviewRequest" in result["proofBlockers"]
+    assert "proof_check_failed:denyRequest" in result["proofBlockers"]
+
+
 def test_wallet_address_hash_is_stable_and_does_not_return_raw_address():
     address = "0x000000000000000000000000000000000000bEEF"
 
@@ -216,7 +233,7 @@ def _valid_external_proof() -> dict:
     return {
         "schema": WALLET_PROVIDER_EXTERNAL_PROOF_SCHEMA,
         "proofMode": "real_wallet_extension_window_ethereum",
-        "externalDappOrigin": "http://127.0.0.1:8142",
+        "externalDappOrigin": "https://arigatoexpress.github.io",
         "guardBaseUrl": "https://guard0-miniapp-s77j6bxyra-uc.a.run.app",
         "windowEthereumPresent": True,
         "realWalletExtension": True,
@@ -230,7 +247,7 @@ def _valid_external_proof() -> dict:
             "forwardedToProvider": True,
             "walletPromptShown": False,
             "providerCallCount": 1,
-            "receiptHash": "a" * 64,
+            "receiptHash": _receipt_hash("read-only"),
         },
         "reviewRequest": {
             "method": "wallet_switchEthereumChain",
@@ -238,7 +255,7 @@ def _valid_external_proof() -> dict:
             "forwardedToProvider": False,
             "walletPromptShown": False,
             "providerCallCount": 1,
-            "receiptHash": "b" * 64,
+            "receiptHash": _receipt_hash("review"),
         },
         "denyRequest": {
             "method": "eth_sendTransaction",
@@ -246,7 +263,7 @@ def _valid_external_proof() -> dict:
             "forwardedToProvider": False,
             "walletPromptShown": False,
             "providerCallCount": 1,
-            "receiptHash": "c" * 64,
+            "receiptHash": _receipt_hash("deny"),
         },
         "operatorReviewed": True,
         "rawParamsReturned": False,
@@ -257,3 +274,7 @@ def _valid_external_proof() -> dict:
         "transactionBroadcastingByZeroGuard": False,
         "moneyMovementByZeroGuard": False,
     }
+
+
+def _receipt_hash(label: str) -> str:
+    return hashlib.sha256(f"wallet-provider-proof:{label}".encode()).hexdigest()
