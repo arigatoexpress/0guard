@@ -11,6 +11,7 @@ def test_production_gap_matrix_classifies_real_local_pending_and_mock_lanes():
 
     assert matrix["schema"] == "0guard.production_gap_matrix.v1"
     assert matrix["productionReady"] is False
+    assert matrix["rawPayloadsReturned"] is False
     assert matrix["mode"] == "local_snapshot_and_manifest_no_side_effects"
     assert matrix["safety"]["transactionSigningEnabled"] is False
     assert matrix["safety"]["telegramSendsEnabled"] is False

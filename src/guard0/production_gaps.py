@@ -662,6 +662,7 @@ def build_production_gap_matrix() -> dict[str, Any]:
         "generatedAt": _now(),
         "mode": "local_snapshot_and_manifest_no_side_effects",
         "productionReady": False,
+        "rawPayloadsReturned": False,
         "whyNotProductionReadyYet": [
             "Historical feature store has a seed API/export from current curated/local artifacts, but not the wider scheduled 2020-present backfill and query index.",
             "0G Storage bundle/readback plus x402 dry-run/caps/terms routes are prepared, but live upload/settlement are not enabled.",
