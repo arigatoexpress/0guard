@@ -101,6 +101,14 @@ def test_wallet_provider_external_proof_status_is_missing_without_artifact(tmp_p
     assert result["schema"] == "0guard.wallet_provider_external_proof_verification.v1"
     assert result["status"] == "missing"
     assert result["verified"] is False
+    assert result["proofBlockers"] == [
+        "wallet_provider_external_proof_file_missing",
+        "real_wallet_extension_proof_missing",
+        "window_ethereum_proof_missing",
+        "throwaway_empty_wallet_proof_missing",
+        "operator_review_proof_missing",
+    ]
+    assert result["blockers"] == result["proofBlockers"]
     assert "record_wallet_provider_external_proof.py" in result["recordProofCommandTemplate"]
     assert "--external-dapp-origin https://arigatoexpress.github.io" in (
         result["recordProofCommandTemplate"]
@@ -132,6 +140,8 @@ def test_wallet_provider_external_proof_accepts_real_extension_flow():
     result = verify_wallet_provider_external_proof(proof)
 
     assert result["verified"] is True
+    assert result["blockers"] == []
+    assert result["proofBlockers"] == []
     assert result["realWalletExtension"] is True
     assert result["mockProvider"] is False
     assert result["throwawayWallet"] is True
@@ -158,6 +168,8 @@ def test_wallet_provider_external_proof_rejects_mock_or_wallet_prompt():
     result = verify_wallet_provider_external_proof(proof)
 
     assert result["verified"] is False
+    assert "proof_check_failed:mockProvider" in result["blockers"]
+    assert "proof_check_failed:denyRequest" in result["proofBlockers"]
     assert result["checks"]["mockProvider"] is False
     assert result["checks"]["denyRequest"] is False
     assert result["safety"]["providerForwardingPerformedBy0guard"] is False

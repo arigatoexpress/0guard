@@ -233,6 +233,7 @@ def verify_wallet_provider_external_proof(
         "moneyMovementByZeroGuard": proof.get("moneyMovementByZeroGuard") is False,
     }
     verified = all(checks.values())
+    blockers = _external_proof_check_blockers(checks)
     proof_path_str = str(proof_path) if proof_path else str(proof.get("proofPath") or "")
     operator_packet = _external_operator_proof_packet(proof_path_str)
     return {
@@ -242,6 +243,8 @@ def verify_wallet_provider_external_proof(
         "verified": verified,
         "proofPresent": True,
         "proofPath": proof_path_str,
+        "blockers": blockers,
+        "proofBlockers": blockers,
         "suggestedExternalProofUrl": operator_packet["externalDappSuggestedUrl"],
         "externalDappSuggestedUrl": operator_packet["externalDappSuggestedUrl"],
         "requiredExternalDappOrigin": "https://arigatoexpress.github.io",
@@ -575,6 +578,7 @@ def _external_proof_status(
 ) -> dict[str, Any]:
     proof_path_str = str(proof_path) if proof_path else ""
     operator_packet = _external_operator_proof_packet(proof_path_str)
+    proof_blockers = _missing_external_proof_blockers(reason)
     return {
         "schema": WALLET_PROVIDER_EXTERNAL_PROOF_VERIFICATION_SCHEMA,
         "generatedAt": _now(),
@@ -582,6 +586,8 @@ def _external_proof_status(
         "verified": False,
         "proofPresent": False,
         "proofPath": proof_path_str,
+        "blockers": proof_blockers,
+        "proofBlockers": proof_blockers,
         "suggestedExternalProofUrl": operator_packet["externalDappSuggestedUrl"],
         "externalDappSuggestedUrl": operator_packet["externalDappSuggestedUrl"],
         "requiredExternalDappOrigin": "https://arigatoexpress.github.io",
@@ -615,6 +621,24 @@ def _external_proof_status(
             "privateKeysReturned": False,
         },
     }
+
+
+def _missing_external_proof_blockers(reason: str) -> list[str]:
+    return [
+        reason,
+        "real_wallet_extension_proof_missing",
+        "window_ethereum_proof_missing",
+        "throwaway_empty_wallet_proof_missing",
+        "operator_review_proof_missing",
+    ]
+
+
+def _external_proof_check_blockers(checks: dict[str, bool]) -> list[str]:
+    return [
+        f"proof_check_failed:{name}"
+        for name, passed in checks.items()
+        if passed is not True
+    ]
 
 
 def _external_operator_proof_packet(proof_path: str) -> dict[str, Any]:
