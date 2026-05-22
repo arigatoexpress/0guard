@@ -29,6 +29,12 @@ def test_storage_upload_manifest_hashes_public_safe_bundle(tmp_path):
     assert manifest["bundleArtifactSha256"] == manifest["bundleArtifact"]["artifactSha256"]
     assert manifest["liveProofStatus"] == "missing"
     assert manifest["liveProofVerified"] is False
+    assert manifest["proofBlockers"] == ["live_proof_file_missing"]
+    assert manifest["preflightBlockers"] == manifest["uploadPreflight"]["blockers"]
+    assert manifest["blockers"] == [
+        "live_proof_file_missing",
+        *manifest["uploadPreflight"]["blockers"],
+    ]
     assert manifest["uploadPreflight"]["schema"] == (
         "0guard.0g_storage_live_upload_preflight.v1"
     )
@@ -48,6 +54,8 @@ def test_storage_upload_manifest_hashes_public_safe_bundle(tmp_path):
     assert manifest["safety"]["transactionSigningEnabled"] is False
     assert manifest["bundleArtifact"]["artifactSha256"]
     assert manifest["liveProof"]["verified"] is False
+    assert manifest["liveProof"]["proofBlockers"] == ["live_proof_file_missing"]
+    assert manifest["liveProof"]["blockers"] == ["live_proof_file_missing"]
 
 
 def test_default_storage_manifest_includes_historical_feature_store_seed():
@@ -158,6 +166,7 @@ def test_verified_live_storage_proof_turns_manifest_upload_readback_green(tmp_pa
     manifest = build_storage_upload_manifest([first], live_proof_path=proof_path)
 
     assert manifest["liveProof"]["verified"] is True
+    assert manifest["proofBlockers"] == []
     assert manifest["status"] == "verified_live_readback"
     assert manifest["verified"] is True
     assert manifest["proofPresent"] is True

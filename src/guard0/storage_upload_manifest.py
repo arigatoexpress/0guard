@@ -56,6 +56,10 @@ def build_storage_upload_manifest(
         paths,
         expected_bundle_artifact_sha256=artifact_sha,
     )
+    proof_blockers = live_proof.get("proofBlockers") or (
+        [live_proof["reason"]] if live_proof.get("reason") else []
+    )
+    preflight_blockers = upload_preflight.get("blockers") or []
     return {
         "schema": STORAGE_UPLOAD_MANIFEST_SCHEMA,
         "generatedAt": _now(),
@@ -68,6 +72,9 @@ def build_storage_upload_manifest(
         "verified": live_verified,
         "proofPresent": live_proof.get("proofPresent") is True,
         "reason": live_proof.get("reason", ""),
+        "blockers": [*proof_blockers, *preflight_blockers],
+        "proofBlockers": proof_blockers,
+        "preflightBlockers": preflight_blockers,
         "bundleFileCount": len(existing_files),
         "bundleRoot": bundle_root,
         "bundleArtifactSha256": artifact_sha,
@@ -480,6 +487,8 @@ def _live_proof_status(status: str, reason: str) -> dict[str, Any]:
         "verified": False,
         "proofPresent": False,
         "reason": reason,
+        "blockers": [reason],
+        "proofBlockers": [reason],
         "checks": {},
         "safety": _safety(),
     }
