@@ -31,6 +31,12 @@ def test_production_readiness_is_honest_and_non_mutating(monkeypatch):
     assert checks["storage_node_funded_soak"]["status"] == "review"
     assert checks["wallet_provider_external_proof"]["status"] == "review"
     assert checks["wallet_provider_external_proof"]["detail"]["verified"] is False
+    assert "wallet_provider_external_proof_file_missing" in (
+        checks["wallet_provider_external_proof"]["detail"]["blockers"]
+    )
+    assert "real_wallet_extension_proof_missing" in (
+        checks["wallet_provider_external_proof"]["detail"]["proofBlockers"]
+    )
     assert (
         checks["wallet_provider_external_proof"]["detail"]["suggestedExternalProofUrl"]
         == "https://arigatoexpress.github.io/0guard/wallet-provider-proof/"
@@ -47,7 +53,27 @@ def test_production_readiness_is_honest_and_non_mutating(monkeypatch):
     assert checks["wallet_provider_external_proof"]["detail"]["realWalletExtension"] is True
     assert checks["wallet_provider_external_proof"]["detail"]["mockProvider"] is False
     assert checks["telegram_live_identity"]["status"] == "review"
+    assert checks["storage_upload_readback"]["status"] == "review"
+    assert "live_proof_file_missing" in checks["storage_upload_readback"]["detail"]["blockers"]
+    assert "live_proof_file_missing" in (
+        checks["storage_upload_readback"]["detail"]["proofBlockers"]
+    )
+    assert "storage_sdk_runtime_not_present" in (
+        checks["storage_upload_readback"]["detail"]["preflightBlockers"]
+    )
+    assert "live_proof_file_missing" in (
+        checks["storage_upload_readback"]["detail"]["liveProofBlockers"]
+    )
     assert checks["private_compute_paid_smoke"]["status"] == "review"
+    assert "paid_smoke_proof_file_missing" in (
+        checks["private_compute_paid_smoke"]["detail"]["blockers"]
+    )
+    assert "paid_smoke_proof_file_missing" in (
+        checks["private_compute_paid_smoke"]["detail"]["paidSmokeProofBlockers"]
+    )
+    assert "router_api_key_missing" in (
+        checks["private_compute_paid_smoke"]["detail"]["paidSmokePreflightBlockers"]
+    )
     assert checks["x402_settlement_path"]["status"] == "review"
     assert checks["x402_settlement_path"]["detail"]["spendCapsConfigured"] is True
     assert checks["x402_settlement_path"]["detail"]["termsConfigured"] is True
@@ -209,8 +235,31 @@ def _blocked_gate_payloads() -> dict:
     payloads["storage"]["sync"]["syncGapBlocks"] = 1
     payloads["storage_upload"]["safety"]["liveStorageUpload"] = False
     payloads["storage_upload"]["safety"]["liveStorageGatewayReadback"] = False
+    payloads["storage_upload"]["blockers"] = [
+        "live_proof_file_missing",
+        "storage_sdk_runtime_not_present",
+    ]
+    payloads["storage_upload"]["proofBlockers"] = ["live_proof_file_missing"]
+    payloads["storage_upload"]["preflightBlockers"] = ["storage_sdk_runtime_not_present"]
+    payloads["storage_upload"]["liveProof"] = {
+        "status": "missing",
+        "verified": False,
+        "blockers": ["live_proof_file_missing"],
+    }
     payloads["private_compute_smoke"]["status"] = "blocked_before_paid_inference"
-    payloads["private_compute_smoke"]["blockers"] = ["router_api_key_missing"]
+    payloads["private_compute_smoke"]["blockers"] = [
+        "paid_smoke_proof_file_missing",
+        "router_api_key_missing",
+    ]
+    payloads["private_compute_smoke"]["paidSmokeProof"] = {
+        "status": "missing",
+        "verified": False,
+        "blockers": ["paid_smoke_proof_file_missing"],
+        "proofBlockers": ["paid_smoke_proof_file_missing"],
+        "preflightBlockers": ["router_api_key_missing"],
+        "paidInferencePerformedExternally": False,
+        "costUsd": None,
+    }
     payloads["private_compute_smoke"]["safety"]["inferenceExecuted"] = False
     payloads["private_compute_smoke"]["safety"]["paidInferenceEnabled"] = False
     payloads["x402_preflight"]["status"] = "payment_required_dry_run"
@@ -224,6 +273,14 @@ def _blocked_gate_payloads() -> dict:
     payloads["x402_policy"]["settlementProof"]["settlementPerformedExternally"] = False
     payloads["wallet_provider_proof"]["verified"] = False
     payloads["wallet_provider_proof"]["proofPresent"] = True
+    payloads["wallet_provider_proof"]["blockers"] = [
+        "wallet_provider_external_proof_file_missing",
+        "real_wallet_extension_proof_missing",
+    ]
+    payloads["wallet_provider_proof"]["proofBlockers"] = [
+        "wallet_provider_external_proof_file_missing",
+        "real_wallet_extension_proof_missing",
+    ]
     return payloads
 
 
@@ -276,8 +333,12 @@ def _green_gate_payloads() -> dict:
         },
         "storage_upload": {
             "schema": "0guard.0g_storage_upload_manifest.v1",
+            "blockers": [],
+            "proofBlockers": [],
+            "preflightBlockers": [],
             "bundle": {"fileCount": 3},
             "readbackVerifier": {"allMatched": True},
+            "liveProof": {"status": "verified", "verified": True, "blockers": []},
             "uploadPlan": {"operatorRequired": True},
             "safety": {
                 "liveStorageUpload": True,
@@ -287,6 +348,20 @@ def _green_gate_payloads() -> dict:
         "private_compute_smoke": {
             "status": "paid_smoke_complete",
             "blockers": [],
+            "paidSmokeProof": {
+                "status": "verified",
+                "verified": True,
+                "blockers": [],
+                "proofBlockers": [],
+                "preflightBlockers": [],
+                "paidInferencePerformedExternally": True,
+                "costUsd": 0.01,
+                "safety": {
+                    "paidInferenceByZeroGuard": False,
+                    "rawPromptReturned": False,
+                    "rawResponseReturned": False,
+                },
+            },
             "router": {
                 "apiKeyConfigured": True,
                 "paidInferenceAllowedByEnv": True,
@@ -335,6 +410,8 @@ def _green_gate_payloads() -> dict:
             "requiresRealWalletExtension": True,
             "requiresWindowEthereum": True,
             "requiresThrowawayEmptyWallet": True,
+            "blockers": [],
+            "proofBlockers": [],
             "proofMode": "real_wallet_extension_window_ethereum",
             "externalDappOrigin": "http://127.0.0.1:8142",
             "windowEthereumPresent": True,
