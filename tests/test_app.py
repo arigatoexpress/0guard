@@ -608,6 +608,7 @@ def test_local_inference_x402_and_backfill_routes_are_no_side_effect(client):
     gaps_body = gaps.get_json()
     assert gaps_body["schema"] == "0guard.production_gap_matrix.v1"
     assert gaps_body["productionReady"] is False
+    assert gaps_body["rawPayloadsReturned"] is False
     assert gaps_body["classificationSummary"]["counts"]["mock_fixture_only"] >= 1
     assert any(item["id"] == "model.0g_private_computer" for item in gaps_body["gaps"])
     assert gaps_body["safety"]["x402SettlementEnabled"] is False
