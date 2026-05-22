@@ -22,11 +22,12 @@ STORAGE_BUNDLE_ARTIFACT_SCHEMA = "0guard.0g_storage_public_bundle.v1"
 STORAGE_LIVE_PROOF_SCHEMA = "0guard.0g_storage_live_upload_proof.v1"
 STORAGE_LIVE_PROOF_VERIFICATION_SCHEMA = "0guard.0g_storage_live_upload_proof_verification.v1"
 REPO_ROOT = Path(__file__).resolve().parents[2]
-STORAGE_SDK_PACKAGE_NAME = "@0gfoundation/0g-ts-sdk"
+STORAGE_SDK_PACKAGE_NAME = "@0gfoundation/0g-storage-ts-sdk"
+LEGACY_STORAGE_SDK_PACKAGE_NAMES = ("@0gfoundation/0g-ts-sdk",)
 STORAGE_SDK_PEER_DEPENDENCIES = ("ethers",)
 STORAGE_SDK_NODE_MODULE_PATHS = (
-    Path("node_modules") / "@0gfoundation" / "0g-ts-sdk",
     Path("node_modules") / "@0gfoundation" / "0g-storage-ts-sdk",
+    Path("node_modules") / "@0gfoundation" / "0g-ts-sdk",
 )
 DEFAULT_STORAGE_BUNDLE_PATHS = (
     REPO_ROOT / "data" / "evals" / "incident_detector_eval.v1.jsonl",
@@ -217,10 +218,11 @@ def build_storage_live_upload_preflight(
         "officialSdk": "https://docs.0g.ai/developer-hub/building-on-0g/storage/sdk",
         "sdkRuntime": {
             "packageName": STORAGE_SDK_PACKAGE_NAME,
+            "legacyPackageNames": list(LEGACY_STORAGE_SDK_PACKAGE_NAMES),
             "peerDependencies": list(STORAGE_SDK_PEER_DEPENDENCIES),
-            "installCommand": "npm install @0gfoundation/0g-ts-sdk ethers",
+            "installCommand": "npm install @0gfoundation/0g-storage-ts-sdk ethers",
             "typescriptImports": [
-                'import { ZgFile, Indexer } from "@0gfoundation/0g-ts-sdk";',
+                'import { ZgFile, Indexer } from "@0gfoundation/0g-storage-ts-sdk";',
                 'import { ethers } from "ethers";',
             ],
             "checkedNodeModulePaths": [
@@ -254,7 +256,7 @@ def build_storage_live_upload_preflight(
             "sdkPackageName": STORAGE_SDK_PACKAGE_NAME,
         },
         "nextCommands": {
-            "installStorageSdk": "npm install @0gfoundation/0g-ts-sdk ethers",
+            "installStorageSdk": "npm install @0gfoundation/0g-storage-ts-sdk ethers",
             "buildBundle": (
                 "PYTHONPATH=src .venv/bin/python scripts/build_0g_storage_bundle.py "
                 "--out dist/0g-storage/zeroguard-public-safe-derived-bundle.json"

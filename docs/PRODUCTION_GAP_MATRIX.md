@@ -211,7 +211,7 @@ For the 0G Storage upload/readback gate, the TypeScript SDK runtime preflight
 tracks the official package and peer dependency:
 
 ```bash
-npm install @0gfoundation/0g-ts-sdk ethers
+npm install @0gfoundation/0g-storage-ts-sdk ethers
 ```
 
 The upload must still happen in a reviewed signer-owned environment; the
