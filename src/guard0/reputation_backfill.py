@@ -17,6 +17,7 @@ from guard0.reputation_connector_worker import (
     PHISHDESTROY_ACTIVE_DOMAINS_URL,
     PHISHDESTROY_PUBLIC_SOURCE_URL,
     PHISHDESTROY_SOURCE_ID,
+    PHISHDESTROY_TTL_SECONDS,
     reputation_connector_snapshot,
 )
 
@@ -126,7 +127,7 @@ def build_reputation_backfill_status(
     derived = payload.get("derivedEvidence") if isinstance(payload.get("derivedEvidence"), list) else []
     generated_at = str(payload.get("generatedAt") or "")
     latest_age_seconds = _age_seconds(generated_at)
-    ttl_seconds = int(fetch.get("ttlSeconds") or 21600)
+    ttl_seconds = int(fetch.get("ttlSeconds") or PHISHDESTROY_TTL_SECONDS)
     fresh_within_ttl = _fresh_within_ttl(latest_age_seconds, ttl_seconds)
     payload_hash = str(persistence.get("payloadHash") or "")
     supervised_freshness_ready = (
@@ -207,7 +208,7 @@ def _build_run(
             "feedHash": fetch.get("feedHash", ""),
             "parsedDomainCount": fetch.get("parsedDomainCount", 0),
             "sampledEvidenceCount": fetch.get("sampledEvidenceCount", len(derived)),
-            "ttlSeconds": fetch.get("ttlSeconds", 21600),
+            "ttlSeconds": fetch.get("ttlSeconds", PHISHDESTROY_TTL_SECONDS),
         },
         "subject": connector_snapshot.get("subject") or {},
         "derivedEvidenceCount": len(derived),
@@ -267,7 +268,7 @@ def _schedule_manifest(out_path: Path) -> dict[str, Any]:
         "checkScriptPath": _display_path(REPUTATION_BACKFILL_SUPERVISOR_CHECK_PATH),
         "scheduleCronUtc": "17 */6 * * *",
         "recommendedIntervalSeconds": 21600,
-        "ttlSeconds": 21600,
+        "ttlSeconds": PHISHDESTROY_TTL_SECONDS,
         "command": (
             "PYTHONPATH=src .venv/bin/python scripts/reputation_backfill_worker.py "
             f"--source {PHISHDESTROY_SOURCE_ID} --live --out {_display_path(out_path)}"

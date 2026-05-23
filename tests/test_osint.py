@@ -135,7 +135,7 @@ def test_osint_signals_live_includes_phishdestroy_digest(monkeypatch):
                 "feedHash": "feedhash",
                 "parsedDomainCount": 123,
                 "sampledEvidenceCount": 4,
-                "ttlSeconds": 21600,
+                "ttlSeconds": 86400,
             },
             "snapshotReceipt": {"hash": "snap"},
         }

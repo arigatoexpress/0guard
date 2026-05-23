@@ -128,7 +128,7 @@ def test_production_readiness_detects_mainnet_runtime_env(monkeypatch):
 
 def test_production_readiness_marks_stale_or_unsupervised_backfill_review(monkeypatch):
     payloads = _green_gate_payloads()
-    payloads["reputation_backfill"]["latestAgeSeconds"] = 21601
+    payloads["reputation_backfill"]["latestAgeSeconds"] = 86401
 
     monkeypatch.setattr(readiness_module, "_production_gate_payloads", lambda: payloads)
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "configured-in-env")
@@ -348,7 +348,7 @@ def _green_gate_payloads() -> dict:
             "status": "ready",
             "latestRunExists": True,
             "latestAgeSeconds": 30,
-            "ttlSeconds": 21600,
+            "ttlSeconds": 86400,
             "derivedEvidenceCount": 5,
             "parsedDomainCount": 81444,
             "rawPayloadsReturned": False,

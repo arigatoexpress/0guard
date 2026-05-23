@@ -39,6 +39,7 @@ MAX_PHISHDESTROY_BYTES = 5_000_000
 MAX_CISA_KEV_BYTES = 8_000_000
 MAX_NVD_CVE_BYTES = 8_000_000
 MAX_OFAC_SANCTIONS_BYTES = 24_000_000
+PHISHDESTROY_TTL_SECONDS = 86_400
 EVM_ADDRESS_RE = re.compile(r"0x[a-fA-F0-9]{40}")
 
 
@@ -122,7 +123,7 @@ def phishdestroy_active_domains_snapshot(
             "feedHash": body_hash,
             "parsedDomainCount": len(unique_domains),
             "sampledEvidenceCount": len(normalized["derivedEvidence"]),
-            "ttlSeconds": 21600,
+            "ttlSeconds": PHISHDESTROY_TTL_SECONDS,
         },
         "subject": _public_subject(subject_domain, matched),
         "derivedEvidence": normalized["derivedEvidence"],

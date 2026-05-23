@@ -26,7 +26,7 @@ def test_reputation_backfill_supervisor_check_passes_for_fresh_derived_artifacts
                     "parsedDomainCount": 2,
                     "sampledEvidenceCount": 1,
                     "feedHash": "feedhash",
-                    "ttlSeconds": 21600,
+                    "ttlSeconds": 86400,
                 },
                 "derivedEvidence": [{"evidenceHash": "evidencehash"}],
                 "snapshotReceipt": {"hash": "snapshothash"},
