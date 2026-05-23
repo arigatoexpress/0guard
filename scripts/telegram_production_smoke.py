@@ -404,7 +404,14 @@ def _route_probes(base_url: str, *, timeout: float, deadline: float | None = Non
     results: list[dict[str, Any]] = []
     for name, path in ROUTE_PROBES:
         if deadline is not None and time.monotonic() >= deadline:
-            results.append({"name": "route_probe_budget", "path": "", "status": None, "error": "time budget exhausted"})
+            results.append(
+                {
+                    "name": "route_probe_budget",
+                    "path": path,
+                    "status": None,
+                    "error": "time budget exhausted",
+                }
+            )
             break
         url = f"{base_url}{path}"
         try:
