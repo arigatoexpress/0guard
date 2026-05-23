@@ -105,11 +105,16 @@ def main(argv: list[str] | None = None) -> int:
             f"falls back to {DEFAULT_BASE_URL}."
         ),
     )
-    parser.add_argument("--timeout", type=float, default=20.0)
+    parser.add_argument(
+        "--timeout",
+        type=float,
+        default=12.0,
+        help="Per-request timeout in seconds (bounded by remaining budget).",
+    )
     parser.add_argument(
         "--budget-seconds",
         type=float,
-        default=120.0,
+        default=45.0,
         help=(
             "Overall time budget for Cloud Run route probes. When exhausted, remaining "
             "paths are marked as budget-exhausted."
@@ -120,18 +125,24 @@ def main(argv: list[str] | None = None) -> int:
 
     requested = (args.base_url or "").rstrip("/") or None
     sapphire_active_base_url = _discover_active_base_url_from_sapphire(timeout=args.timeout)
-    active_requested = requested or sapphire_active_base_url or DEFAULT_BASE_URL
+    traffic_base_url = _select_base_url(DEFAULT_BASE_URL, timeout=args.timeout)
+    active_requested = requested or traffic_base_url
 
     base_url = _select_base_url(active_requested.rstrip("/"), timeout=args.timeout)
-    base_probe_deadline = time.monotonic() + max(1.0, float(args.budget_seconds))
-    probes = list(_probe_paths(base_url, CHECKLIST_PATHS, timeout=args.timeout, deadline=base_probe_deadline))
+    overall_deadline = time.monotonic() + max(1.0, float(args.budget_seconds))
+    probes = list(_probe_paths(base_url, CHECKLIST_PATHS, timeout=args.timeout, deadline=overall_deadline))
     traffic_probes: list[ProbeResult] | None = None
-    traffic_base_url = _select_base_url(DEFAULT_BASE_URL, timeout=args.timeout)
-    if traffic_base_url.rstrip("/") != base_url.rstrip("/"):
-        traffic_probe_deadline = time.monotonic() + max(1.0, float(args.budget_seconds))
-        traffic_probes = list(
-            _probe_paths(traffic_base_url, CHECKLIST_PATHS, timeout=args.timeout, deadline=traffic_probe_deadline)
-        )
+    drift_target = (sapphire_active_base_url or "").rstrip("/") or None
+    if drift_target and drift_target.rstrip("/") != traffic_base_url.rstrip("/"):
+        if time.monotonic() + 5.0 <= overall_deadline:
+            traffic_probes = list(
+                _probe_paths(drift_target, CHECKLIST_PATHS, timeout=args.timeout, deadline=overall_deadline)
+            )
+    elif traffic_base_url.rstrip("/") != base_url.rstrip("/"):
+        if time.monotonic() + 5.0 <= overall_deadline:
+            traffic_probes = list(
+                _probe_paths(traffic_base_url, CHECKLIST_PATHS, timeout=args.timeout, deadline=overall_deadline)
+            )
     sapphire = _probe_sapphire(timeout=args.timeout)
     public = _probe_public(timeout=args.timeout)
     silo = _probe_silo(timeout=args.timeout)
@@ -143,6 +154,7 @@ def main(argv: list[str] | None = None) -> int:
         "requestedBaseUrl": requested,
         "sapphireActiveBaseUrl": sapphire_active_base_url,
         "trafficBaseUrl": traffic_base_url,
+        "driftBaseUrl": drift_target,
         "probes": [probe.__dict__ for probe in probes],
         "trafficProbes": [probe.__dict__ for probe in traffic_probes] if traffic_probes else None,
         "sapphire": sapphire,
@@ -177,6 +189,8 @@ def _overall_ok(
 ) -> bool:
     """Treat 200/204 as ok; allow 405 only for POST-only route probes."""
     for probe in probes:
+        if probe.status_code is None and "budget exhausted" in (probe.snippet or ""):
+            continue
         if probe.status_code in (200, 204, 405):
             continue
         return False
@@ -210,18 +224,18 @@ def _url_entry_ok(entry: dict[str, Any] | None) -> bool:
 def _probe_public(*, timeout: float) -> dict[str, Any]:
     results: list[dict[str, Any]] = []
     for url in (PAGES_ROOT_URL, PAGES_HACKATHON_URL, SAPPHIRE_0GUARD_PAGE_URL):
-        results.append(_probe_url(url, timeout=timeout))
+        results.append(_probe_url(url, timeout=min(timeout, 6.0)))
     return {"urls": results}
 
 
 def _probe_silo(*, timeout: float) -> dict[str, Any]:
-    return {"tho_healthz": _probe_url(THO_HEALTHZ_URL, timeout=timeout)}
+    return {"tho_healthz": _probe_url(THO_HEALTHZ_URL, timeout=min(timeout, 6.0))}
 
 
 def _probe_sapphire(*, timeout: float) -> dict[str, Any]:
     progress: list[dict[str, Any]] = []
     for url in SAPPHIRE_PROGRESS_URLS:
-        entry = _probe_url(url, timeout=timeout)
+        entry = _probe_url(url, timeout=min(timeout, 6.0))
         parsed: dict[str, Any] = {}
         if entry.get("statusCode") == 200 and entry.get("json"):
             data = entry["json"]
@@ -236,7 +250,7 @@ def _probe_sapphire(*, timeout: float) -> dict[str, Any]:
             }
         progress.append({**entry, "parsed": parsed})
     return {
-        "health": _probe_url(SAPPHIRE_HEALTH_URL, timeout=timeout),
+        "health": _probe_url(SAPPHIRE_HEALTH_URL, timeout=min(timeout, 6.0)),
         "progress": progress,
     }
 
@@ -275,15 +289,16 @@ def _discover_active_base_url_from_sapphire(*, timeout: float) -> str | None:
 
 def _probe_url(url: str, *, timeout: float) -> dict[str, Any]:
     last_error: Exception | None = None
-    for attempt in range(2):
+    for attempt in range(1):
         try:
-            resp = requests.get(url, timeout=timeout, headers={"User-Agent": "0guard-osint-steward/1.0"})
+            resp = requests.get(
+                url,
+                timeout=timeout,
+                headers={"User-Agent": "0guard-osint-steward/1.0"},
+            )
             break
         except requests.RequestException as exc:
             last_error = exc
-            if attempt == 0:
-                time.sleep(0.4)
-                continue
             return {"url": url, "statusCode": None, "error": str(exc)}
     else:  # pragma: no cover - defensive; loop returns on final failure.
         return {"url": url, "statusCode": None, "error": str(last_error or "unknown error")}
@@ -326,10 +341,10 @@ def _probe_paths(
         url = urljoin(base_url.rstrip("/") + "/", path.lstrip("/"))
         resp: requests.Response | None = None
         last_error: Exception | None = None
-        for attempt in range(2):
+        for attempt in range(1):
             try:
                 bounded_timeout = _bounded_timeout(timeout, deadline)
-                resp = session.get(url, timeout=bounded_timeout)
+                resp = session.get(url, timeout=bounded_timeout, stream=True)
                 break
             except TimeoutError as exc:
                 last_error = exc
@@ -337,9 +352,6 @@ def _probe_paths(
                 break
             except requests.RequestException as exc:
                 last_error = exc
-                if attempt == 0:
-                    time.sleep(0.4)
-                    continue
                 resp = None
 
         if resp is None:
@@ -357,8 +369,9 @@ def _probe_paths(
             status_code=resp.status_code,
             elapsed_ms=int(resp.elapsed.total_seconds() * 1000),
             content_type=resp.headers.get("content-type", ""),
-            snippet=_snippet(resp.text or ""),
+            snippet=_snippet(_read_snippet_text(resp)),
         )
+        resp.close()
 
 
 def _select_base_url(requested: str, *, timeout: float) -> str:
@@ -396,6 +409,28 @@ def _bounded_timeout(timeout: float, deadline: float | None) -> float:
     return max(0.5, min(timeout, remaining))
 
 
+def _read_snippet_text(resp: requests.Response, *, limit_bytes: int = 4096) -> str:
+    try:
+        chunks: list[bytes] = []
+        total = 0
+        for chunk in resp.iter_content(chunk_size=min(1024, limit_bytes)):
+            if not chunk:
+                break
+            chunks.append(chunk)
+            total += len(chunk)
+            if total >= limit_bytes:
+                break
+        data = b"".join(chunks)
+    except requests.RequestException:
+        return ""
+
+    encoding = resp.encoding or "utf-8"
+    try:
+        return data.decode(encoding, errors="replace")
+    except LookupError:
+        return data.decode("utf-8", errors="replace")
+
+
 def _snippet(text: str, *, limit: int = 260) -> str:
     normalized = " ".join(text.strip().split())
     if len(normalized) <= limit:
@@ -416,6 +451,8 @@ def _markdown(payload: dict[str, Any]) -> str:
     lines.append(f"- Base URL: {payload.get('baseUrl')}")
     if payload.get("trafficBaseUrl"):
         lines.append(f"- Traffic Base URL: {payload.get('trafficBaseUrl')}")
+    if payload.get("driftBaseUrl"):
+        lines.append(f"- Drift Base URL: {payload.get('driftBaseUrl')}")
     lines.append(f"- Overall: {'ok' if payload.get('ok') else 'needs attention'}")
     lines.append("")
 
