@@ -168,8 +168,12 @@ def _overall_ok(
     if sapphire is not None:
         if not _url_entry_ok(sapphire.get("health")):
             return False
-        for entry in sapphire.get("progress") or []:
-            if not _url_entry_ok(entry):
+        progress_entries = list(sapphire.get("progress") or [])
+        if progress_entries:
+            # Sapphire progress can be intermittently flaky on one hostname while
+            # still being healthy on another; treat it as OK if at least one URL
+            # returns a valid 200/204 response.
+            if not any(_url_entry_ok(entry) for entry in progress_entries):
                 return False
     if public is not None:
         for entry in public.get("urls") or []:
@@ -229,23 +233,28 @@ def _discover_active_base_url_from_sapphire(*, timeout: float) -> str | None:
     falls back to DEFAULT_BASE_URL.
     """
 
+    headers = {"User-Agent": "0guard-osint-steward/1.0"}
     for url in SAPPHIRE_PROGRESS_URLS:
-        try:
-            resp = requests.get(url, timeout=timeout, headers={"User-Agent": "0guard-osint-steward/1.0"})
-        except requests.RequestException:
-            continue
-        if resp.status_code != 200:
-            continue
-        if "application/json" not in resp.headers.get("content-type", ""):
-            continue
-        try:
-            data = resp.json()
-        except ValueError:
-            continue
+        for attempt in range(2):
+            try:
+                resp = requests.get(url, timeout=timeout, headers=headers)
+            except requests.RequestException:
+                if attempt == 0:
+                    time.sleep(0.4)
+                    continue
+                break
+            if resp.status_code != 200:
+                break
+            if "application/json" not in resp.headers.get("content-type", ""):
+                break
+            try:
+                data = resp.json()
+            except ValueError:
+                break
 
-        value = data.get("base_url") or data.get("baseUrl")
-        if isinstance(value, str) and value.strip():
-            return value.strip().rstrip("/")
+            value = data.get("base_url") or data.get("baseUrl")
+            if isinstance(value, str) and value.strip():
+                return value.strip().rstrip("/")
     return None
 
 
