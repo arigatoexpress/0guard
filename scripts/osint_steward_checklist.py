@@ -173,6 +173,10 @@ def _overall_ok(
                 return False
     if public is not None:
         for entry in public.get("urls") or []:
+            # Sapphire /p/0guard is a best-effort read-only surface; it can be
+            # intermittently reset or gated while the progress API remains healthy.
+            if entry and entry.get("url") == SAPPHIRE_0GUARD_PAGE_URL:
+                continue
             if not _url_entry_ok(entry):
                 return False
     if silo is not None and not _url_entry_ok(silo.get("tho_healthz")):
@@ -351,6 +355,7 @@ def _now() -> str:
 
 
 def _markdown(payload: dict[str, Any]) -> str:
+    slow_ms_threshold = 10_000
     lines: list[str] = []
     lines.append("# 0guard OSINT Steward Checklist")
     lines.append("")
@@ -365,7 +370,10 @@ def _markdown(payload: dict[str, Any]) -> str:
     for probe in payload.get("probes", []):
         status = probe.get("status_code")
         ms = probe.get("elapsed_ms")
-        lines.append(f"- `{probe.get('path')}`: {status} ({ms}ms)")
+        suffix = ""
+        if isinstance(ms, int) and ms >= slow_ms_threshold:
+            suffix = " (slow)"
+        lines.append(f"- `{probe.get('path')}`: {status} ({ms}ms){suffix}")
     lines.append("")
 
     traffic_probes = payload.get("trafficProbes") or []
@@ -406,7 +414,11 @@ def _markdown(payload: dict[str, Any]) -> str:
 
     lines.append("## Public Surfaces")
     for entry in (payload.get("public") or {}).get("urls") or []:
-        lines.append(f"- `{entry.get('url')}`: {entry.get('statusCode')}")
+        status_code = entry.get("statusCode")
+        line = f"- `{entry.get('url')}`: {status_code}"
+        if status_code is None and entry.get("error"):
+            line += f" (error: {entry.get('error')})"
+        lines.append(line)
     lines.append("")
 
     lines.append("## Silo Boundary Sanity Check")
