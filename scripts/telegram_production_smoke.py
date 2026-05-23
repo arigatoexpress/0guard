@@ -520,7 +520,8 @@ def _markdown(payload: dict[str, Any]) -> str:
         for probe in probes:
             status = probe.get("status")
             if status is None:
-                lines.append(f"- `warn` {probe['name']}: error={probe.get('error','unknown')} path={probe['path']}")
+                level = "info" if probe.get("name") == "route_probe_budget" else "warn"
+                lines.append(f"- `{level}` {probe['name']}: error={probe.get('error','unknown')} path={probe['path']}")
             else:
                 elapsed = probe.get("elapsedMs")
                 elapsed_label = f" ({elapsed}ms)" if isinstance(elapsed, int) else ""
