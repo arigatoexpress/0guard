@@ -1,5 +1,6 @@
 """Tests for 0G Storage no-upload bundle manifests."""
 
+from guard0 import storage_upload_manifest as upload_manifest
 from guard0.storage_upload_manifest import (
     STORAGE_LIVE_PROOF_SCHEMA,
     build_storage_live_upload_preflight,
@@ -12,7 +13,8 @@ from guard0.storage_upload_manifest import (
 )
 
 
-def test_storage_upload_manifest_hashes_public_safe_bundle(tmp_path):
+def test_storage_upload_manifest_hashes_public_safe_bundle(monkeypatch, tmp_path):
+    monkeypatch.setattr(upload_manifest, "REPO_ROOT", tmp_path)
     first = tmp_path / "incident_eval.jsonl"
     second = tmp_path / "reputation.json"
     first.write_text('{"caseId":"case-1","rights":{"rawPayloadResaleAllowed":false}}\n')

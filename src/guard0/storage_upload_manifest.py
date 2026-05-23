@@ -182,7 +182,11 @@ def build_storage_live_upload_preflight(
     chain_rpc_configured = bool(os.getenv("ZG_STORAGE_CHAIN_RPC"))
     indexer_rpc_configured = bool(os.getenv("ZG_STORAGE_INDEXER_RPC"))
     sdk_package_paths = [REPO_ROOT / path for path in STORAGE_SDK_NODE_MODULE_PATHS]
-    sdk_package_present = any(path.exists() for path in sdk_package_paths)
+    sdk_primary_path = REPO_ROOT / "node_modules" / "@0gfoundation" / "0g-storage-ts-sdk"
+    sdk_package_present = sdk_primary_path.exists()
+    legacy_sdk_package_present = any(
+        path.exists() for path in sdk_package_paths if path != sdk_primary_path
+    )
 
     blockers = []
     if not existing_files:
@@ -229,6 +233,7 @@ def build_storage_live_upload_preflight(
                 _relative_repo_path(path) for path in sdk_package_paths
             ],
             "packagePresent": sdk_package_present,
+            "legacyPackagePresent": legacy_sdk_package_present,
         },
         "recommendedNetwork": "testnet",
         "networkProfiles": {
