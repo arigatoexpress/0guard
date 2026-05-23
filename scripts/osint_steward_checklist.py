@@ -106,6 +106,15 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     parser.add_argument("--timeout", type=float, default=20.0)
+    parser.add_argument(
+        "--budget-seconds",
+        type=float,
+        default=120.0,
+        help=(
+            "Overall time budget for Cloud Run route probes. When exhausted, remaining "
+            "paths are marked as budget-exhausted."
+        ),
+    )
     parser.add_argument("--format", choices=("markdown", "json"), default="markdown")
     args = parser.parse_args(argv)
 
@@ -114,11 +123,15 @@ def main(argv: list[str] | None = None) -> int:
     active_requested = requested or sapphire_active_base_url or DEFAULT_BASE_URL
 
     base_url = _select_base_url(active_requested.rstrip("/"), timeout=args.timeout)
-    probes = list(_probe_paths(base_url, CHECKLIST_PATHS, timeout=args.timeout))
+    base_probe_deadline = time.monotonic() + max(1.0, float(args.budget_seconds))
+    probes = list(_probe_paths(base_url, CHECKLIST_PATHS, timeout=args.timeout, deadline=base_probe_deadline))
     traffic_probes: list[ProbeResult] | None = None
     traffic_base_url = _select_base_url(DEFAULT_BASE_URL, timeout=args.timeout)
     if traffic_base_url.rstrip("/") != base_url.rstrip("/"):
-        traffic_probes = list(_probe_paths(traffic_base_url, CHECKLIST_PATHS, timeout=args.timeout))
+        traffic_probe_deadline = time.monotonic() + max(1.0, float(args.budget_seconds))
+        traffic_probes = list(
+            _probe_paths(traffic_base_url, CHECKLIST_PATHS, timeout=args.timeout, deadline=traffic_probe_deadline)
+        )
     sapphire = _probe_sapphire(timeout=args.timeout)
     public = _probe_public(timeout=args.timeout)
     silo = _probe_silo(timeout=args.timeout)
@@ -135,10 +148,12 @@ def main(argv: list[str] | None = None) -> int:
         "sapphire": sapphire,
         "public": public,
         "siloBoundary": silo,
+        "probeBudgetSeconds": float(args.budget_seconds),
         "notes": [
             "This is a read-only probe script; 405 on POST-only endpoints is expected.",
             "Use --base-url to force a candidate/no-traffic Cloud Run revision.",
             "When Sapphire exposes a base_url, the script treats it as the active surface and reports traffic drift separately.",
+            "Budget exhaustion produces status_code=None with snippet=error: budget exhausted.",
         ],
     }
 
@@ -289,16 +304,36 @@ def _probe_url(url: str, *, timeout: float) -> dict[str, Any]:
     return entry
 
 
-def _probe_paths(base_url: str, paths: Iterable[str], *, timeout: float) -> Iterable[ProbeResult]:
+def _probe_paths(
+    base_url: str,
+    paths: Iterable[str],
+    *,
+    timeout: float,
+    deadline: float | None = None,
+) -> Iterable[ProbeResult]:
     session = requests.Session()
     session.headers.update({"User-Agent": "0guard-osint-steward/1.0"})
     for path in paths:
+        if deadline is not None and time.monotonic() >= deadline:
+            yield ProbeResult(
+                path=path,
+                status_code=None,
+                elapsed_ms=None,
+                content_type="",
+                snippet="error: budget exhausted",
+            )
+            continue
         url = urljoin(base_url.rstrip("/") + "/", path.lstrip("/"))
         resp: requests.Response | None = None
         last_error: Exception | None = None
         for attempt in range(2):
             try:
-                resp = session.get(url, timeout=timeout)
+                bounded_timeout = _bounded_timeout(timeout, deadline)
+                resp = session.get(url, timeout=bounded_timeout)
+                break
+            except TimeoutError as exc:
+                last_error = exc
+                resp = None
                 break
             except requests.RequestException as exc:
                 last_error = exc
@@ -352,6 +387,15 @@ def _select_base_url(requested: str, *, timeout: float) -> str:
     return requested
 
 
+def _bounded_timeout(timeout: float, deadline: float | None) -> float:
+    if deadline is None:
+        return timeout
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        raise TimeoutError("budget exhausted")
+    return max(0.5, min(timeout, remaining))
+
+
 def _snippet(text: str, *, limit: int = 260) -> str:
     normalized = " ".join(text.strip().split())
     if len(normalized) <= limit:
@@ -379,10 +423,14 @@ def _markdown(payload: dict[str, Any]) -> str:
     for probe in payload.get("probes", []):
         status = probe.get("status_code")
         ms = probe.get("elapsed_ms")
-        suffix = ""
-        if isinstance(ms, int) and ms >= slow_ms_threshold:
-            suffix = " (slow)"
-        lines.append(f"- `{probe.get('path')}`: {status} ({ms}ms){suffix}")
+        snippet = (probe.get("snippet") or "").strip()
+        if status is None:
+            detail = f"error: {snippet}" if snippet else "error"
+            lines.append(f"- `{probe.get('path')}`: None ({detail})")
+            continue
+        suffix = " (slow)" if isinstance(ms, int) and ms >= slow_ms_threshold else ""
+        ms_label = f"{ms}ms" if isinstance(ms, int) else "n/a"
+        lines.append(f"- `{probe.get('path')}`: {status} ({ms_label}){suffix}")
     lines.append("")
 
     traffic_probes = payload.get("trafficProbes") or []
@@ -396,16 +444,34 @@ def _markdown(payload: dict[str, Any]) -> str:
             if status in (200, 204, 405):
                 continue
             ms = probe.get("elapsed_ms")
-            lines.append(f"- `{probe.get('path')}`: {status} ({ms}ms)")
+            snippet = (probe.get("snippet") or "").strip()
+            if status is None:
+                detail = f"error: {snippet}" if snippet else "error"
+                lines.append(f"- `{probe.get('path')}`: None ({detail})")
+                continue
+            ms_label = f"{ms}ms" if isinstance(ms, int) else "n/a"
+            lines.append(f"- `{probe.get('path')}`: {status} ({ms_label})")
         lines.append("")
 
     lines.append("## Sapphire Readback (Read-only)")
     sapphire = payload.get("sapphire") or {}
     health = sapphire.get("health") or {}
-    lines.append(f"- `health`: {health.get('statusCode')} ({health.get('elapsedMs')}ms)")
+    health_status = health.get("statusCode")
+    health_err = health.get("error")
+    health_ms = health.get("elapsedMs")
+    if health_status is None and health_err:
+        lines.append(f"- `health`: None (error: {health_err})")
+    else:
+        health_ms_label = f"{health_ms}ms" if isinstance(health_ms, int) else "n/a"
+        lines.append(f"- `health`: {health_status} ({health_ms_label})")
     for entry in sapphire.get("progress") or []:
         parsed = entry.get("parsed") or {}
-        lines.append(f"- `progress`: {entry.get('url')} → {entry.get('statusCode')}")
+        progress_status = entry.get("statusCode")
+        progress_err = entry.get("error")
+        if progress_status is None and progress_err:
+            lines.append(f"- `progress`: {entry.get('url')} → None (error: {progress_err})")
+        else:
+            lines.append(f"- `progress`: {entry.get('url')} → {progress_status}")
         if parsed:
             lines.append(
                 "  - base_url: "
