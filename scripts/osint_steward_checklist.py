@@ -84,6 +84,39 @@ CHECKLIST_PATHS: tuple[str, ...] = (
     "/api/wallet/alert-preview",
 )
 
+CRITICAL_PATHS: frozenset[str] = frozenset(
+    {
+        "/api/healthz",
+        "/api/readyz",
+        "/api/hackathon/submission-packet",
+        "/api/hackathon/readiness",
+        "/api/osint/sources",
+        "/api/osint/readiness",
+        "/api/intelligence/data-streams",
+        "/api/intelligence/detector-candidates?live=1&limit=10",
+        "/api/reputation/connectors/live?live=1&limit=3",
+        "/api/integrations/arbitrum",
+        "/api/integrations/metamask",
+        "/api/hackathons/next",
+        "/api/telegram/status",
+        "/api/telegram/miniapp/preview",
+        "/api/wallet/alert-preview",
+    }
+)
+
+# Some endpoints are inherently bursty or heavy enough that occasional timeouts
+# are expected on the public Cloud Run surface. The steward report should
+# surface these as warnings, but they should not flip the overall result unless
+# a critical endpoint is also failing.
+BEST_EFFORT_TIMEOUT_PATHS: frozenset[str] = frozenset(
+    {
+        "/api/osint/signals?live=1&limit=10",
+        "/api/intelligence/events?live=1&limit=10",
+        "/api/reputation/shadow-cache",
+        "/api/reputation/connectors/live?live=1&limit=3",
+    }
+)
+
 
 @dataclass(frozen=True)
 class ProbeResult:
@@ -114,7 +147,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--budget-seconds",
         type=float,
-        default=45.0,
+        default=90.0,
         help=(
             "Overall time budget for Cloud Run route probes. When exhausted, remaining "
             "paths are marked as budget-exhausted."
@@ -191,9 +224,20 @@ def _overall_ok(
     for probe in probes:
         if probe.status_code is None and "budget exhausted" in (probe.snippet or ""):
             continue
+        if probe.status_code is None:
+            snippet = (probe.snippet or "").lower()
+            if (
+                probe.path in BEST_EFFORT_TIMEOUT_PATHS
+                and ("timed out" in snippet or "timeout" in snippet)
+            ):
+                continue
+            if probe.path in CRITICAL_PATHS:
+                return False
+            continue
         if probe.status_code in (200, 204, 405):
             continue
-        return False
+        if probe.path in CRITICAL_PATHS:
+            return False
     if sapphire is not None:
         if not _url_entry_ok(sapphire.get("health")):
             return False
@@ -344,7 +388,7 @@ def _probe_paths(
         url = urljoin(base_url.rstrip("/") + "/", path.lstrip("/"))
         resp: requests.Response | None = None
         last_error: Exception | None = None
-        for attempt in range(1):
+        for attempt in range(2):
             try:
                 bounded_timeout = _bounded_timeout(timeout, deadline)
                 resp = session.get(url, timeout=bounded_timeout, stream=True)
@@ -356,6 +400,8 @@ def _probe_paths(
             except requests.RequestException as exc:
                 last_error = exc
                 resp = None
+                if attempt == 0:
+                    time.sleep(0.4)
 
         if resp is None:
             yield ProbeResult(

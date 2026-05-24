@@ -118,10 +118,13 @@ def main(argv: list[str] | None = None) -> int:
     try:
         base_url = _select_base_url(requested_base_url, timeout=http_timeout, deadline=deadline)
     except (requests.RequestException, TimeoutError) as exc:
+        timed_out = isinstance(exc, TimeoutError)
         payload: dict[str, Any] = {
             "baseUrl": requested_base_url,
             "baseUrlSelection": {"ok": False, "tried": candidates, "error": str(exc)},
+            "error": str(exc),
             "tokenPrinted": False,
+            "timedOut": timed_out,
             "checks": [],
             "ok": False,
         }
