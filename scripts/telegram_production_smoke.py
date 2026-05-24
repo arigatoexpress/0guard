@@ -110,7 +110,6 @@ def main(argv: list[str] | None = None) -> int:
         else (25.0 if args.skip_telegram_api else None)
     )
     deadline = (time.monotonic() + overall_budget) if overall_budget else None
-    route_deadline = (time.monotonic() + route_budget) if route_budget else None
 
     token = "" if args.skip_telegram_api else _load_secret(args.bot_token_env, args.bot_token_secret, args.gcloud_project)
     webhook_secret = "" if args.skip_telegram_api else _load_secret("", args.webhook_secret, args.gcloud_project)
@@ -255,6 +254,10 @@ def main(argv: list[str] | None = None) -> int:
         ]
     )
 
+    # Route probes should get their own budget window; starting the route deadline
+    # before earlier health/preview checks can leave only a few seconds remaining
+    # and produces confusing "budget exhausted" diagnostics.
+    route_deadline = (time.monotonic() + route_budget) if route_budget else None
     payload["routeProbes"] = _route_probes(base_url, timeout=route_timeout, deadline=route_deadline)
 
     if token:

@@ -126,7 +126,7 @@ def main(argv: list[str] | None = None) -> int:
     requested = (args.base_url or "").rstrip("/") or None
     sapphire_active_base_url = _discover_active_base_url_from_sapphire(timeout=args.timeout)
     traffic_base_url = _select_base_url(DEFAULT_BASE_URL, timeout=args.timeout)
-    active_requested = requested or traffic_base_url
+    active_requested = requested or sapphire_active_base_url or traffic_base_url
 
     base_url = _select_base_url(active_requested.rstrip("/"), timeout=args.timeout)
     overall_deadline = time.monotonic() + max(1.0, float(args.budget_seconds))
@@ -136,7 +136,7 @@ def main(argv: list[str] | None = None) -> int:
     if drift_target and drift_target.rstrip("/") != traffic_base_url.rstrip("/"):
         if time.monotonic() + 5.0 <= overall_deadline:
             traffic_probes = list(
-                _probe_paths(drift_target, CHECKLIST_PATHS, timeout=args.timeout, deadline=overall_deadline)
+                _probe_paths(traffic_base_url, CHECKLIST_PATHS, timeout=args.timeout, deadline=overall_deadline)
             )
     elif traffic_base_url.rstrip("/") != base_url.rstrip("/"):
         if time.monotonic() + 5.0 <= overall_deadline:
@@ -224,18 +224,18 @@ def _url_entry_ok(entry: dict[str, Any] | None) -> bool:
 def _probe_public(*, timeout: float) -> dict[str, Any]:
     results: list[dict[str, Any]] = []
     for url in (PAGES_ROOT_URL, PAGES_HACKATHON_URL, SAPPHIRE_0GUARD_PAGE_URL):
-        results.append(_probe_url(url, timeout=min(timeout, 6.0)))
+        results.append(_probe_url(url, timeout=timeout))
     return {"urls": results}
 
 
 def _probe_silo(*, timeout: float) -> dict[str, Any]:
-    return {"tho_healthz": _probe_url(THO_HEALTHZ_URL, timeout=min(timeout, 6.0))}
+    return {"tho_healthz": _probe_url(THO_HEALTHZ_URL, timeout=timeout)}
 
 
 def _probe_sapphire(*, timeout: float) -> dict[str, Any]:
     progress: list[dict[str, Any]] = []
     for url in SAPPHIRE_PROGRESS_URLS:
-        entry = _probe_url(url, timeout=min(timeout, 6.0))
+        entry = _probe_url(url, timeout=timeout)
         parsed: dict[str, Any] = {}
         if entry.get("statusCode") == 200 and entry.get("json"):
             data = entry["json"]
@@ -250,7 +250,7 @@ def _probe_sapphire(*, timeout: float) -> dict[str, Any]:
             }
         progress.append({**entry, "parsed": parsed})
     return {
-        "health": _probe_url(SAPPHIRE_HEALTH_URL, timeout=min(timeout, 6.0)),
+        "health": _probe_url(SAPPHIRE_HEALTH_URL, timeout=timeout),
         "progress": progress,
     }
 
@@ -289,7 +289,7 @@ def _discover_active_base_url_from_sapphire(*, timeout: float) -> str | None:
 
 def _probe_url(url: str, *, timeout: float) -> dict[str, Any]:
     last_error: Exception | None = None
-    for attempt in range(1):
+    for attempt in range(2):
         try:
             resp = requests.get(
                 url,
@@ -299,6 +299,9 @@ def _probe_url(url: str, *, timeout: float) -> dict[str, Any]:
             break
         except requests.RequestException as exc:
             last_error = exc
+            if attempt == 0:
+                time.sleep(0.4)
+                continue
             return {"url": url, "statusCode": None, "error": str(exc)}
     else:  # pragma: no cover - defensive; loop returns on final failure.
         return {"url": url, "statusCode": None, "error": str(last_error or "unknown error")}
