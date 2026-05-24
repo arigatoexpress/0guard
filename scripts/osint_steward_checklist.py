@@ -141,13 +141,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--timeout",
         type=float,
-        default=12.0,
+        default=20.0,
         help="Per-request timeout in seconds (bounded by remaining budget).",
     )
     parser.add_argument(
         "--budget-seconds",
         type=float,
-        default=90.0,
+        default=140.0,
         help=(
             "Overall time budget for Cloud Run route probes. When exhausted, remaining "
             "paths are marked as budget-exhausted."
