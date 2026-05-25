@@ -46,7 +46,7 @@ def validate_supervisor_inputs(
         failures.append("latest_status_not_ready")
     if status.get("latestRunExists") is not True:
         failures.append("latest_artifact_missing")
-    if _fresh_within_ttl(status) is not True:
+    if worker_output_path is None and _fresh_within_ttl(status) is not True:
         failures.append("latest_artifact_stale")
     if int(status.get("derivedEvidenceCount") or 0) <= 0:
         failures.append("latest_missing_derived_evidence")
