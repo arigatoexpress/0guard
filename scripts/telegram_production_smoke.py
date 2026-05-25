@@ -93,18 +93,18 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     http_timeout = (
-        args.timeout_seconds if args.timeout_seconds is not None else (12.0 if args.skip_telegram_api else 30.0)
+        args.timeout_seconds if args.timeout_seconds is not None else (20.0 if args.skip_telegram_api else 30.0)
     )
     route_timeout = (
         args.route_timeout_seconds
         if args.route_timeout_seconds is not None
-        else (12.0 if args.skip_telegram_api else 25.0)
+        else (20.0 if args.skip_telegram_api else 25.0)
     )
-    overall_budget = args.budget_seconds if args.budget_seconds is not None else (45.0 if args.skip_telegram_api else None)
+    overall_budget = args.budget_seconds if args.budget_seconds is not None else (75.0 if args.skip_telegram_api else None)
     route_budget = (
         args.route_budget_seconds
         if args.route_budget_seconds is not None
-        else (25.0 if args.skip_telegram_api else None)
+        else (55.0 if args.skip_telegram_api else None)
     )
     deadline = (time.monotonic() + overall_budget) if overall_budget else None
 

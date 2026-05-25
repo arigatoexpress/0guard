@@ -147,7 +147,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--budget-seconds",
         type=float,
-        default=140.0,
+        default=420.0,
         help=(
             "Overall time budget for Cloud Run route probes. When exhausted, remaining "
             "paths are marked as budget-exhausted."
