@@ -23,9 +23,9 @@ def test_base_url_candidates_include_live_sapphire_urls() -> None:
     )
 
     assert candidates == [
-        "https://guard0-miniapp-s77j6bxyra-uc.a.run.app",
         "https://candidate-live.example",
         "https://candidate-preview.example",
+        "https://guard0-miniapp-s77j6bxyra-uc.a.run.app",
     ]
 
 

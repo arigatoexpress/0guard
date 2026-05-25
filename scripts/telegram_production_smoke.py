@@ -379,20 +379,20 @@ def _select_base_url(
         requested,
         sapphire_discovered_base_urls=sapphire_discovered_base_urls,
     )
+    preferred = candidates[0] if candidates else requested
     requested_error: Exception | None = None
     last_error: Exception | None = None
 
-    # Prefer the requested base URL as long as it answers health checks; do not
-    # fall back to stale candidates due to transient failures unless needed.
     try:
-        _load_health(requested, timeout=timeout, deadline=deadline)
-        return requested
+        _load_health(preferred, timeout=timeout, deadline=deadline)
+        return preferred
     except (requests.RequestException, TimeoutError) as exc:
-        requested_error = exc
+        if preferred == requested:
+            requested_error = exc
         last_error = exc
 
     for candidate in candidates:
-        if candidate == requested:
+        if candidate == preferred:
             continue
         try:
             _load_health(candidate, timeout=timeout, deadline=deadline)
@@ -400,6 +400,14 @@ def _select_base_url(
             last_error = exc
             continue
         return candidate
+
+    if preferred != requested:
+        try:
+            _load_health(requested, timeout=timeout, deadline=deadline)
+            return requested
+        except (requests.RequestException, TimeoutError) as exc:
+            requested_error = exc
+            last_error = exc
 
     if requested_error is not None:
         raise requested_error
@@ -414,7 +422,12 @@ def _base_url_candidates(
     sapphire_discovered_base_urls: list[str] | None = None,
 ) -> list[str]:
     candidates: list[str] = []
-    for url in (requested, *(sapphire_discovered_base_urls or []), DEFAULT_BASE_URL):
+    ordered_urls = (
+        (*(sapphire_discovered_base_urls or []), requested, DEFAULT_BASE_URL)
+        if requested.rstrip("/") == DEFAULT_BASE_URL.rstrip("/") and sapphire_discovered_base_urls
+        else (requested, *(sapphire_discovered_base_urls or []), DEFAULT_BASE_URL)
+    )
+    for url in ordered_urls:
         normalized = url.rstrip("/")
         if normalized and normalized not in candidates:
             candidates.append(normalized)
