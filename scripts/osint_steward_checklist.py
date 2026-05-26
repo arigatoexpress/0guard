@@ -387,11 +387,14 @@ def _probe_paths(
             continue
         url = urljoin(base_url.rstrip("/") + "/", path.lstrip("/"))
         resp: requests.Response | None = None
+        elapsed_ms: int | None = None
         last_error: Exception | None = None
         for attempt in range(2):
             try:
                 bounded_timeout = _bounded_timeout(timeout, deadline)
+                start = time.monotonic()
                 resp = session.get(url, timeout=bounded_timeout, stream=True)
+                elapsed_ms = int((time.monotonic() - start) * 1000)
                 break
             except TimeoutError as exc:
                 last_error = exc
@@ -416,7 +419,7 @@ def _probe_paths(
         yield ProbeResult(
             path=path,
             status_code=resp.status_code,
-            elapsed_ms=int(resp.elapsed.total_seconds() * 1000),
+            elapsed_ms=elapsed_ms,
             content_type=resp.headers.get("content-type", ""),
             snippet=_snippet(_read_snippet_text(resp)),
         )
@@ -460,16 +463,13 @@ def _bounded_timeout(timeout: float, deadline: float | None) -> float:
 
 def _read_snippet_text(resp: requests.Response, *, limit_bytes: int = 4096) -> str:
     try:
-        chunks: list[bytes] = []
-        total = 0
-        for chunk in resp.iter_content(chunk_size=min(1024, limit_bytes)):
-            if not chunk:
-                break
-            chunks.append(chunk)
-            total += len(chunk)
-            if total >= limit_bytes:
-                break
-        data = b"".join(chunks)
+        # Read only the first chunk so a slow response can't block the steward
+        # run. The status code + headers are the primary signal here.
+        data = b""
+        for chunk in resp.iter_content(chunk_size=min(2048, limit_bytes)):
+            if chunk:
+                data = chunk[:limit_bytes]
+            break
     except requests.RequestException:
         return ""
 
