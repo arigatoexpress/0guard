@@ -1,127 +1,58 @@
 # 0guard — Agent Guide
 
-## Project Overview
+## What this repo does
 
-0guard is a **0G-native agent guard** with signature & behavioral detection for crypto hacks. It monitors blockchain transactions, social media (X/Twitter, Telegram), and on-chain activity to detect and alert on potential security threats.
+0guard is a **0G-native agent guard** that evaluates blockchain intents, calldata, and reputation context before any wallet or signer acts. It returns `allow`, `review`, or `deny` verdicts and produces deterministic receipts that can be anchored on 0G mainnet.
 
-**Key capabilities:**
-- Signature-based detection of known exploit patterns
-- Behavioral anomaly detection for suspicious transactions
-- Social media monitoring for hack announcements and scam alerts
-- Policy engine for customizable security rules
-- Content generation for security awareness posts
-
-## Architecture
+## Key directories and files
 
 ```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│  Blockchain     │────▶│  0guard Engine   │────▶│  Alert Channels │
-│  (0G, EVM)      │     │  (detection)     │     │  (Telegram, X)  │
-└─────────────────┘     └──────────────────┘     └─────────────────┘
-         │                       │
-         ▼                       ▼
-┌─────────────────┐     ┌──────────────────┐
-│  Signature DB   │     │  Policy Engine   │
-│  (known hacks)  │     │  (custom rules)  │
-└─────────────────┘     └──────────────────┘
+0guard/
+├── src/guard0/               # Application code
+│   ├── app.py                # Flask web server and API routes
+│   ├── cli.py                # Command-line interface
+│   ├── policy.py             # Policy engine and security rules
+│   ├── signatures.py         # Exploit signature detection
+│   ├── reputation.py         # Reputation scoring and connectors
+│   ├── storage.py            # Data persistence layer
+│   └── telegram_routes.py    # Telegram/Mira preview routes (no sends)
+├── contracts/                # Solidity receipt-anchor contracts
+├── foundry/                  # Foundry build artifacts and config
+├── data/                     # Incident datasets and provenance caches
+├── docs/                     # Proof files, runbooks, legal policy
+├── scripts/                  # Utility and ops scripts
+└── tests/                    # pytest suite
 ```
 
-**Core modules:**
-- `crypto_hack_guard.py` — Signature & behavioral detection engine
-- `policy.py` — Configurable security policies and rules
-- `app.py` — Flask web server with health checks and API
-- `x_bot.py` — X/Twitter bot for monitoring and posting
-- `telegram_bot.py` — Telegram bot for alerts and commands
-- `content_engine.py` — Security content generation
-- `storage.py` — Data persistence layer
-- `cli.py` — Command-line interface
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|------------|
-| Language | Python 3.10+ |
-| Runtime | Flask 3.0+ |
-| Blockchain | web3 7.0+, eth-utils 5.0+ |
-| Social | tweepy 4.14+ |
-| Testing | pytest 8.0+, pytest-cov 5.0+ |
-| Linting | ruff 0.6+ |
-| Containerization | Docker |
-
-## Development Commands
+## How to run tests / dev server
 
 ```bash
-# Install dependencies
-pip install -e ".[dev]"
+# Install
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install -e '.[dev]'
 
-# Run tests
+# Tests
 pytest -q
-
-# Run tests with coverage
-pytest -q --cov=src/guard0 --cov-report=html
-
-# Run linting
+python3 -m compileall src scripts
 ruff check src tests scripts
 
-# Run the Flask app
-python -m guard0.app
-
-# Run the CLI
-0guard --help
-
-# Build Docker image
-docker build -t 0guard .
-
-# Run Docker container
-docker run -p 8109:8109 0guard
+# Dev server
+python3 -m guard0.app
+# open http://127.0.0.1:8109
 ```
 
-## CI/CD
-
-GitHub Actions workflows:
-- **test** — Lint (ruff), test with coverage (pytest-cov, 60% gate), compile check, demo smoke test
-- **docker** — Docker build + health check (main branch only)
-
-## Safety Boundaries (MUST NOT CHANGE)
+## Safety boundaries (DO NOT CHANGE)
 
 1. **No private key exposure** — Never log, store, or transmit private keys or mnemonics.
-2. **No unauthorized transactions** — The detection engine must never sign or broadcast transactions.
-3. **No social media spam** — Bots must respect rate limits and never post without policy approval.
+2. **No unauthorized transactions** — The engine must never sign or broadcast transactions.
+3. **No social media spam** — Telegram/X routes are read-only previews; no outbound sends without explicit live-confirm flags.
 4. **Testnet-first** — Blockchain interactions default to testnet unless explicitly configured for mainnet.
+5. **No raw upstream resale** — Source-linked defensive outputs only; never mirror or resell raw OSINT payloads.
 
-## Agent Conventions
+## Current status
 
-- Use **type hints** where practical.
-- Run **ruff** before committing (`ruff check src tests scripts`).
-- Write **tests** for new detection signatures and policies.
-- Use **conventional commits**: `feat:`, `fix:`, `docs:`, `test:`, `chore:`.
-- Update `AGENTS.md` if you change the architecture or safety boundaries.
-
-## Deployment
-
-### Docker
-```bash
-docker build -t 0guard .
-docker run -d -p 8109:8109 --env-file .env 0guard
-```
-
-### Render (planned)
-Connect repo to Render Dashboard and use Docker deployment.
-
-## Environment Variables
-
-| Variable | Purpose | Required |
-|----------|---------|----------|
-| `PORT` | Flask server port | No (default 8109) |
-| `X_API_KEY` / `X_API_SECRET` | X/Twitter API credentials | For X bot |
-| `X_ACCESS_TOKEN` / `X_ACCESS_SECRET` | X/Twitter user credentials | For X bot |
-| `TELEGRAM_BOT_TOKEN` | Telegram Bot API token | For Telegram bot |
-| `TELEGRAM_CHAT_ID` | Default Telegram chat for alerts | For Telegram bot |
-| `WEB3_PROVIDER_URI` | Blockchain RPC endpoint | For on-chain detection |
-
-## Contributing
-
-1. Create a feature branch: `git checkout -b feat/description`
-2. Make changes with tests
-3. Run the full check suite: `pytest -q && ruff check src tests scripts`
-4. Open a PR against `main`
+- Proof-first build with one live 0G mainnet deny receipt anchored.
+- 28 of 28 incident-derived seeds covered by the detector engine.
+- Wallet-provider guard and Telegram Mini App are live previews with sends disabled.
+- CI gates lint, tests, compile check, and demo smoke test.

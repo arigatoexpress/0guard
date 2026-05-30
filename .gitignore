@@ -22,3 +22,6 @@ output/
 output/playwright/
 contracts/out/
 foundry/out/
+
+# Python bytecode
+*.py[cod]
