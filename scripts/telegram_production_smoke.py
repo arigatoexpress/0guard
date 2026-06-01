@@ -9,18 +9,18 @@ Manager through the local `gcloud` CLI.
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager
 import hashlib
 import hmac
 import json
 import os
+import signal
 import subprocess
 import sys
 import time
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlencode
-
-import requests
 
 DEFAULT_BASE_URL = "https://guard0-miniapp-s77j6bxyra-uc.a.run.app"
 FALLBACK_BASE_URLS: tuple[str, ...] = (
@@ -60,6 +60,27 @@ class Check:
     name: str
     ok: bool
     detail: str
+
+
+@contextmanager
+def _request_alarm(seconds: float) -> Any:
+    if seconds <= 0:
+        raise TimeoutError("time budget exhausted")
+    if not hasattr(signal, "setitimer") or not hasattr(signal, "SIGALRM"):
+        yield
+        return
+
+    def _handler(_signum: int, _frame: Any) -> None:
+        raise TimeoutError("request time budget exceeded")
+
+    previous_handler = signal.getsignal(signal.SIGALRM)
+    try:
+        signal.signal(signal.SIGALRM, _handler)
+        signal.setitimer(signal.ITIMER_REAL, float(seconds))
+        yield
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0.0)
+        signal.signal(signal.SIGALRM, previous_handler)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -118,7 +139,7 @@ def main(argv: list[str] | None = None) -> int:
     candidates = _base_url_candidates(requested_base_url)
     try:
         base_url = _select_base_url(requested_base_url, timeout=http_timeout, deadline=deadline)
-    except (requests.RequestException, TimeoutError) as exc:
+    except (TimeoutError, OSError, subprocess.CalledProcessError, ValueError, RuntimeError) as exc:
         payload: dict[str, Any] = {
             "baseUrl": requested_base_url,
             "baseUrlSelection": {"ok": False, "tried": candidates, "error": str(exc)},
@@ -319,7 +340,7 @@ def _select_base_url(requested: str, *, timeout: float, deadline: float | None =
             _load_health(candidate, timeout=timeout, deadline=deadline)
             if not _has_required_api_surface(candidate, timeout=timeout, deadline=deadline):
                 continue
-        except (requests.RequestException, TimeoutError) as exc:
+        except (TimeoutError, OSError, subprocess.CalledProcessError, ValueError, RuntimeError) as exc:
             last_error = exc
             continue
         return candidate
@@ -341,13 +362,10 @@ def _base_url_candidates(requested: str) -> list[str]:
 def _has_required_api_surface(base_url: str, *, timeout: float, deadline: float | None = None) -> bool:
     for path in REQUIRED_API_SURFACE:
         try:
-            response = requests.get(
-                f"{base_url}{path}",
-                timeout=_bounded_timeout(timeout, deadline),
-            )
-        except (requests.RequestException, TimeoutError):
+            status = _curl_status(f"{base_url}{path}", timeout=_bounded_timeout(timeout, deadline))
+        except (TimeoutError, OSError, subprocess.CalledProcessError, ValueError):
             return False
-        if response.status_code == 404:
+        if status == 404:
             return False
     return True
 
@@ -377,9 +395,7 @@ def _load_secret(env_name: str, secret_name: str, project: str) -> str:
 
 
 def _get_json(url: str, *, timeout: float, deadline: float | None = None) -> dict[str, Any]:
-    response = requests.get(url, timeout=_bounded_timeout(timeout, deadline))
-    response.raise_for_status()
-    return response.json()
+    return _curl_json("GET", url, timeout=_bounded_timeout(timeout, deadline))
 
 
 def _post_json(
@@ -390,14 +406,13 @@ def _post_json(
     timeout: float,
     deadline: float | None = None,
 ) -> dict[str, Any]:
-    response = requests.post(
+    return _curl_json(
+        "POST",
         url,
-        json=payload,
-        headers=headers or {},
         timeout=_bounded_timeout(timeout, deadline),
+        payload=payload,
+        headers=headers or {},
     )
-    response.raise_for_status()
-    return response.json()
 
 
 def _route_probes(base_url: str, *, timeout: float, deadline: float | None = None) -> list[dict[str, Any]]:
@@ -416,21 +431,142 @@ def _route_probes(base_url: str, *, timeout: float, deadline: float | None = Non
         url = f"{base_url}{path}"
         try:
             start = time.monotonic()
-            resp = requests.get(url, timeout=_bounded_timeout(timeout, deadline))
+            bounded = _bounded_timeout(timeout, deadline)
+            with _request_alarm(bounded + 1.0):
+                status = _curl_status(url, timeout=bounded)
             elapsed_ms = int((time.monotonic() - start) * 1000)
-            results.append({"name": name, "path": path, "status": resp.status_code, "elapsedMs": elapsed_ms})
-        except (requests.RequestException, TimeoutError) as exc:
+            results.append({"name": name, "path": path, "status": status, "elapsedMs": elapsed_ms})
+        except (TimeoutError, OSError, subprocess.CalledProcessError, ValueError, RuntimeError) as exc:
             results.append({"name": name, "path": path, "status": None, "error": str(exc)})
     return results
 
 
 def _load_health(base_url: str, *, timeout: float, deadline: float | None = None) -> tuple[str, dict[str, Any]]:
+    bounded = _bounded_timeout(timeout, deadline)
+    healthz_url = f"{base_url}/api/healthz"
+    status, data = _curl_json_with_status("GET", healthz_url, timeout=bounded)
+    if status == 200:
+        return "/api/healthz", data
+    if status != 404:
+        raise RuntimeError(f"HTTP {status} for {healthz_url}")
+
+    health_url = f"{base_url}/api/health"
+    status, data = _curl_json_with_status("GET", health_url, timeout=bounded)
+    if status != 200:
+        raise RuntimeError(f"HTTP {status} for {health_url}")
+    return "/api/health", data
+
+
+def _curl_json_with_status(method: str, url: str, *, timeout: float) -> tuple[int, dict[str, Any]]:
+    cmd: list[str] = [
+        "curl",
+        "-sS",
+        "--connect-timeout",
+        "5",
+        "--max-time",
+        f"{max(0.5, float(timeout)):.3f}",
+        "-H",
+        "Accept: application/json",
+        "-H",
+        "User-Agent: 0guard-telegram-smoke/1.0",
+        "-w",
+        "\n%{http_code}",
+    ]
+    if method.upper() != "GET":
+        raise ValueError(f"unsupported method: {method}")
+    cmd.append(url)
     try:
-        return "/api/healthz", _get_json(f"{base_url}/api/healthz", timeout=timeout, deadline=deadline)
-    except requests.HTTPError as exc:
-        if exc.response is None or exc.response.status_code != 404:
-            raise
-    return "/api/health", _get_json(f"{base_url}/api/health", timeout=timeout, deadline=deadline)
+        result = subprocess.run(
+            cmd,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=float(timeout) + 1.0,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise TimeoutError(f"curl timeout after {timeout:.1f}s") from exc
+    if not result.stdout:
+        raise RuntimeError("empty curl response")
+    body, status_text = result.stdout.rsplit("\n", 1)
+    status = int((status_text or "0").strip() or "0")
+    if not body.strip():
+        return status, {}
+    return status, json.loads(body)
+
+
+def _curl_json(
+    method: str,
+    url: str,
+    *,
+    timeout: float,
+    payload: dict[str, Any] | None = None,
+    headers: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    cmd: list[str] = [
+        "curl",
+        "-sS",
+        "--fail-with-body",
+        "--connect-timeout",
+        "5",
+        "--max-time",
+        f"{max(0.5, float(timeout)):.3f}",
+        "-H",
+        "Accept: application/json",
+        "-H",
+        "User-Agent: 0guard-telegram-smoke/1.0",
+    ]
+    for key, value in (headers or {}).items():
+        cmd.extend(["-H", f"{key}: {value}"])
+
+    if method.upper() == "POST":
+        cmd.extend(["-X", "POST", "-H", "Content-Type: application/json"])
+        cmd.extend(["--data-binary", json.dumps(payload or {}, separators=(",", ":"))])
+    elif method.upper() != "GET":
+        raise ValueError(f"unsupported method: {method}")
+
+    cmd.append(url)
+    try:
+        result = subprocess.run(
+            cmd,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=float(timeout) + 1.0,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise TimeoutError(f"curl timeout after {timeout:.1f}s") from exc
+    if not result.stdout.strip():
+        return {}
+    return json.loads(result.stdout)
+
+
+def _curl_status(url: str, *, timeout: float) -> int:
+    cmd = [
+        "curl",
+        "-sS",
+        "--connect-timeout",
+        "5",
+        "--max-time",
+        f"{max(0.5, float(timeout)):.3f}",
+        "-o",
+        "/dev/null",
+        "-w",
+        "%{http_code}",
+        "-H",
+        "User-Agent: 0guard-telegram-smoke/1.0",
+        url,
+    ]
+    try:
+        result = subprocess.run(
+            cmd,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=float(timeout) + 1.0,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise TimeoutError(f"curl timeout after {timeout:.1f}s") from exc
+    return int((result.stdout or "0").strip() or "0")
 
 
 def _bounded_timeout(timeout: float, deadline: float | None) -> float:
