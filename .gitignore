@@ -4,6 +4,8 @@ dist/
 build/
 .venv/
 .env
+.env.*
+!.env.example
 *.pyc
 .pytest_cache/
 .ruff_cache/

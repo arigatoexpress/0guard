@@ -8,13 +8,16 @@ on:
         required: false
         default: "dry-run"
 
+permissions:
+  contents: read
+
 jobs:
   post:
     runs-on: ubuntu-latest
     if: github.repository == 'arigatoexpress/0guard'
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
         with:
           python-version: '3.12'
       - name: Install deps
