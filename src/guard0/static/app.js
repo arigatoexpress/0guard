@@ -599,11 +599,6 @@ async function loadVirtualsFacilitator(){
   const j = await r.json();
   writeJson('cross-chain-output', j);
 }
-async function loadIkaIntegration(){
-  const r = await fetch('/api/integrations/ika');
-  const j = await r.json();
-  writeJson('cross-chain-output', j);
-}
 async function runReputationProbe(){
   const payload = {
     url: 'https://docs.0g.ai.evil.example/claim',
@@ -869,7 +864,6 @@ document.getElementById('load-metamask-integration').addEventListener('click', l
 document.getElementById('load-metamask-1shot-plan').addEventListener('click', loadMetamask1ShotPlan);
 document.getElementById('run-metamask-1shot-preview').addEventListener('click', runMetamask1ShotPreview);
 document.getElementById('load-virtuals-facilitator').addEventListener('click', loadVirtualsFacilitator);
-document.getElementById('load-ika-integration').addEventListener('click', loadIkaIntegration);
 document.getElementById('run-reputation-probe').addEventListener('click', runReputationProbe);
 document.getElementById('load-reputation-adapters').addEventListener('click', loadReputationAdapters);
 document.getElementById('load-reputation-shadow-cache').addEventListener('click', loadReputationShadowCache);

@@ -74,8 +74,6 @@ CHECKLIST_PATHS: tuple[str, ...] = (
     "/api/native-preflight",
     "/api/integrations/external-guardrails",
     "/api/integrations/external-guardrails/evaluate",
-    "/api/integrations/ika",
-    "/api/integrations/ika/evaluate",
     "/api/0g/proof-ladder",
     "/api/0g/receipt",
     "/api/telegram/status",

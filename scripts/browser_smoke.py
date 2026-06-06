@@ -307,12 +307,6 @@ def exercise_workbench(page: Page) -> None:
         "0guard.virtuals_facilitator_manifest.v1"
     )
     expect(page.locator("#cross-chain-output")).to_contain_text("0guard Facilitator")
-    page.locator("#load-ika-integration").click()
-    expect(page.locator("#cross-chain-output")).to_contain_text(
-        "0guard.ika_integration_manifest.v1"
-    )
-    expect(page.locator("#cross-chain-output")).to_contain_text("Ikavery")
-    expect(page.locator("#cross-chain-output")).to_contain_text('"transactionSigningEnabled": false')
     page.locator("#run-reputation-probe").click()
     expect(page.locator("#cross-chain-output")).to_contain_text("0guard.reputation_probe.v1")
     expect(page.locator("#cross-chain-output")).to_contain_text('"decision": "deny"')

@@ -74,7 +74,6 @@ from guard0.hackathon_integrations import (
 )
 from guard0.incident_data import detection_coverage, filter_incidents, incident_summary
 from guard0.historical_feature_store import build_historical_feature_store
-from guard0.ika import evaluate_ika_signing_request, ika_integration_manifest
 from guard0.intelligence_events import intelligence_events_snapshot
 from guard0.live_detector_candidates import live_detector_candidates
 from guard0.local_inference import (
@@ -250,7 +249,6 @@ FRONTEND_REQUIRED_SELECTORS = (
     "#load-metamask-1shot-plan",
     "#run-metamask-1shot-preview",
     "#load-virtuals-facilitator",
-    "#load-ika-integration",
     "#run-reputation-probe",
     "#load-reputation-adapters",
     "#load-reputation-shadow-cache",
@@ -1001,8 +999,6 @@ def api_frontend_contract():
                 "/api/hackathons/metamask-1shot",
                 "/api/hackathons/metamask-1shot/permission-preview",
                 "/api/integrations/virtuals-facilitator",
-                "/api/integrations/ika",
-                "/api/integrations/ika/evaluate",
                 "/api/reputation/probe",
                 "/api/reputation/connectors",
                 "/api/reputation/connectors/live",
@@ -1083,7 +1079,6 @@ def api_frontend_contract():
                 "load-arbitrum-integration",
                 "load-metamask-integration",
                 "load-virtuals-facilitator",
-                "load-ika-integration",
                 "run-reputation-probe",
                 "load-reputation-backfill-status",
                 "load-reputation-adapters",
@@ -1529,20 +1524,6 @@ def api_metamask_1shot_permission_preview():
 @app.route("/api/integrations/virtuals-facilitator", methods=["GET"])
 def api_virtuals_facilitator():
     return jsonify(virtuals_facilitator_manifest())
-
-
-@app.route("/api/integrations/ika", methods=["GET"])
-def api_ika_integration():
-    return jsonify(ika_integration_manifest())
-
-
-@app.route("/api/integrations/ika/evaluate", methods=["POST"])
-def api_ika_integration_evaluate():
-    body = request.get_json(silent=True) or {}
-    try:
-        return jsonify(evaluate_ika_signing_request(body))
-    except (TypeError, ValueError) as exc:
-        return jsonify({"error": str(exc)}), 400
 
 
 @app.route("/api/reputation/probe", methods=["GET", "POST"])
