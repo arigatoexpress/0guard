@@ -22,7 +22,6 @@ def developer_kit_manifest() -> dict[str, Any]:
                 "AI agent frameworks",
                 "Telegram Mini Apps",
                 "x402 facilitators",
-                "dWallet/MPC operators",
                 "EVM L2 applications",
             ],
             "whyNow": (
@@ -125,11 +124,6 @@ def developer_kit_manifest() -> dict[str, Any]:
                 "purpose": "MetaMask Connect, Snap insights, and delegated-permission guardrail plan.",
             },
             {
-                "method": "GET",
-                "path": "/api/integrations/ika",
-                "purpose": "Ika, Ikavery, MPCKit, and OdWS read-only integration manifest.",
-            },
-            {
                 "method": "POST",
                 "path": "/api/reputation/probe",
                 "purpose": "Rights-aware domain, address, label, and source-evidence reputation probe.",
@@ -158,11 +152,6 @@ def developer_kit_manifest() -> dict[str, Any]:
                 "method": "GET/POST",
                 "path": "/api/0g/proof-ladder",
                 "purpose": "Build a Chain, Storage, DA, Compute, and Alignment proof packet without live uploads, inference, signing, or broadcasts.",
-            },
-            {
-                "method": "POST",
-                "path": "/api/integrations/ika/evaluate",
-                "purpose": "dWallet/MPC signing preflight before Ika-adjacent projects sign.",
             },
             {
                 "method": "POST",
@@ -236,21 +225,6 @@ def _adapter_recipes() -> list[dict[str, Any]]:
             "denyBehavior": "do not request a wallet signature",
         },
         {
-            "id": "ika_mpckit_odws",
-            "ecosystem": "Ika, Ikavery, MPCKit, and OdWS",
-            "stage": "pre_dwallet_signature",
-            "call": "/api/native-preflight",
-            "inputMapping": {
-                "surface": "ika_dwallets",
-                "sourceProject": "ikavery, mpckit, odws, or encrypt",
-                "operation": "sign, sweep, transfer, rotate, or preview",
-                "liveSigning": "true only when an external signer would be asked next",
-            },
-            "allowBehavior": "continue only for preview/simulation-safe operations",
-            "reviewBehavior": "show why the dWallet action needs human inspection",
-            "denyBehavior": "block sweeps, live transfers, key import, and blind signature flows",
-        },
-        {
             "id": "x402_prepared_payment",
             "ecosystem": "x402 and paid API products",
             "stage": "before payment settlement",
@@ -306,15 +280,6 @@ def _example_payloads() -> dict[str, dict[str, Any]]:
             "chain": "eip155:8453",
             "intent": {"mode": "preview"},
             "expectedDecision": "allow",
-        },
-        "blockIkaSweep": {
-            "surface": "ika_dwallets",
-            "sourceProject": "ikavery",
-            "operation": "sweep",
-            "chain": "solana:devnet",
-            "liveSigning": True,
-            "intentText": "Autonomous agent proposes a recovery sweep through a dWallet signer.",
-            "expectedDecision": "deny",
         },
         "reviewX402Payment": {
             "surface": "x402",

@@ -32,13 +32,11 @@ def test_developer_kit_manifest_is_actionable_and_non_mutating():
     assert any(route["path"] == "/api/0g/proof-ladder" for route in manifest["routes"])
     assert {recipe["id"] for recipe in manifest["adapterRecipes"]} >= {
         "agentkit_turnkey_safe_evm",
-        "ika_mpckit_odws",
         "x402_prepared_payment",
         "telegram_ton_miniapp",
         "arbitrum_l2_ci_gate",
     }
     assert manifest["examplePayloads"]["readOnlyEvmStatus"]["expectedDecision"] == "allow"
-    assert manifest["examplePayloads"]["blockIkaSweep"]["expectedDecision"] == "deny"
     assert manifest["examplePayloads"]["blockProviderApproval"]["expectedDecision"] == "deny"
     assert manifest["safety"]["transactionSigningEnabled"] is False
     assert manifest["safety"]["paymentSettlementEnabled"] is False

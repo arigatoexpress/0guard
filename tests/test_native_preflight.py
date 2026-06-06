@@ -3,30 +3,6 @@
 from guard0.native_preflight import build_native_preflight, hackathon_strategy
 
 
-def test_native_preflight_denies_live_ika_sweep_before_signer():
-    result = build_native_preflight(
-        {
-            "surface": "ika_dwallets",
-            "sourceProject": "ikavery",
-            "operation": "sweep",
-            "chain": "solana:devnet",
-            "liveSigning": True,
-            "intentText": "Autonomous agent proposes a recovery sweep through a dWallet signer.",
-        }
-    )
-
-    assert result["schema"] == "0guard.native_preflight.v1"
-    assert result["decision"] == "deny"
-    assert result["receipt"]["zeroGStorageReady"] is True
-    assert result["receipt"]["liveUploadPerformed"] is False
-    assert result["safety"]["transactionSigningEnabled"] is False
-    assert {component["id"] for component in result["components"]} >= {
-        "core_policy",
-        "ika_preflight",
-        "external_guardrail",
-    }
-
-
 def test_native_preflight_reviews_ton_without_address_and_allows_read_only_evm():
     ton = build_native_preflight(
         {

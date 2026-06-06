@@ -202,8 +202,6 @@ def test_frontend_contract_is_browser_smoke_ready_and_non_mutating(client):
     assert "/api/integrations/cross-chain" in data["apiRoutes"]
     assert "/api/integrations/cross-chain/readiness" in data["apiRoutes"]
     assert "/api/integrations/virtuals-facilitator" in data["apiRoutes"]
-    assert "/api/integrations/ika" in data["apiRoutes"]
-    assert "/api/integrations/ika/evaluate" in data["apiRoutes"]
     assert "/api/reputation/probe" in data["apiRoutes"]
     assert "/api/reputation/connectors" in data["apiRoutes"]
     assert "/api/reputation/connectors/live" in data["apiRoutes"]
@@ -268,7 +266,6 @@ def test_frontend_contract_is_browser_smoke_ready_and_non_mutating(client):
     assert "#load-cross-chain-catalog" in data["requiredSelectors"]
     assert "#load-cross-chain-readiness" in data["requiredSelectors"]
     assert "#load-virtuals-facilitator" in data["requiredSelectors"]
-    assert "#load-ika-integration" in data["requiredSelectors"]
     assert "#run-reputation-probe" in data["requiredSelectors"]
     assert "#load-reputation-backfill-status" in data["requiredSelectors"]
     assert "#load-reputation-adapters" in data["requiredSelectors"]
@@ -853,28 +850,6 @@ def test_cross_chain_integration_routes_are_read_only(client):
     assert manifest_body["agent"]["launchStatus"] == "prepared_operator_required"
     assert manifest_body["safety"]["externalAgentLaunchEnabled"] is False
 
-    ika = client.get("/api/integrations/ika")
-    assert ika.status_code == 200
-    ika_body = ika.get_json()
-    assert ika_body["schema"] == "0guard.ika_integration_manifest.v1"
-    assert ika_body["safety"]["privateKeyImportEnabled"] is False
-
-    ika_preflight = client.post(
-        "/api/integrations/ika/evaluate",
-        json={
-            "sourceProject": "ikavery",
-            "operation": "sweep",
-            "chain": "solana:devnet",
-            "liveSigning": True,
-        },
-    )
-    assert ika_preflight.status_code == 200
-    ika_preflight_body = ika_preflight.get_json()
-    assert ika_preflight_body["schema"] == "0guard.ika_signing_preflight.v1"
-    assert ika_preflight_body["decision"] == "deny"
-    assert ika_preflight_body["transactionSigningEnabled"] is False
-    assert ika_preflight_body["safety"]["transactionSigningEnabled"] is False
-
     reputation = client.post(
         "/api/reputation/probe",
         json={
@@ -1036,8 +1011,7 @@ def test_cross_chain_integration_routes_are_read_only(client):
     native_preflight = client.post(
         "/api/native-preflight",
         json={
-            "surface": "ika_dwallets",
-            "sourceProject": "ikavery",
+            "surface": "evm",
             "operation": "sweep",
             "chain": "solana:devnet",
             "liveSigning": True,
@@ -1105,7 +1079,6 @@ def test_cross_chain_integration_routes_are_read_only(client):
     assert "/api/readyz" in {route["path"] for route in developer_kit_body["routes"]}
     assert {recipe["id"] for recipe in developer_kit_body["adapterRecipes"]} >= {
         "agentkit_turnkey_safe_evm",
-        "ika_mpckit_odws",
     }
     assert "/api/reputation/connectors" in {
         route["path"] for route in developer_kit_body["routes"]

@@ -53,7 +53,6 @@ deployment gates, and x402-style paid APIs.
 | Developer kit | `/api/developer-kit` | Live |
 | Telegram Mini App | `/telegram` | Live preview, no sends |
 | TON risk passport | `/api/ton/wallet-risk-preview` | Live preview, no wallet prompts |
-| Ika/Ikavery preflight | `/api/integrations/ika/evaluate` | Live preview, no signing |
 | External guardrails | `/api/integrations/external-guardrails/evaluate` | Live read-only |
 | Submission proof | `docs/hackathon-0g/` | Public Pages artifact |
 

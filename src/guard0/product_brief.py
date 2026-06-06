@@ -69,7 +69,7 @@ def product_brief() -> dict[str, Any]:
             "Raspberry Pis can become cheap edge sentinels for node health, alert dedupe, and proof-cache work while the Windows host does heavy 0G runtime work.",
             "Real source-linked incident data and detector coverage instead of mock security claims.",
             "A live Telegram Mini App surface that remains preview-only and no-send.",
-            "Portable developer-kit routes that other wallets, agents, Mini Apps, CI jobs, and dWallet flows can call.",
+            "Portable developer-kit routes that other wallets, agents, Mini Apps, and CI jobs can call.",
             "Rights-aware OSINT posture: external feeds become derived signals, not raw data resale.",
         ],
         "honestLimits": [
@@ -232,7 +232,7 @@ def _built_systems(summary: dict[str, Any], coverage: dict[str, Any]) -> list[di
             "id": "developer_kit",
             "label": "Developer kit",
             "status": "live",
-            "whatItDoes": "Exposes SDK/CI/wallet/Mini App/dWallet recipes for calling 0guard before any signer.",
+            "whatItDoes": "Exposes SDK/CI/wallet/Mini App recipes for calling 0guard before any signer.",
             "proofRoutes": ["/api/developer-kit"],
         },
         {
@@ -243,7 +243,6 @@ def _built_systems(summary: dict[str, Any], coverage: dict[str, Any]) -> list[di
             "proofRoutes": [
                 "/api/integrations/cross-chain",
                 "/api/integrations/external-guardrails",
-                "/api/integrations/ika",
             ],
         },
     ]

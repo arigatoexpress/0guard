@@ -1,10 +1,10 @@
 """Unified native preflight for 0guard integration surfaces.
 
 This module is the product seam between 0G receipts, policy evaluation, TON
-risk passports, Ika/dWallet signing preflights, and external guardrails. It is
-not an execution adapter: it never signs, broadcasts, bridges, pays, sends, or
-uploads. It prepares one deterministic verdict that other hackathon demos and
-agent frameworks can call before they touch a signer.
+risk passports, and external guardrails. It is not an execution adapter: it
+never signs, broadcasts, bridges, pays, sends, or uploads. It prepares one
+deterministic verdict that other hackathon demos and agent frameworks can call
+before they touch a signer.
 """
 
 from __future__ import annotations
@@ -15,7 +15,6 @@ from datetime import datetime, timezone
 from typing import Any
 
 from guard0.external_guardrails import evaluate_external_guardrail
-from guard0.ika import evaluate_ika_signing_request
 from guard0.policy import evaluate_intent
 from guard0.reputation import build_reputation_probe
 from guard0.ton import build_ton_wallet_risk_preview
@@ -23,16 +22,6 @@ from guard0.ton import build_ton_wallet_risk_preview
 NATIVE_PREFLIGHT_SCHEMA = "0guard.native_preflight.v1"
 HACKATHON_STRATEGY_SCHEMA = "0guard.hackathon_strategy.v1"
 
-_IKA_SURFACES = {
-    "ika",
-    "ika_dwallets",
-    "ikavery",
-    "mpckit",
-    "odws",
-    "clear_msig_ika",
-    "encrypt",
-    "encrypt_pre_alpha",
-}
 _EXTERNAL_SURFACES = {
     "x402",
     "x402_payment",
@@ -61,7 +50,6 @@ _EXTERNAL_SURFACES = {
     "wormhole_ntt",
     "celestia",
     "celestia_blobstream",
-    *_IKA_SURFACES,
 }
 
 
@@ -110,23 +98,6 @@ def build_native_preflight(payload: dict[str, Any] | None = None) -> dict[str, A
     }
     core_policy = evaluate_intent(policy_intent).to_dict()
     components: list[dict[str, Any]] = [_component("core_policy", core_policy["decision"], core_policy)]
-
-    if _should_run_ika(surface=surface, source_project=source_project, operation=operation):
-        ika_result = evaluate_ika_signing_request(
-            {
-                "chain": chain,
-                "operation": operation,
-                "sourceProject": source_project,
-                "environment": policy_intent["mode"],
-                "messageHex": message_hex,
-                "target": target,
-                "valueEth": value_eth,
-                "intentText": policy_intent["prompt_text"],
-                "liveSigning": live_signing or live_transaction,
-                "sensitiveData": _truthy(body.get("sensitiveData") or body.get("sensitive_data")),
-            }
-        )
-        components.append(_component("ika_preflight", ika_result["decision"], ika_result))
 
     external_target = _external_target(body=body, surface=surface)
     if external_target:
@@ -244,7 +215,7 @@ def hackathon_strategy() -> dict[str, Any]:
             },
             "importance": "highest",
             "whyNow": "This is the active submitted project; all follow-on work should strengthen the 0G proof and product story.",
-            "0guardBuild": "Keep mainnet receipt proof, 28/28 provenance, no-send Telegram, Ika preflight, and native preflight green.",
+            "0guardBuild": "Keep mainnet receipt proof, 28/28 provenance, no-send Telegram, and native preflight green.",
             "sources": ["https://www.hackquest.io/hackathons/0G-APAC-Hackathon"],
         },
         {
@@ -355,7 +326,7 @@ def hackathon_strategy() -> dict[str, Any]:
         "opportunities": opportunities,
         "nextEngineeringSequence": [
             "Keep the 0G APAC submission and public proof surfaces green through review.",
-            "Build SDK examples around /api/native-preflight for Arbitrum/EVM and Ika/dWallet use.",
+            "Build SDK examples around /api/native-preflight for Arbitrum/EVM use.",
             "Add a rights-aware reputation adapter before any stronger alerting claims.",
             "Only add live 0G Storage or Compute after operator credentials and rollback notes are reviewed.",
         ],
@@ -386,10 +357,6 @@ def _external_target(*, body: dict[str, Any], surface: str) -> str:
     if surface in _EXTERNAL_SURFACES:
         return surface
     return ""
-
-
-def _should_run_ika(*, surface: str, source_project: str, operation: str) -> bool:
-    return surface in _IKA_SURFACES or source_project in _IKA_SURFACES or "dwallet" in operation
 
 
 def _should_run_reputation(body: dict[str, Any]) -> bool:
