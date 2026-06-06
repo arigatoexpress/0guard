@@ -27,6 +27,10 @@ FALLBACK_BASE_URLS: tuple[str, ...] = (
     "https://candidate-acdc011---guard0-miniapp-s77j6bxyra-uc.a.run.app",
     "https://candidate-6f07f89---guard0-miniapp-s77j6bxyra-uc.a.run.app",
 )
+SAPPHIRE_PROGRESS_URLS: tuple[str, ...] = (
+    "https://sapphirealpha.xyz/api/0guard/progress",
+    "https://www.sapphirealpha.xyz/api/0guard/progress",
+)
 REQUIRED_API_SURFACE: tuple[str, ...] = (
     "/api/hackathons/next",
     "/api/intelligence/events?live=1&limit=1",
@@ -64,7 +68,15 @@ class Check:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="0guard Telegram production smoke")
-    parser.add_argument("--base-url", default=DEFAULT_BASE_URL)
+    parser.add_argument(
+        "--base-url",
+        default=None,
+        help=(
+            "Explicit Cloud Run base URL to probe. If omitted, the script prefers the "
+            "Sapphire apex /api/0guard/progress base_url when available, otherwise "
+            f"falls back to {DEFAULT_BASE_URL}."
+        ),
+    )
     parser.add_argument("--bot-token-env", default="TELEGRAM_BOT_TOKEN")
     parser.add_argument("--gcloud-project", default=DEFAULT_GCLOUD_PROJECT)
     parser.add_argument("--bot-token-secret", default=DEFAULT_BOT_SECRET)
@@ -114,13 +126,17 @@ def main(argv: list[str] | None = None) -> int:
 
     token = "" if args.skip_telegram_api else _load_secret(args.bot_token_env, args.bot_token_secret, args.gcloud_project)
     webhook_secret = "" if args.skip_telegram_api else _load_secret("", args.webhook_secret, args.gcloud_project)
-    requested_base_url = args.base_url.rstrip("/")
+    requested_base_url = (args.base_url or "").rstrip("/")
+    sapphire_active_base_url = _discover_active_base_url_from_sapphire(timeout=http_timeout, deadline=deadline)
+    active_requested_base_url = requested_base_url or sapphire_active_base_url or DEFAULT_BASE_URL
     candidates = _base_url_candidates(requested_base_url)
     try:
-        base_url = _select_base_url(requested_base_url, timeout=http_timeout, deadline=deadline)
+        base_url = _select_base_url(active_requested_base_url, timeout=http_timeout, deadline=deadline)
     except (requests.RequestException, TimeoutError) as exc:
         payload: dict[str, Any] = {
-            "baseUrl": requested_base_url,
+            "baseUrl": active_requested_base_url,
+            "requestedBaseUrl": requested_base_url or None,
+            "sapphireActiveBaseUrl": sapphire_active_base_url,
             "baseUrlSelection": {"ok": False, "tried": candidates, "error": str(exc)},
             "tokenPrinted": False,
             "checks": [],
@@ -135,6 +151,8 @@ def main(argv: list[str] | None = None) -> int:
     checks: list[Check] = []
     payload: dict[str, Any] = {
         "baseUrl": base_url,
+        "requestedBaseUrl": requested_base_url or None,
+        "sapphireActiveBaseUrl": sapphire_active_base_url,
         "baseUrlSelection": {"ok": True, "tried": candidates},
         "tokenPrinted": False,
         "timedOut": False,
@@ -327,6 +345,31 @@ def _select_base_url(requested: str, *, timeout: float, deadline: float | None =
     if last_error is not None:
         raise last_error
     return requested
+
+
+def _discover_active_base_url_from_sapphire(*, timeout: float, deadline: float | None = None) -> str | None:
+    headers = {"User-Agent": "0guard-telegram-smoke/1.0"}
+    for url in SAPPHIRE_PROGRESS_URLS:
+        for attempt in range(2):
+            try:
+                response = requests.get(url, timeout=_bounded_timeout(timeout, deadline), headers=headers)
+            except (requests.RequestException, TimeoutError):
+                if attempt == 0:
+                    time.sleep(0.4)
+                    continue
+                break
+            if response.status_code != 200:
+                break
+            if "application/json" not in response.headers.get("content-type", ""):
+                break
+            try:
+                data = response.json()
+            except ValueError:
+                break
+            value = data.get("base_url") or data.get("baseUrl")
+            if isinstance(value, str) and value.strip():
+                return value.strip().rstrip("/")
+    return None
 
 
 def _base_url_candidates(requested: str) -> list[str]:
