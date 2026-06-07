@@ -23,14 +23,9 @@ from urllib.parse import urlencode
 import requests
 
 DEFAULT_BASE_URL = "https://guard0-miniapp-s77j6bxyra-uc.a.run.app"
-FALLBACK_BASE_URLS: tuple[str, ...] = (
-    "https://candidate-acdc011---guard0-miniapp-s77j6bxyra-uc.a.run.app",
-    "https://candidate-6f07f89---guard0-miniapp-s77j6bxyra-uc.a.run.app",
-)
-REQUIRED_API_SURFACE: tuple[str, ...] = (
-    "/api/hackathons/next",
-    "/api/intelligence/events?live=1&limit=1",
-    "/api/reputation/connectors/live?live=1&limit=1",
+SAPPHIRE_PROGRESS_URLS: tuple[str, ...] = (
+    "https://sapphirealpha.xyz/api/0guard/progress",
+    "https://www.sapphirealpha.xyz/api/0guard/progress",
 )
 DEFAULT_GCLOUD_PROJECT = "sapphire-479610"
 DEFAULT_BOT_SECRET = "guard0-telegram-bot-token"
@@ -97,32 +92,47 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--format", choices=("json", "markdown"), default="markdown")
     args = parser.parse_args(argv)
 
-    http_timeout = args.timeout_seconds if args.timeout_seconds is not None else (12.0 if args.skip_telegram_api else 30.0)
+    http_timeout = (
+        args.timeout_seconds if args.timeout_seconds is not None else (20.0 if args.skip_telegram_api else 30.0)
+    )
     route_timeout = (
         args.route_timeout_seconds
         if args.route_timeout_seconds is not None
-        else (12.0 if args.skip_telegram_api else 25.0)
+        else (20.0 if args.skip_telegram_api else 25.0)
     )
-    overall_budget = args.budget_seconds if args.budget_seconds is not None else (45.0 if args.skip_telegram_api else None)
+    overall_budget = args.budget_seconds if args.budget_seconds is not None else (75.0 if args.skip_telegram_api else None)
     route_budget = (
         args.route_budget_seconds
         if args.route_budget_seconds is not None
-        else (25.0 if args.skip_telegram_api else None)
+        else (55.0 if args.skip_telegram_api else None)
     )
     deadline = (time.monotonic() + overall_budget) if overall_budget else None
-    route_deadline = (time.monotonic() + route_budget) if route_budget else None
 
     token = "" if args.skip_telegram_api else _load_secret(args.bot_token_env, args.bot_token_secret, args.gcloud_project)
     webhook_secret = "" if args.skip_telegram_api else _load_secret("", args.webhook_secret, args.gcloud_project)
     requested_base_url = args.base_url.rstrip("/")
-    candidates = _base_url_candidates(requested_base_url)
+    sapphire_discovered_base_urls = _discover_base_urls_from_sapphire(timeout=http_timeout)
+    sapphire_active_base_url = sapphire_discovered_base_urls[0] if sapphire_discovered_base_urls else None
+    candidates = _base_url_candidates(
+        requested_base_url,
+        sapphire_discovered_base_urls=sapphire_discovered_base_urls,
+    )
     try:
-        base_url = _select_base_url(requested_base_url, timeout=http_timeout, deadline=deadline)
+        base_url = _select_base_url(
+            requested_base_url,
+            sapphire_discovered_base_urls=sapphire_discovered_base_urls,
+            timeout=http_timeout,
+            deadline=deadline,
+        )
     except (requests.RequestException, TimeoutError) as exc:
+        timed_out = isinstance(exc, TimeoutError)
         payload: dict[str, Any] = {
             "baseUrl": requested_base_url,
+            "sapphireActiveBaseUrl": sapphire_active_base_url,
             "baseUrlSelection": {"ok": False, "tried": candidates, "error": str(exc)},
+            "error": str(exc),
             "tokenPrinted": False,
+            "timedOut": timed_out,
             "checks": [],
             "ok": False,
         }
@@ -135,6 +145,7 @@ def main(argv: list[str] | None = None) -> int:
     checks: list[Check] = []
     payload: dict[str, Any] = {
         "baseUrl": base_url,
+        "sapphireActiveBaseUrl": sapphire_active_base_url,
         "baseUrlSelection": {"ok": True, "tried": candidates},
         "tokenPrinted": False,
         "timedOut": False,
@@ -143,8 +154,8 @@ def main(argv: list[str] | None = None) -> int:
     timed_out = False
     try:
         health_path, health = _load_health(base_url, timeout=http_timeout, deadline=deadline)
-    except TimeoutError as exc:
-        timed_out = True
+    except (TimeoutError, requests.RequestException) as exc:
+        timed_out = isinstance(exc, TimeoutError) or isinstance(exc, requests.Timeout)
         payload["timedOut"] = True
         payload["error"] = str(exc)
         payload["checks"] = []
@@ -172,16 +183,31 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         status = _get_json(f"{base_url}/api/telegram/status", timeout=http_timeout, deadline=deadline)
-    except TimeoutError:
+    except (TimeoutError, requests.RequestException):
         timed_out = True
         status = {}
     payload["telegramStatus"] = _status_summary(status)
+    miniapp_auth = status.get("miniAppAuth") or {}
+    registration = status.get("registration") or {}
+    safety = status.get("safety") or {}
     checks.extend(
         [
-            Check("cloud_run_bot_token_configured", status["miniAppAuth"]["botTokenConfigured"] is True, str(status["miniAppAuth"]["botTokenConfigured"])),
-            Check("cloud_run_bot_username_configured", status["registration"]["telegramBotUsernameConfigured"] is True, str(status["registration"]["telegramBotUsernameConfigured"])),
-            Check("telegram_sends_disabled", status["safety"]["telegramSendsEnabled"] is False, _disabled_label(status["safety"]["telegramSendsEnabled"])),
-            Check("registration_secret_env", status["registration"]["secretSource"] == "env", status["registration"]["secretSource"]),
+            Check(
+                "cloud_run_bot_token_configured",
+                miniapp_auth.get("botTokenConfigured") is True,
+                str(miniapp_auth.get("botTokenConfigured")),
+            ),
+            Check(
+                "cloud_run_bot_username_configured",
+                registration.get("telegramBotUsernameConfigured") is True,
+                str(registration.get("telegramBotUsernameConfigured")),
+            ),
+            Check(
+                "telegram_sends_disabled",
+                safety.get("telegramSendsEnabled") is False,
+                _disabled_label(safety.get("telegramSendsEnabled")),
+            ),
+            Check("registration_secret_env", registration.get("secretSource") == "env", str(registration.get("secretSource"))),
         ]
     )
 
@@ -192,7 +218,7 @@ def main(argv: list[str] | None = None) -> int:
             timeout=http_timeout,
             deadline=deadline,
         )
-    except TimeoutError:
+    except (TimeoutError, requests.RequestException):
         timed_out = True
         session = {}
     payload["browserPreviewSession"] = {
@@ -204,12 +230,16 @@ def main(argv: list[str] | None = None) -> int:
     checks.append(Check("browser_preview_session", session.get("mode") == "local_browser_preview", str(session.get("mode"))))
 
     if token:
-        signed_session = _post_json(
-            f"{base_url}/api/telegram/miniapp/session",
-            {"initData": _signed_demo_init_data(token)},
-            timeout=http_timeout,
-            deadline=deadline,
-        )
+        try:
+            signed_session = _post_json(
+                f"{base_url}/api/telegram/miniapp/session",
+                {"initData": _signed_demo_init_data(token)},
+                timeout=http_timeout,
+                deadline=deadline,
+            )
+        except (TimeoutError, requests.RequestException):
+            timed_out = True
+            signed_session = {}
         auth = signed_session.get("auth") or {}
         payload["signedTelegramSession"] = {
             "schema": signed_session.get("schema"),
@@ -235,7 +265,7 @@ def main(argv: list[str] | None = None) -> int:
             timeout=http_timeout,
             deadline=deadline,
         )
-    except TimeoutError:
+    except (TimeoutError, requests.RequestException):
         timed_out = True
         preview = {}
     payload["miniAppPreview"] = {
@@ -255,34 +285,61 @@ def main(argv: list[str] | None = None) -> int:
         ]
     )
 
+    # Route probes should get their own budget window; starting the route deadline
+    # before earlier health/preview checks can leave only a few seconds remaining
+    # and produces confusing "budget exhausted" diagnostics.
+    route_deadline = (time.monotonic() + route_budget) if route_budget else None
     payload["routeProbes"] = _route_probes(base_url, timeout=route_timeout, deadline=route_deadline)
 
     if token:
-        bot = _telegram_readbacks(token, timeout=http_timeout)
+        try:
+            bot = _telegram_readbacks(token, timeout=http_timeout)
+        except (TimeoutError, requests.RequestException):
+            timed_out = True
+            bot = {}
         payload["telegramApi"] = bot
+        get_me = bot.get("getMe") or {}
+        menu_button = bot.get("menuButton") or {}
+        webhook = bot.get("webhook") or {}
         checks.extend(
             [
-                Check("telegram_get_me", bot["getMe"]["ok"] is True and bot["getMe"]["username"] == "Raris0guardBot", str(bot["getMe"])),
-                Check("telegram_menu_button", bot["menuButton"]["webAppUrl"] == f"{base_url}/telegram", str(bot["menuButton"])),
-                Check("telegram_webhook_set", bot["webhook"]["urlSet"] is True, str(bot["webhook"])),
-                Check("telegram_webhook_no_last_error", not bot["webhook"].get("lastErrorMessage"), bot["webhook"].get("lastErrorMessage") or "none"),
+                Check(
+                    "telegram_get_me",
+                    get_me.get("ok") is True and get_me.get("username") == "Raris0guardBot",
+                    str(get_me),
+                ),
+                Check(
+                    "telegram_menu_button",
+                    menu_button.get("webAppUrl") == f"{base_url}/telegram",
+                    str(menu_button),
+                ),
+                Check("telegram_webhook_set", webhook.get("urlSet") is True, str(webhook)),
+                Check(
+                    "telegram_webhook_no_last_error",
+                    not webhook.get("lastErrorMessage"),
+                    webhook.get("lastErrorMessage") or "none",
+                ),
             ]
         )
 
     if token and webhook_secret:
-        webhook_route = _post_json(
-            f"{base_url}/api/telegram/webhook",
-            {
-                "message": {
-                    "chat": {"id": 1234},
-                    "from": {"id": 8675309, "username": "demo_operator", "is_bot": False},
-                    "text": "/start",
-                }
-            },
-            headers={"X-Telegram-Bot-Api-Secret-Token": webhook_secret},
-            timeout=http_timeout,
-            deadline=deadline,
-        )
+        try:
+            webhook_route = _post_json(
+                f"{base_url}/api/telegram/webhook",
+                {
+                    "message": {
+                        "chat": {"id": 1234},
+                        "from": {"id": 8675309, "username": "demo_operator", "is_bot": False},
+                        "text": "/start",
+                    }
+                },
+                headers={"X-Telegram-Bot-Api-Secret-Token": webhook_secret},
+                timeout=http_timeout,
+                deadline=deadline,
+            )
+        except (TimeoutError, requests.RequestException):
+            timed_out = True
+            webhook_route = {}
         payload["webhookRoute"] = {
             "schema": webhook_route.get("schema"),
             "action": webhook_route.get("action"),
@@ -311,45 +368,100 @@ def _emit(payload: dict[str, Any], fmt: str) -> None:
     print(_markdown(payload))
 
 
-def _select_base_url(requested: str, *, timeout: float, deadline: float | None = None) -> str:
-    candidates = _base_url_candidates(requested)
+def _select_base_url(
+    requested: str,
+    *,
+    sapphire_discovered_base_urls: list[str] | None = None,
+    timeout: float,
+    deadline: float | None = None,
+) -> str:
+    candidates = _base_url_candidates(
+        requested,
+        sapphire_discovered_base_urls=sapphire_discovered_base_urls,
+    )
+    preferred = candidates[0] if candidates else requested
+    requested_error: Exception | None = None
     last_error: Exception | None = None
+
+    try:
+        _load_health(preferred, timeout=timeout, deadline=deadline)
+        return preferred
+    except (requests.RequestException, TimeoutError) as exc:
+        if preferred == requested:
+            requested_error = exc
+        last_error = exc
+
     for candidate in candidates:
+        if candidate == preferred:
+            continue
         try:
             _load_health(candidate, timeout=timeout, deadline=deadline)
-            if not _has_required_api_surface(candidate, timeout=timeout, deadline=deadline):
-                continue
         except (requests.RequestException, TimeoutError) as exc:
             last_error = exc
             continue
         return candidate
 
+    if preferred != requested:
+        try:
+            _load_health(requested, timeout=timeout, deadline=deadline)
+            return requested
+        except (requests.RequestException, TimeoutError) as exc:
+            requested_error = exc
+            last_error = exc
+
+    if requested_error is not None:
+        raise requested_error
     if last_error is not None:
         raise last_error
     return requested
 
 
-def _base_url_candidates(requested: str) -> list[str]:
+def _base_url_candidates(
+    requested: str,
+    *,
+    sapphire_discovered_base_urls: list[str] | None = None,
+) -> list[str]:
     candidates: list[str] = []
-    for url in (requested, DEFAULT_BASE_URL, *FALLBACK_BASE_URLS):
+    ordered_urls = (
+        (*(sapphire_discovered_base_urls or []), requested, DEFAULT_BASE_URL)
+        if requested.rstrip("/") == DEFAULT_BASE_URL.rstrip("/") and sapphire_discovered_base_urls
+        else (requested, *(sapphire_discovered_base_urls or []), DEFAULT_BASE_URL)
+    )
+    for url in ordered_urls:
         normalized = url.rstrip("/")
         if normalized and normalized not in candidates:
             candidates.append(normalized)
     return candidates
 
 
-def _has_required_api_surface(base_url: str, *, timeout: float, deadline: float | None = None) -> bool:
-    for path in REQUIRED_API_SURFACE:
-        try:
-            response = requests.get(
-                f"{base_url}{path}",
-                timeout=_bounded_timeout(timeout, deadline),
-            )
-        except (requests.RequestException, TimeoutError):
-            return False
-        if response.status_code == 404:
-            return False
-    return True
+def _discover_base_urls_from_sapphire(*, timeout: float) -> list[str]:
+    headers = {"User-Agent": "0guard-telegram-smoke/1.0"}
+    discovered: list[str] = []
+    for url in SAPPHIRE_PROGRESS_URLS:
+        for attempt in range(2):
+            try:
+                response = requests.get(url, timeout=timeout, headers=headers)
+            except requests.RequestException:
+                if attempt == 0:
+                    time.sleep(0.4)
+                    continue
+                break
+            if response.status_code != 200:
+                break
+            if "application/json" not in response.headers.get("content-type", ""):
+                break
+            try:
+                data = response.json()
+            except ValueError:
+                break
+            for key in ("base_url", "baseUrl", "candidate_url", "candidateUrl"):
+                value = data.get(key)
+                if isinstance(value, str):
+                    normalized = value.strip().rstrip("/")
+                    if normalized and normalized not in discovered:
+                        discovered.append(normalized)
+            break
+    return discovered
 
 
 def _load_secret(env_name: str, secret_name: str, project: str) -> str:

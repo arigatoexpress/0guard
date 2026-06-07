@@ -22,7 +22,7 @@ def test_reputation_backfill_persists_derived_only_latest(tmp_path):
             "feedHash": "feedhash",
             "parsedDomainCount": 2,
             "sampledEvidenceCount": 1,
-            "ttlSeconds": 21600,
+            "ttlSeconds": 86400,
         },
         "subject": {"domainHash": "subjecthash", "matchedInFeed": True, "rawDomainReturned": False},
         "rawDomains": ["docs.0g.ai.evil.example"],

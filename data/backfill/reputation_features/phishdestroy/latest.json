@@ -64,19 +64,19 @@
   "derivedEvidenceCount": 5,
   "feedLink": "https://raw.githubusercontent.com/phishdestroy/destroylist/main/dns/active_domains.json",
   "fetch": {
-    "contentLength": 2310840,
+    "contentLength": 2311003,
     "contentType": "text/plain; charset=utf-8",
-    "etag": "\"1007c1e9cf2db484ee9fed4af8bd8433f995800ae34833dd086c48321ee66f69\"",
-    "feedHash": "7d6683c459b6b56f85beb8fa8105a6dea4cfa71b5fbdce860b4ddcf2495aee80",
+    "etag": "\"a1a9241566566161344081f4146fd0593492f7f685f90252b8af2574b71af404\"",
+    "feedHash": "aac52a47879902692ac68555e89f2daeb2aaa3ec19ce7665a7a39f98ac2b4f04",
     "httpStatus": 200,
     "lastModified": null,
-    "latencyMs": 1070,
-    "parsedDomainCount": 82583,
+    "latencyMs": 1225,
+    "parsedDomainCount": 82594,
     "sampledEvidenceCount": 5,
     "status": "ok",
-    "ttlSeconds": 21600
+    "ttlSeconds": 86400
   },
-  "generatedAt": "2026-05-23T16:31:36+00:00",
+  "generatedAt": "2026-05-23T19:36:48+00:00",
   "input": {
     "limit": 5,
     "live": true,
@@ -87,7 +87,7 @@
   "persistence": {
     "fileHash": "",
     "path": "data/backfill/reputation_features/phishdestroy/latest.json",
-    "payloadHash": "cd2f12ce71d375a98264c8fa08d8cf78ce62c5eb06290ea7cec95d825d1506ec",
+    "payloadHash": "a4e4f1bd9cdb83bc9b7ba1fe901d0ae398d55728acd199eb27fe72cc8a8a95fa",
     "payloadHashAlgorithm": "sha256_canonical_json_without_persistence_hashes",
     "written": true
   },
@@ -127,7 +127,7 @@
   },
   "runReceipt": {
     "algorithm": "sha256_canonical_json",
-    "hash": "90ed3213e6167f9c017f24cee9b90896d706466f14ccea8dedfe80da8e159ef5",
+    "hash": "87938457d7d636ee2b28ac2b39b375ba2585110a7db06341271cbd5c55a004c6",
     "liveAnchorPerformed": false,
     "liveUploadPerformed": false,
     "zeroGChainReady": true,
@@ -157,14 +157,14 @@
     "scheduleCronUtc": "17 */6 * * *",
     "supervisorInstalled": true,
     "supervisorType": "github_actions_scheduled_freshness_monitor",
-    "ttlSeconds": 21600,
+    "ttlSeconds": 86400,
     "workflowPath": ".github/workflows/reputation-backfill-supervisor.yml",
     "writesRawPayloads": false
   },
   "schema": "0guard.reputation_backfill_run.v1",
   "snapshotReceipt": {
     "algorithm": "sha256_canonical_json",
-    "hash": "df6f1db7242f6843663dc9907463b374526af7489a530bf3b11d18add35a6d73",
+    "hash": "d296d09a925730681b63677febe93f6e6cc9969819aae3a30b812373dfc15cd0",
     "liveAnchorPerformed": false,
     "liveUploadPerformed": false,
     "zeroGChainReady": true,
