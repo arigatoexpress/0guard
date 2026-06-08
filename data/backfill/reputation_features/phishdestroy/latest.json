@@ -70,13 +70,13 @@
     "feedHash": "572549ae70ae6afd6f03656cb200648ba7913a8ad44d1f2fcb32b04519913bea",
     "httpStatus": 200,
     "lastModified": null,
-    "latencyMs": 244,
+    "latencyMs": 480,
     "parsedDomainCount": 85538,
     "sampledEvidenceCount": 5,
     "status": "ok",
     "ttlSeconds": 86400
   },
-  "generatedAt": "2026-06-08T04:08:52+00:00",
+  "generatedAt": "2026-06-08T10:59:27+00:00",
   "input": {
     "limit": 5,
     "live": true,
@@ -87,7 +87,7 @@
   "persistence": {
     "fileHash": "",
     "path": "data/backfill/reputation_features/phishdestroy/latest.json",
-    "payloadHash": "4736739ed4233a148f218f760309cda2ebae0971e6593af14f2ebcd59f39c98d",
+    "payloadHash": "c2f5396dae729411065fad6c6c046a19801ad9180cd83b04025a92c6ba6ceaae",
     "payloadHashAlgorithm": "sha256_canonical_json_without_persistence_hashes",
     "written": true
   },
@@ -127,7 +127,7 @@
   },
   "runReceipt": {
     "algorithm": "sha256_canonical_json",
-    "hash": "e77f57a99b176ba9eeedeaa3c1c3454035655e0576f3e10c41cf932bac596caa",
+    "hash": "13434e6dd65719c67616bf9267db94c8104d3755e2f19054551dc90b2b8bed33",
     "liveAnchorPerformed": false,
     "liveUploadPerformed": false,
     "zeroGChainReady": true,
