@@ -64,19 +64,19 @@
   "derivedEvidenceCount": 5,
   "feedLink": "https://raw.githubusercontent.com/phishdestroy/destroylist/main/dns/active_domains.json",
   "fetch": {
-    "contentLength": 2391314,
+    "contentLength": 2391575,
     "contentType": "text/plain; charset=utf-8",
-    "etag": "\"014e71fe4e4cd8aae9e3f5aa966bead1452d4426495ed75c17e6b24fee1c24b0\"",
-    "feedHash": "40416fa93f541d78267c421fb83c83c089bcf19cea17a080c2ad429f97f77f0b",
+    "etag": "\"d8d836c122f5af3efdc167bc6c72edf05d83f0f9ee87de6fa2178ad6883e6d60\"",
+    "feedHash": "572549ae70ae6afd6f03656cb200648ba7913a8ad44d1f2fcb32b04519913bea",
     "httpStatus": 200,
     "lastModified": null,
-    "latencyMs": 276,
-    "parsedDomainCount": 85531,
+    "latencyMs": 244,
+    "parsedDomainCount": 85538,
     "sampledEvidenceCount": 5,
     "status": "ok",
     "ttlSeconds": 86400
   },
-  "generatedAt": "2026-06-07T19:24:58+00:00",
+  "generatedAt": "2026-06-08T04:08:52+00:00",
   "input": {
     "limit": 5,
     "live": true,
@@ -87,7 +87,7 @@
   "persistence": {
     "fileHash": "",
     "path": "data/backfill/reputation_features/phishdestroy/latest.json",
-    "payloadHash": "fac48a0f0f94877d2bf2b20c48c12dc248e136d915876f0461aedaff1fbee7bb",
+    "payloadHash": "4736739ed4233a148f218f760309cda2ebae0971e6593af14f2ebcd59f39c98d",
     "payloadHashAlgorithm": "sha256_canonical_json_without_persistence_hashes",
     "written": true
   },
@@ -127,7 +127,7 @@
   },
   "runReceipt": {
     "algorithm": "sha256_canonical_json",
-    "hash": "638d93a2ad900629ba46b1f91b912bdbfc960acaa7fc54e61f711d6648d22568",
+    "hash": "e77f57a99b176ba9eeedeaa3c1c3454035655e0576f3e10c41cf932bac596caa",
     "liveAnchorPerformed": false,
     "liveUploadPerformed": false,
     "zeroGChainReady": true,
@@ -164,7 +164,7 @@
   "schema": "0guard.reputation_backfill_run.v1",
   "snapshotReceipt": {
     "algorithm": "sha256_canonical_json",
-    "hash": "1db2ebdd98f257adaee1a1e8508a7cdfc05f52cb786ea7780faae172e00604ea",
+    "hash": "0fe6d1990e72452be1547ac8616b6e0d9a1462b99f935d5328142868580a8bb5",
     "liveAnchorPerformed": false,
     "liveUploadPerformed": false,
     "zeroGChainReady": true,
