@@ -6,7 +6,7 @@
   "license": "UNLICENSED",
   "dependencies": {
     "@0gfoundation/0g-storage-ts-sdk": "1.2.10",
-    "ethers": "6.13.1"
+    "ethers": "6.16.0"
   },
   "overrides": {
     "axios": "^1.13.2",
